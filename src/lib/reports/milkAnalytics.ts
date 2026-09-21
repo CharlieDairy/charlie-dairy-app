@@ -76,6 +76,64 @@ export async function getTopLowProducers(year: number, limit = 5): Promise<{ top
   };
 }
 
+export type SalesSummary = {
+  totalLitresSold: number;
+  totalRsSold: number;
+  customerCount: number;
+  recordCount: number;
+  recordsWithQuantity: number;
+};
+
+// "Unknown" buyer = backfilled from historical cash-ledger entries that never
+// recorded who the buyer was (see scripts/deploy/backfill-milksale-from-cash.ts).
+// Those still count toward litres/Rs sold (real recorded revenue) but not
+// toward customerCount, since we genuinely don't know who they were.
+export async function getSalesSummary(year: number): Promise<SalesSummary> {
+  const start = new Date(year, 0, 1);
+  const end = new Date(year + 1, 0, 1);
+
+  const sales = await prisma.milkSale.findMany({
+    where: { date: { gte: start, lt: end } },
+    select: { litres: true, amount: true, buyer: true },
+  });
+
+  const identifiedBuyers = new Set(sales.filter((s) => s.buyer && s.buyer !== "Unknown").map((s) => s.buyer));
+
+  return {
+    totalLitresSold: Math.round(sales.reduce((sum, s) => sum + s.litres, 0) * 10) / 10,
+    totalRsSold: Math.round(sales.reduce((sum, s) => sum + s.amount, 0)),
+    customerCount: identifiedBuyers.size,
+    recordCount: sales.length,
+    recordsWithQuantity: sales.filter((s) => s.litres > 0).length,
+  };
+}
+
+export type ProductionVsSoldPoint = { month: string; monthLabel: string; produced: number; sold: number; unaccounted: number };
+
+export async function getProductionVsSold(year: number): Promise<ProductionVsSoldPoint[]> {
+  const start = new Date(year, 0, 1);
+  const end = new Date(year + 1, 0, 1);
+
+  const [production, sales] = await Promise.all([
+    prisma.milkingRecord.findMany({ where: { date: { gte: start, lt: end } }, select: { date: true, litres: true } }),
+    prisma.milkSale.findMany({ where: { date: { gte: start, lt: end } }, select: { date: true, litres: true } }),
+  ]);
+
+  const produced = new Array(12).fill(0) as number[];
+  for (const r of production) produced[r.date.getMonth()] += r.litres;
+
+  const sold = new Array(12).fill(0) as number[];
+  for (const s of sales) sold[s.date.getMonth()] += s.litres;
+
+  return produced.map((p, i) => ({
+    month: `${year}-${String(i + 1).padStart(2, "0")}`,
+    monthLabel: MONTH_LABELS[i],
+    produced: Math.round(p * 10) / 10,
+    sold: Math.round(sold[i] * 10) / 10,
+    unaccounted: Math.round((p - sold[i]) * 10) / 10,
+  }));
+}
+
 export type HerdCompositionRow = { status: string; label: string; count: number };
 
 export async function getHerdComposition(labelMap: Map<string, string>): Promise<HerdCompositionRow[]> {

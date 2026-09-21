@@ -13,13 +13,20 @@ function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-// Historical data was migrated only into CashTransaction (revenue side included,
-// e.g. "Cash sale proceed for Milk"); MilkSale starts empty and only fills as
-// entries are logged going forward, so summing both here cannot double-count.
+// Historical milk-sale revenue was migrated only into CashTransaction (as
+// category "Cash sale proceed for Milk"); MilkSale is meant to fill only from
+// entries logged going forward via Milk Sale Entry, so summing both here
+// cannot double-count — EXCEPT for rows backfilled by
+// scripts/deploy/backfill-milksale-from-cash.ts, which exist specifically to
+// give MilkSale historical litres/buyer data and represent money that's
+// already counted on the CashTransaction side. Those are excluded from
+// revenue here to avoid counting the same cash twice.
+const BACKFILL_MARKER = "Backfill (cash ledger)";
+
 export async function getMonthlyPnl(): Promise<MonthlyPnl[]> {
   const [cash, sales] = await Promise.all([
     prisma.cashTransaction.findMany({ select: { date: true, category: true, amountIn: true, amountOut: true } }),
-    prisma.milkSale.findMany({ select: { date: true, amount: true } }),
+    prisma.milkSale.findMany({ where: { NOT: { enteredBy: BACKFILL_MARKER } }, select: { date: true, amount: true } }),
   ]);
 
   const months = new Map<string, MonthlyPnl>();
