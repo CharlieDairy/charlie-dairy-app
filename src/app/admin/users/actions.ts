@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { isValidModule } from "@/lib/modules";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -68,6 +69,26 @@ export async function setUserActive(formData: FormData): Promise<void> {
   }
 
   await prisma.user.update({ where: { id: userId }, data: { active } });
+  revalidatePath("/admin/users");
+}
+
+export async function toggleModule(formData: FormData): Promise<void> {
+  const userId = formData.get("userId") as string;
+  const moduleRaw = formData.get("module") as string;
+  const grant = formData.get("grant") === "true";
+
+  if (!isValidModule(moduleRaw)) return;
+
+  if (grant) {
+    await prisma.moduleAccess.upsert({
+      where: { userId_module: { userId, module: moduleRaw } },
+      update: {},
+      create: { userId, module: moduleRaw },
+    });
+  } else {
+    await prisma.moduleAccess.deleteMany({ where: { userId, module: moduleRaw } });
+  }
+
   revalidatePath("/admin/users");
 }
 

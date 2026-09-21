@@ -4,22 +4,27 @@ import AddUserForm from "./AddUserForm";
 import RoleSelect from "./RoleSelect";
 import ActiveToggle from "./ActiveToggle";
 import ResetPasswordForm from "./ResetPasswordForm";
+import ModuleToggles from "./ModuleToggles";
+import type { ModuleName } from "@/lib/modules";
 
 export default async function UsersAdminPage() {
   const session = await auth();
   const currentUserId = (session?.user as { id?: string } | undefined)?.id;
 
-  const users = await prisma.user.findMany({ orderBy: { createdAt: "asc" } });
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: "asc" },
+    include: { moduleAccess: true },
+  });
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Users &amp; Access</h1>
       <p className="text-sm text-neutral-500 max-w-2xl">
-        ADMIN can see and edit everything under Admin. ENTRY can only use the data-entry
-        pages. Deactivating an account blocks future logins but keeps their name on past
-        records (e.g. &ldquo;entered by&rdquo;). A deactivated user&apos;s existing browser
-        session stays valid until it naturally expires or they sign out — this is not an
-        instant kill switch.
+        ADMIN can see and edit everything. ENTRY defaults to data-entry pages only, but can be
+        granted access to specific admin sections below — Operations, Financial, People, Admin —
+        without becoming a full administrator. Deactivating an account blocks future logins but
+        keeps their name on past records. Neither a deactivation nor a module change takes effect
+        on an already-open browser session until it&apos;s refreshed by signing in again.
       </p>
       <AddUserForm />
       <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
@@ -29,14 +34,15 @@ export default async function UsersAdminPage() {
               <th className="text-left px-3 py-2">Name</th>
               <th className="text-left px-3 py-2">Username</th>
               <th className="text-left px-3 py-2">Role</th>
+              <th className="text-left px-3 py-2">Module Access</th>
               <th className="text-left px-3 py-2">Status</th>
-              <th className="text-left px-3 py-2">Created</th>
               <th className="text-left px-3 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
             {users.map((u) => {
               const isSelf = u.id === currentUserId;
+              const granted = u.moduleAccess.map((m) => m.module) as ModuleName[];
               return (
                 <tr key={u.id} className="border-t border-neutral-100 align-top">
                   <td className="px-3 py-2 font-medium">
@@ -48,11 +54,17 @@ export default async function UsersAdminPage() {
                     <RoleSelect userId={u.id} role={u.role} isSelf={isSelf} />
                   </td>
                   <td className="px-3 py-2">
+                    {u.role === "ADMIN" ? (
+                      <span className="text-xs text-neutral-400">All (full admin)</span>
+                    ) : (
+                      <ModuleToggles userId={u.id} granted={granted} />
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
                     <span className={u.active ? "text-green-700" : "text-red-600"}>
                       {u.active ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-neutral-500">{u.createdAt.toISOString().slice(0, 10)}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-col gap-2 items-start">
                       <ActiveToggle userId={u.id} active={u.active} isSelf={isSelf} />

@@ -40,17 +40,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.role = (user as { role: string }).role;
         token.id = user.id;
+        // Only ENTRY-role users need this — ADMIN implicitly has every
+        // module (see src/lib/modules.ts). Fetched once at sign-in and
+        // carried in the JWT since sessions are stateless; a grant change
+        // takes effect on the user's next login, same as the existing
+        // `active` flag caveat documented on /admin/users.
+        if ((user as { role: string }).role !== "ADMIN") {
+          const grants = await prisma.moduleAccess.findMany({ where: { userId: user.id }, select: { module: true } });
+          token.modules = grants.map((g) => g.module);
+        } else {
+          token.modules = [];
+        }
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
-        (session.user as { role?: string; id?: string }).role = token.role as string;
-        (session.user as { role?: string; id?: string }).id = token.id as string;
+        (session.user as { role?: string; id?: string; modules?: string[] }).role = token.role as string;
+        (session.user as { role?: string; id?: string; modules?: string[] }).id = token.id as string;
+        (session.user as { role?: string; id?: string; modules?: string[] }).modules = (token.modules as string[]) ?? [];
       }
       return session;
     },

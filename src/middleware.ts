@@ -1,10 +1,12 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { moduleForPath } from "@/lib/modules";
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth;
   const role = (req.auth?.user as { role?: string } | undefined)?.role;
+  const modules = (req.auth?.user as { modules?: string[] } | undefined)?.modules ?? [];
 
   if (pathname === "/login") {
     if (isLoggedIn) {
@@ -18,7 +20,14 @@ export default auth((req) => {
   }
 
   if (pathname.startsWith("/admin") && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/entry", req.url));
+    const required = moduleForPath(pathname);
+    // The bare dashboard (no specific module required) is open to anyone
+    // with at least one module grant; a specific section needs that exact
+    // module granted.
+    const allowed = required ? modules.includes(required) : modules.length > 0;
+    if (!allowed) {
+      return NextResponse.redirect(new URL("/entry", req.url));
+    }
   }
 
   return NextResponse.next();

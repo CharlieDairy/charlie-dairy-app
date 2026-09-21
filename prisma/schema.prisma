@@ -20,6 +20,28 @@ model User {
   role         Role
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
+
+  moduleAccess ModuleAccess[]
+}
+
+enum ModuleName {
+  OPERATIONS
+  FINANCIAL
+  PEOPLE
+  ADMIN
+}
+
+// Grants a non-ADMIN-role user visibility into an /admin/* section without
+// making them a full admin. ADMIN role always has every module implicitly —
+// see src/lib/modules.ts and middleware.ts.
+model ModuleAccess {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  module    ModuleName
+  grantedAt DateTime   @default(now())
+
+  @@unique([userId, module])
 }
 
 enum CowGender {
