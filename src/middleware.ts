@@ -29,10 +29,10 @@ export default auth((req) => {
 
   if (pathname.startsWith("/admin") && role !== "ADMIN") {
     const required = moduleForPath(pathname);
-    // The bare dashboard (no specific module required) is open to anyone
-    // with at least one module grant; a specific section needs that exact
+    // The bare dashboard (no specific module required) is open to every
+    // logged-in user by default; a specific section still needs that exact
     // module granted.
-    const allowed = required ? modules.includes(required) : modules.length > 0;
+    const allowed = required ? modules.includes(required) : true;
     if (!allowed) {
       return NextResponse.redirect(new URL("/entry", req.url));
     }

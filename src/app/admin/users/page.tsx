@@ -20,8 +20,8 @@ export default async function UsersAdminPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Users &amp; Access</h1>
       <p className="text-sm text-neutral-500 max-w-2xl">
-        ADMIN can see and edit everything. ENTRY defaults to data-entry pages only, but can be
-        granted access to specific admin sections below — Operations, Financial, People, Admin —
+        ADMIN can see and edit everything. ENTRY defaults to Data Entry plus the Dashboard, and can
+        be granted access to specific admin sections below — Operations, Financial, People, Admin —
         without becoming a full administrator. Deactivating an account blocks future logins but
         keeps their name on past records. Neither a deactivation nor a module change takes effect
         on an already-open browser session until it&apos;s refreshed by signing in again.

@@ -26,8 +26,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const modules = ((session?.user as { modules?: string[] } | undefined)?.modules ?? []) as ModuleName[];
   const isFullAdmin = role === "ADMIN";
 
+  // The Dashboard (item.module === null) is visible to every logged-in
+  // user by default, same as middleware's own gate for it; a specific
+  // module section still needs that exact module granted.
   const canSee = (item: (typeof navItems)[number]) =>
-    isFullAdmin || (item.module ? modules.includes(item.module) : modules.length > 0);
+    isFullAdmin || (item.module ? modules.includes(item.module) : true);
 
   const dashboardItem = navItems.find((i) => i.module === null && canSee(i));
   const groups = MODULES.map((m) => ({
