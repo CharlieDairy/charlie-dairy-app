@@ -33,6 +33,10 @@ export default function AddCowForm({ statusOptions }: { statusOptions: { code: s
           ))}
         </select>
       </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="dateOfBirth" className="text-sm font-medium text-neutral-700">Date of Birth</label>
+        <input id="dateOfBirth" name="dateOfBirth" type="date" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+      </div>
       <div className="flex flex-col gap-1 flex-1 min-w-[150px]">
         <label htmlFor="notes" className="text-sm font-medium text-neutral-700">Notes</label>
         <input id="notes" name="notes" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
