@@ -1,0 +1,992 @@
+[
+  {
+    "tag": "1",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "2",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "3",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "4",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "5",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "6",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "7",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "8",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "9",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "10",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "11",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "12",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "13",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "14",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "15",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "16",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "17",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "18",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "19",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "not inseminated",
+    "lastCalvingDate": "2025-08-31",
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "31",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "32",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "33",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "34",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "35",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "not inseminated",
+    "lastCalvingDate": "2025-10-21",
+    "expectedCalving": "2025-10-15",
+    "targetSellDate": "2026-09-15",
+    "notes": null
+  },
+  {
+    "tag": "36",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "not inseminated",
+    "lastCalvingDate": "2025-09-02",
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "37",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "38",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "39",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "40",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "41",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "42",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "43",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "44",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "45",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "46",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "47",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "inseminated",
+    "lastCalvingDate": "2025-08-23",
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "48",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "inseminated",
+    "lastCalvingDate": "2025-08-14",
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "49",
+    "gender": "UNKNOWN",
+    "status": "DEAD",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "50",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "not inseminated",
+    "lastCalvingDate": "2025-04-09",
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "51",
+    "gender": "FEMALE",
+    "status": "DRY",
+    "condition": "pregnant",
+    "lastCalvingDate": "2024-02-15",
+    "expectedCalving": "2026-07-02",
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "52",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "53",
+    "gender": "FEMALE",
+    "status": "DRY",
+    "condition": "pregnant",
+    "lastCalvingDate": "2024-08-19",
+    "expectedCalving": "2025-11-25",
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "54",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "inseminated",
+    "lastCalvingDate": "2025-08-19",
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "55",
+    "gender": "FEMALE",
+    "status": "DRY",
+    "condition": "pregnant",
+    "lastCalvingDate": "2025-11-24",
+    "expectedCalving": "2025-11-24",
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "56",
+    "gender": "FEMALE",
+    "status": "DRY",
+    "condition": "pregnant",
+    "lastCalvingDate": "2024-06-17",
+    "expectedCalving": "2025-11-14",
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "57",
+    "gender": "FEMALE",
+    "status": "DRY",
+    "condition": "pregnant",
+    "lastCalvingDate": "2024-07-27",
+    "expectedCalving": "2025-11-19",
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "58",
+    "gender": "FEMALE",
+    "status": "DRY",
+    "condition": "pregnant",
+    "lastCalvingDate": null,
+    "expectedCalving": "2026-05-15",
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "59",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "inseminated",
+    "lastCalvingDate": "2025-08-29",
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "60",
+    "gender": "UNKNOWN",
+    "status": "MILKING",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "61",
+    "gender": "UNKNOWN",
+    "status": "MILKING",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "62",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "63",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "64",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "65",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "66",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "67",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "68",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "69",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "70",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "71",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "101",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "not inseminated",
+    "lastCalvingDate": "2025-10-20",
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "102",
+    "gender": "FEMALE",
+    "status": "MILKING",
+    "condition": "not inseminated",
+    "lastCalvingDate": "2025-09-22",
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "103",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "104",
+    "gender": "MALE",
+    "status": "DORMANT",
+    "condition": "x",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "105",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "pregnant",
+    "lastCalvingDate": null,
+    "expectedCalving": "2026-04-15",
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "106",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "pregnant",
+    "lastCalvingDate": null,
+    "expectedCalving": "2026-04-15",
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "107",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "108",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "109",
+    "gender": "MALE",
+    "status": "DORMANT",
+    "condition": "x",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "110",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "111",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "112",
+    "gender": "MALE",
+    "status": "DORMANT",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "113",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "114",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "115",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "116",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "117",
+    "gender": "FEMALE",
+    "status": "HEIFER",
+    "condition": "not inseminated",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "118",
+    "gender": "MALE",
+    "status": "DORMANT",
+    "condition": "x",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "119",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "120",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "121",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "122",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "123",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "124",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "125",
+    "gender": "MALE",
+    "status": "DORMANT",
+    "condition": "x",
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "126",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "127",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "128",
+    "gender": "MALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "129",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "130",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "131",
+    "gender": "MALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "132",
+    "gender": "FEMALE",
+    "status": "CALF",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": "2025-05-12",
+    "notes": null
+  },
+  {
+    "tag": "134",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "135",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "136",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "137",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "138",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "139",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  },
+  {
+    "tag": "140",
+    "gender": "UNKNOWN",
+    "status": "DORMANT",
+    "condition": null,
+    "lastCalvingDate": null,
+    "expectedCalving": null,
+    "targetSellDate": null,
+    "notes": null
+  }
+]

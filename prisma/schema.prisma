@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  ENTRY
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+}
+
+enum CowGender {
+  FEMALE
+  MALE
+  UNKNOWN
+}
+
+enum CowStatus {
+  MILKING
+  DRY
+  HEIFER
+  CALF
+  DORMANT
+  SOLD
+  DEAD
+}
+
+model Cow {
+  id                String   @id @default(cuid())
+  tag               String   @unique
+  gender            CowGender @default(UNKNOWN)
+  status            CowStatus @default(DORMANT)
+  condition         String?
+  lastCalvingDate   DateTime?
+  nextAiDate        DateTime?
+  dryDate           DateTime?
+  expectedCalving   DateTime?
+  targetSellDate    DateTime?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  milkingRecords MilkingRecord[]
+}
+
+enum Shift {
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+model MilkingRecord {
+  id        String   @id @default(cuid())
+  cowId     String?
+  cow       Cow?     @relation(fields: [cowId], references: [id])
+  date      DateTime
+  shift     Shift
+  litres    Float
+  enteredBy String?
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([cowId])
+}
+
+model MilkSale {
+  id        String   @id @default(cuid())
+  date      DateTime
+  buyer     String
+  litres    Float
+  rate      Float?
+  fatPct    Float?
+  snf       Float?
+  amount    Float
+  enteredBy String?
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
+
+enum FeedDirection {
+  IN
+  OUT
+}
+
+model FeedTransaction {
+  id        String        @id @default(cuid())
+  date      DateTime
+  feedType  String
+  direction FeedDirection
+  quantity  Float
+  rate      Float?
+  cost      Float?
+  notes     String?
+  enteredBy String?
+  createdAt DateTime      @default(now())
+
+  @@index([date])
+  @@index([feedType])
+}
+
+enum CashMode {
+  CASH
+  BANK
+}
+
+model CashTransaction {
+  id          String   @id @default(cuid())
+  date        DateTime
+  time        String?
+  account     String?
+  party       String?
+  category    String
+  mode        CashMode @default(CASH)
+  amountIn    Float    @default(0)
+  amountOut   Float    @default(0)
+  enteredBy   String?
+  projectLand String?
+  remark      String?
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+  @@index([category])
+}
+
+enum CapitalEntryType {
+  CONTRIBUTION
+  WITHDRAWAL
+  LOAN
+  REPAYMENT
+  OTHER
+}
+
+model CapitalEntry {
+  id          String           @id @default(cuid())
+  date        DateTime
+  partner     String
+  description String
+  debit       Float            @default(0)
+  credit      Float            @default(0)
+  bankAccount String?
+  type        CapitalEntryType @default(OTHER)
+  venture     String?
+  createdAt   DateTime         @default(now())
+
+  @@index([date])
+  @@index([partner])
+}
+
+model Asset {
+  id              String    @id @default(cuid())
+  assetClass      String
+  details         String
+  qty             Float
+  value           Float
+  depreciationPct Float     @default(0)
+  yearLived       Int       @default(0)
+  currentValue    Float
+  valuationDate   DateTime?
+  createdAt       DateTime  @default(now())
+}

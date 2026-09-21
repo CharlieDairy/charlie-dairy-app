@@ -1,0 +1,2062 @@
+[
+  {
+    "date": "2021-02-08",
+    "partner": "Obaid",
+    "description": "Capital - Phase 1",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 605843.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-02-09",
+    "partner": "Abid",
+    "description": "Capital - Phase 1",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 605842.8571428572,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-02-09",
+    "partner": "Farhan",
+    "description": "Capital - Phase 1",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 605842.8571428572,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-02-11",
+    "partner": "Maaz",
+    "description": "Capital - Phase 1",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 600000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-02-11",
+    "partner": "Usman",
+    "description": "Capital - Phase 1",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 606054.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-02-15",
+    "partner": "Mohsin",
+    "description": "Capital - Phase 1",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 600000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-02-16",
+    "partner": "Hafiz",
+    "description": "Capital - Phase 1",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 605842.8571428572,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-04-22",
+    "partner": "Abid",
+    "description": "Capital - Phase 2 (both installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 598571.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-04-24",
+    "partner": "Mohsin",
+    "description": "Capital - Phase 2 (1st installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 250000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-04-24",
+    "partner": "Usman",
+    "description": "Capital - Phase 2 (1st installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 250000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-04-26",
+    "partner": "Farhan",
+    "description": "Capital - Phase 2 (both installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 600000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-04-26",
+    "partner": "Obaid",
+    "description": "Capital - Phase 2 (1st installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 400000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-04-27",
+    "partner": "Obaid",
+    "description": "Capital - Phase 2 (1st installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 100000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-04-29",
+    "partner": "Usman",
+    "description": "Capital - Phase 2 (2nd installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 250000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-04-30",
+    "partner": "Usman",
+    "description": "Capital - Phase 2 (2nd installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 100000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-04-30",
+    "partner": "Obaid",
+    "description": "Capital - Phase 2 (2nd installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 100000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-05-12",
+    "partner": "Hafiz",
+    "description": "Capital - Phase 2 (both installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 598571.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-05-24",
+    "partner": "Mohsin",
+    "description": "Capital - Phase 2 (2nd installment)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 350000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-05-28",
+    "partner": "Maaz",
+    "description": "Payment to Maaz against excess Phase 1 investment",
+    "bankAccount": null,
+    "debit": 285585.714285714,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-05-28",
+    "partner": "Maaz",
+    "description": "non transaction - adjustment entry for summary pivot",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-06-28",
+    "partner": "Abid",
+    "description": "Phase 3.1 & 3.2 onvestment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 430000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-06-29",
+    "partner": "Mohsin",
+    "description": "Phase 3.1 investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 217207.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-06-29",
+    "partner": "Farhan",
+    "description": "Phase 3.1 investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 214491.25,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-06-30",
+    "partner": "Obaid",
+    "description": "Phase 3.1 & 3.2 onvestment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 428571.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-07-05",
+    "partner": "Usman",
+    "description": "Phase 3.1 investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 215000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-08-10",
+    "partner": "Usman",
+    "description": "Phase 3.2 investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 213360.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-08-31",
+    "partner": "Mohsin",
+    "description": "Phase 3.2 investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 217207.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-11-18",
+    "partner": "Hafiz",
+    "description": "Phase 3.1 investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2021-10-07",
+    "partner": "Farhan",
+    "description": "Phase 3.2 investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 214285.714285714,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2022-01-27",
+    "partner": "Hafiz",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 230000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2022-01-26",
+    "partner": "Abid",
+    "description": "Dairy Phase 1.1 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-01-28",
+    "partner": "Farhan",
+    "description": "Dairy Phase 1.1 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-02-01",
+    "partner": "Obaid",
+    "description": "Dairy Phase 1.1 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 405000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-02-07",
+    "partner": "Usman",
+    "description": "Dairy Phase 1.1 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 405000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-02-07",
+    "partner": "Abid",
+    "description": "Dairy Phase 1.1 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 255000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-02-08",
+    "partner": "Junaid",
+    "description": "non transaction - adjustment entry for summary pivot",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1634413.8571428573,
+    "type": "CONTRIBUTION",
+    "venture": "Fattening"
+  },
+  {
+    "date": "2022-02-08",
+    "partner": "Junaid",
+    "description": "non transaction - adjustment entry for summary pivot",
+    "bankAccount": null,
+    "debit": 1634413.8571428573,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-02-08",
+    "partner": "Junaid",
+    "description": "Dairy Phase 1.1 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1000000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-02-14",
+    "partner": "Junaid",
+    "description": "Dairy Phase 1.1 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1050000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-02-14",
+    "partner": "Mohsin",
+    "description": "Dairy Phase 1.1 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 405000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-02-23",
+    "partner": "Farhan",
+    "description": "Dairy Phase 1.1 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 255000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-02-28",
+    "partner": "Mohsin",
+    "description": "Dairy Phase 2 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1000000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-03-06",
+    "partner": "Junaid",
+    "description": "Dairy Phase 2 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 700000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-03-24",
+    "partner": "Obaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1000000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-03-28",
+    "partner": "Usman",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1000000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-04-03",
+    "partner": "Abid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1000000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-04-05",
+    "partner": "Junaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 300000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-04-06",
+    "partner": "Usman",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1000000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-04-12",
+    "partner": "Abid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1000000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-04-12",
+    "partner": "Obaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1000000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-04-22",
+    "partner": "Junaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 500000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-04-23",
+    "partner": "Farhan",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1000000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-06-04",
+    "partner": "Mohsin",
+    "description": "Dairy Phase 2 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 400000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-07-14",
+    "partner": "Farhan",
+    "description": "Dairy Phase 2 collection",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 300000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-07-16",
+    "partner": "Farhan",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 700000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-07-16",
+    "partner": "Mohsin",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 600000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-09-20",
+    "partner": "Usman",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 400000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-09-22",
+    "partner": "Mohsin",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 400000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-09-22",
+    "partner": "Junaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 600000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-09-24",
+    "partner": "Farhan",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 400021.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-09-24",
+    "partner": "Junaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 289414.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-09-24",
+    "partner": "Abid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 400000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-09-24",
+    "partner": "Obaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 400000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2022-12-23",
+    "partner": "Junaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 22"
+  },
+  {
+    "date": "2022-12-26",
+    "partner": "Usman",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 100000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 22"
+  },
+  {
+    "date": "2022-12-26",
+    "partner": "Farhan",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 100000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 22"
+  },
+  {
+    "date": "2022-12-30",
+    "partner": "Abid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 22"
+  },
+  {
+    "date": "2023-03-21",
+    "partner": "Usman",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23-1"
+  },
+  {
+    "date": "2023-03-25",
+    "partner": "Junaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23-1"
+  },
+  {
+    "date": "2023-03-25",
+    "partner": "Mohsin",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23-1"
+  },
+  {
+    "date": "2023-03-30",
+    "partner": "Farhan",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23-1"
+  },
+  {
+    "date": "2023-03-30",
+    "partner": "Obaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23-1"
+  },
+  {
+    "date": "2023-03-30",
+    "partner": "Abid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23-1"
+  },
+  {
+    "date": "2023-05-12",
+    "partner": "Usman",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 250000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-05-12",
+    "partner": "Obaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 250000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-05-12",
+    "partner": "Abid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 250000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-05-15",
+    "partner": "Junaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-05-15",
+    "partner": "Junaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 50000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-05-15",
+    "partner": "Mohsin",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 64445.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-05-22",
+    "partner": "Maaz",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 25000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-05-24",
+    "partner": "Farhan",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 78000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-06-14",
+    "partner": "Mohsin",
+    "description": "200K transferred including Imam sb milk payment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 185555.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-06-21",
+    "partner": "Farhan",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 78000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-06-26",
+    "partner": "Maaz",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 25000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-11-03",
+    "partner": "Maaz",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 50000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-11-22",
+    "partner": "Maaz",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 50000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-12-04",
+    "partner": "Farhan",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 94000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-12-04",
+    "partner": "Junaid",
+    "description": "1st",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 72000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 3"
+  },
+  {
+    "date": "2023-12-04",
+    "partner": "Mohsin",
+    "description": "1st",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 72000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 3"
+  },
+  {
+    "date": "2023-12-04",
+    "partner": "Obaid",
+    "description": "1st",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 72000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 3"
+  },
+  {
+    "date": "2023-12-04",
+    "partner": "Abid",
+    "description": "1st",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 72000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 3"
+  },
+  {
+    "date": "2023-12-04",
+    "partner": "Usman",
+    "description": "1st",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 72000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 3"
+  },
+  {
+    "date": "2023-12-19",
+    "partner": "Maaz",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 25000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2023-12-19",
+    "partner": "Maaz",
+    "description": "Capital adjusted agains crops land in AUG",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 183333.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2023-12-19",
+    "partner": "Maaz",
+    "description": "Capital adjusted agains crops land iN Dec",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 146664.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2024-01-05",
+    "partner": "Obaid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 72000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 3"
+  },
+  {
+    "date": "2024-01-05",
+    "partner": "Abid",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 72000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 3"
+  },
+  {
+    "date": "2024-01-31",
+    "partner": "Obaid",
+    "description": "Refund",
+    "bankAccount": null,
+    "debit": 72000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": "LOAN 23- 3"
+  },
+  {
+    "date": "2024-01-31",
+    "partner": "Abid",
+    "description": "Refund",
+    "bankAccount": null,
+    "debit": 72000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": "LOAN 23- 3"
+  },
+  {
+    "date": "2024-01-01",
+    "partner": "Maaz",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 25000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2024-02-01",
+    "partner": "Maaz",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 25000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2024-03-01",
+    "partner": "Maaz",
+    "description": "",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 25000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 23- 2"
+  },
+  {
+    "date": "2024-03-01",
+    "partner": "Obaid",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1140000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.1"
+  },
+  {
+    "date": "2024-03-01",
+    "partner": "Junaid",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1140000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.1"
+  },
+  {
+    "date": "2024-03-01",
+    "partner": "Abid",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1140000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.1"
+  },
+  {
+    "date": "2024-03-01",
+    "partner": "Mohsin",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1140000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.1"
+  },
+  {
+    "date": "2024-03-01",
+    "partner": "Farhan",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1140000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.1"
+  },
+  {
+    "date": "2024-03-01",
+    "partner": "Usman",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1140000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.1"
+  },
+  {
+    "date": "2024-03-01",
+    "partner": "Maaz",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 1140000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.1"
+  },
+  {
+    "date": "2024-04-15",
+    "partner": "Abid",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 187500.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.2"
+  },
+  {
+    "date": "2024-04-15",
+    "partner": "Obaid",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 187500.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.2"
+  },
+  {
+    "date": "2024-10-19",
+    "partner": "Maaz",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 187500.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.2"
+  },
+  {
+    "date": "2024-04-15",
+    "partner": "Usman",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 187500.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.2"
+  },
+  {
+    "date": "2024-05-25",
+    "partner": "Mohsin",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 187500.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.2"
+  },
+  {
+    "date": "2024-05-25",
+    "partner": "Junaid",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 187500.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.2"
+  },
+  {
+    "date": "2024-05-22",
+    "partner": "Farhan",
+    "description": "Phase 3 Investment",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 187500.0,
+    "type": "CONTRIBUTION",
+    "venture": "Phase 3.2"
+  },
+  {
+    "date": "2024-05-20",
+    "partner": "Abid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 250000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 24-1"
+  },
+  {
+    "date": "2024-05-20",
+    "partner": "Obaid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 250000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 24-1"
+  },
+  {
+    "date": "2024-07-07",
+    "partner": "Maaz",
+    "description": "WhatsChat 13.07.2024",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 602000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2024-09-28",
+    "partner": "Junaid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 75000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 24-2"
+  },
+  {
+    "date": "2024-09-30",
+    "partner": "Farhan",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 75000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 24-2"
+  },
+  {
+    "date": "2024-09-19",
+    "partner": "Obaid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 75600.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 24-2"
+  },
+  {
+    "date": "2024-10-02",
+    "partner": "Usman",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 75000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 24-2"
+  },
+  {
+    "date": "2024-10-02",
+    "partner": "Abid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 75000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 24-2"
+  },
+  {
+    "date": "2024-12-30",
+    "partner": "Mohsin",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 71500.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 25-1"
+  },
+  {
+    "date": "2025-01-01",
+    "partner": "Obaid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 50000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 25-1"
+  },
+  {
+    "date": "2025-01-18",
+    "partner": "Junaid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 25-1"
+  },
+  {
+    "date": "2025-01-18",
+    "partner": "obaid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 149000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 25-1"
+  },
+  {
+    "date": "2025-01-20",
+    "partner": "Junaid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 116000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 25-1"
+  },
+  {
+    "date": "2025-01-21",
+    "partner": "Mohsin",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 200000.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 25-1"
+  },
+  {
+    "date": "2025-01-22",
+    "partner": "Junaid",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 83500.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 25-1"
+  },
+  {
+    "date": "2025-05-01",
+    "partner": "Farhan",
+    "description": "LOAN for AGRI COST",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 99471.0,
+    "type": "CONTRIBUTION",
+    "venture": "LOAN 25-1"
+  },
+  {
+    "date": "2025-05-01",
+    "partner": "Junaid",
+    "description": "Repayment of Capital",
+    "bankAccount": null,
+    "debit": 99000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": "LOAN 25-1"
+  },
+  {
+    "date": "2025-04-22",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2025-05-21",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2025-06-21",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2025-07-22",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2025-08-22",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2025-09-20",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2025-10-23",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2025-11-21",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2025-12-19",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2026-01-21",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2026-02-19",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2026-03-18",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2026-04-21",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2026-05-20",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2026-06-18",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2026-08-19",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2026-08-20",
+    "partner": "Maaz",
+    "description": "Maaz Khan Capital",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": "Dairy"
+  },
+  {
+    "date": "2024-04-01",
+    "partner": "Agri Land Lease",
+    "description": "Land lease from L1 to L8 due (pay on monthly basis May'24 - Apr'25)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 688594.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-01-01",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Maaz Outstanding Capital",
+    "bankAccount": null,
+    "debit": 2670003.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-05-01",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Land lease from L1 to L8 due (pay on monthly basis May'25 - Apr'26)",
+    "bankAccount": null,
+    "debit": 499417.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2026-02-23",
+    "partner": "Bank Account - Abid",
+    "description": "Animal Sale trf to Abid from Basit",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 625700.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-04-22",
+    "partner": "Agri Land Lease",
+    "description": "Payment by Charlie",
+    "bankAccount": null,
+    "debit": 250000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-04-22",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Pmt recd fr Maaz on C/O - Paid to AgriLand Lease",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-05-01",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Crop Expense Year 2025-2026",
+    "bankAccount": null,
+    "debit": 498200.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2026-03-25",
+    "partner": "Bank Account - Abid",
+    "description": "Loan to Basit",
+    "bankAccount": null,
+    "debit": 300000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-04-22",
+    "partner": "Agri Land Lease",
+    "description": "Payment by Maaz on behalf of Charlie",
+    "bankAccount": null,
+    "debit": 150000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-05-22",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Pmt recd fr Maaz on C/O - Paid to AgriLand Lease",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-05-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash received from JAMO  - 850000",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-05-06",
+    "partner": "Bank Account - Abid",
+    "description": "Animal Sale trf to Abid from Basit",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 500000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-05-01",
+    "partner": "Agri Land Lease",
+    "description": "Land lease from L1 to L8 due (pay on monthly basis May'25 - Apr'26)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 499417.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-06-21",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Pmt recd fr Maaz on C/O - Paid to AgriLand Lease",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 138594.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-06-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-05-11",
+    "partner": "Bank Account - Abid",
+    "description": "Animal Sale trf to Abid from Basit",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 128000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-05-21",
+    "partner": "Agri Land Lease",
+    "description": "Payment by Maaz on behalf of Charlie",
+    "bankAccount": null,
+    "debit": 150000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-06-21",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding (Abid Sheikh)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 11406.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-07-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-05-20",
+    "partner": "Bank Account - Abid",
+    "description": "Trf to Basit for SILAGE",
+    "bankAccount": null,
+    "debit": 500000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-06-21",
+    "partner": "Agri Land Lease",
+    "description": "Payment by Maaz on behalf of Charlie",
+    "bankAccount": null,
+    "debit": 138594.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-07-22",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding (Abid Sheikh)",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-08-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-05-21",
+    "partner": "Bank Account - Abid",
+    "description": "Trf to Basit for SILAGE",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2025-11-21",
+    "partner": "Agri Land Lease",
+    "description": "Payment to LANDLORD by Maaz",
+    "bankAccount": null,
+    "debit": 150000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-08-22",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-09-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-05-25",
+    "partner": "Bank Account - Abid",
+    "description": "Animal Sale trf to Abid from Basit",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-01-21",
+    "partner": "Agri Land Lease",
+    "description": "Payment by Maaz on behalf of Charlie",
+    "bankAccount": null,
+    "debit": 100000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-09-22",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-10-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-05-25",
+    "partner": "Bank Account - Abid",
+    "description": "ADJUSTED TOWARD SILAGE",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-02-19",
+    "partner": "Agri Land Lease",
+    "description": "Payment by Maaz on behalf of Charlie",
+    "bankAccount": null,
+    "debit": 100000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-10-23",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-11-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-05-25",
+    "partner": "Bank Account - Abid",
+    "description": "Animal Sale trf to Abid from Basit",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-03-18",
+    "partner": "Agri Land Lease",
+    "description": "Payment by Maaz on behalf of Charlie",
+    "bankAccount": null,
+    "debit": 100000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-11-19",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2025-12-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-05-25",
+    "partner": "Bank Account - Abid",
+    "description": "ADJUSTED TOWARDS BATTERY",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-04-21",
+    "partner": "Agri Land Lease",
+    "description": "Payment by Maaz on behalf of Charlie",
+    "bankAccount": null,
+    "debit": 50000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2025-12-22",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2026-01-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-04-21",
+    "partner": "Agri Land Lease",
+    "description": "Farm Land Lease",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 35000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2026-01-21",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2026-02-28",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-04-21",
+    "partner": "Agri Land Lease",
+    "description": "Farm Land Lease - Paid",
+    "bankAccount": null,
+    "debit": 35000.0,
+    "credit": 0.0,
+    "type": "WITHDRAWAL",
+    "venture": null
+  },
+  {
+    "date": "2026-02-19",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2026-03-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-03-18",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2026-04-30",
+    "partner": "Agri Cost Recovery Acc from Charlie",
+    "description": "Cash recieved from Charlie - 90k",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 0.0,
+    "type": "OTHER",
+    "venture": null
+  },
+  {
+    "date": "2026-04-22",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2026-05-22",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2026-06-18",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2026-08-19",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  },
+  {
+    "date": "2026-08-20",
+    "partner": "Capital Investment - Maaz Khan",
+    "description": "Payment recieved by Maaz on Capital outstanding",
+    "bankAccount": null,
+    "debit": 0.0,
+    "credit": 150000.0,
+    "type": "CONTRIBUTION",
+    "venture": null
+  }
+]

@@ -1,0 +1,782 @@
+[
+  {
+    "assetClass": "Animal",
+    "details": "Cows",
+    "qty": 16.0,
+    "value": 9600000.0,
+    "depreciationPct": 0.3,
+    "yearLived": 1,
+    "currentValue": 6467000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Animal",
+    "details": "Heifers",
+    "qty": 5.0,
+    "value": 1250000.0,
+    "depreciationPct": 0.0,
+    "yearLived": 1,
+    "currentValue": 1250000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Animal",
+    "details": "Bull",
+    "qty": 1.0,
+    "value": 250000.0,
+    "depreciationPct": 0.0,
+    "yearLived": 1,
+    "currentValue": 250000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Animal",
+    "details": "Female Calfs",
+    "qty": 9.0,
+    "value": 900000.0,
+    "depreciationPct": 0.0,
+    "yearLived": 1,
+    "currentValue": 900000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Energy",
+    "details": "Solar Plates (550Wx23) (330WX7)",
+    "qty": 30.0,
+    "value": 486000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 243000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Energy",
+    "details": "Invertor NS 2.5KW Nitrox 8KW + Fironus 5 KW",
+    "qty": 3.0,
+    "value": 600000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 300000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Energy",
+    "details": "Batteries Tubler Osaka (8+4+2)",
+    "qty": 14.0,
+    "value": 840000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 420000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Fan 42\"",
+    "qty": 5.0,
+    "value": 200000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Bracket Fans",
+    "qty": 8.0,
+    "value": 80000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 40000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Pedestal Fan D.C. (out oforder)",
+    "qty": 2.0,
+    "value": 0,
+    "depreciationPct": 0.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Pedestal Fan A.C",
+    "qty": 1.0,
+    "value": 12000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 6000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Ceiling Fan D.C. (out oforder)",
+    "qty": 2.0,
+    "value": 6000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Ceiling Fan A.C.",
+    "qty": 2.0,
+    "value": 10000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Router Pump D.C (out of order)",
+    "qty": 2.0,
+    "value": 24000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Router Pump A.C",
+    "qty": 2.0,
+    "value": 24000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 12000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Water Tanks Plastic",
+    "qty": 3.0,
+    "value": 18000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 9000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Milking Machine 6 line",
+    "qty": 1.0,
+    "value": 450000.0,
+    "depreciationPct": 0.33,
+    "yearLived": 2,
+    "currentValue": 153000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Scale Small (for milk weight)",
+    "qty": 1.0,
+    "value": 8000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Scale large (for Animal weight)",
+    "qty": 1.0,
+    "value": 50000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Rickshaw with Frame",
+    "qty": 1.0,
+    "value": 60000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Motorcycle C.D 70",
+    "qty": 1.0,
+    "value": 50000.0,
+    "depreciationPct": 0.9,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Fire Fighting Extinguisher",
+    "qty": 1.0,
+    "value": 40000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Toka machine with motor",
+    "qty": 1.0,
+    "value": 1000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Toka Blade spare set",
+    "qty": 1.0,
+    "value": 0,
+    "depreciationPct": 1.0,
+    "yearLived": 0,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Solar lights Big (out of order)",
+    "qty": 5.0,
+    "value": 25000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Solar lights small (out or order)",
+    "qty": 10.0,
+    "value": 10000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "water cooler Electric 20ltr",
+    "qty": 1.0,
+    "value": 0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Water cooler Simple 15ltr",
+    "qty": 1.0,
+    "value": 1000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Milk Carrier Frame for bike",
+    "qty": 1.0,
+    "value": 2000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Wheel barrow",
+    "qty": 1.0,
+    "value": 2000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Tyre tub",
+    "qty": 3.0,
+    "value": 3000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Rough File",
+    "qty": 1.0,
+    "value": 500.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Hand Toka for Sugar Cane",
+    "qty": 1.0,
+    "value": 300.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Plastic Basket for Medicine",
+    "qty": 1.0,
+    "value": 500.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Hand Tools",
+    "qty": 6.0,
+    "value": 1000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Kassi",
+    "qty": 1.0,
+    "value": 1000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Cleaning Tool",
+    "qty": 2.0,
+    "value": 1800.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Milking",
+    "details": "Grass cutting Machine",
+    "qty": 1.0,
+    "value": 25000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 12500.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "CCTV",
+    "details": "C.C.T.V System (08 cam)",
+    "qty": 1.0,
+    "value": 12000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 6000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "CCTV",
+    "details": "C.C.T.V System (14 Cam)",
+    "qty": 1.0,
+    "value": 270000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 135000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "CCTV",
+    "details": "Internet Device",
+    "qty": 1.0,
+    "value": 3000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Charpai",
+    "qty": 2.0,
+    "value": 2500.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Silver Buckets",
+    "qty": 3.0,
+    "value": 1500.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Scrap Mislenious (Non Countable)",
+    "qty": 0,
+    "value": 2000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Refridgerator small",
+    "qty": 1.0,
+    "value": 15000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 7500.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Almirah",
+    "qty": 1.0,
+    "value": 4000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "A.C PEL",
+    "qty": 1.0,
+    "value": 60000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 0,
+    "currentValue": 60000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Bed Single",
+    "qty": 2.0,
+    "value": 8000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Room chair",
+    "qty": 2.0,
+    "value": 2500.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Plastic chair",
+    "qty": 1.0,
+    "value": 500.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Plastic Table",
+    "qty": 1.0,
+    "value": 1000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Oven",
+    "qty": 1.0,
+    "value": 8000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Plastic Cane (with Tab)",
+    "qty": 1.0,
+    "value": 300.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "3 Piece Tub set",
+    "qty": 1.0,
+    "value": 1500.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Calculator",
+    "qty": 1.0,
+    "value": 500.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Scissors (small)",
+    "qty": 1.0,
+    "value": 200.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Tag punch machine (Hand)",
+    "qty": 1.0,
+    "value": 1000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Plastic Drum (200ltr)",
+    "qty": 1.0,
+    "value": 2000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Rubber Pipe",
+    "qty": 707.0,
+    "value": 3000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Management",
+    "details": "Crokery Items",
+    "qty": 0,
+    "value": 0,
+    "depreciationPct": 1.0,
+    "yearLived": 0,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Gate Large",
+    "qty": 2.0,
+    "value": 60000.0,
+    "depreciationPct": 0.2,
+    "yearLived": 1,
+    "currentValue": 48000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Gate small",
+    "qty": 1.0,
+    "value": 7000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Office side Rooms",
+    "qty": 3.0,
+    "value": 1000000.0,
+    "depreciationPct": 0.3,
+    "yearLived": 1,
+    "currentValue": 700000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Store + Generator + Chiller Room",
+    "qty": 3.0,
+    "value": 1000000.0,
+    "depreciationPct": 0.3,
+    "yearLived": 1,
+    "currentValue": 700000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Labor Rooms",
+    "qty": 3.0,
+    "value": 800000.0,
+    "depreciationPct": 0.3,
+    "yearLived": 1,
+    "currentValue": 560000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Shed Milking Area",
+    "qty": 1.0,
+    "value": 200000.0,
+    "depreciationPct": 0.3,
+    "yearLived": 1,
+    "currentValue": 140000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Shed Toka Machine",
+    "qty": 1.0,
+    "value": 120000.0,
+    "depreciationPct": 0.3,
+    "yearLived": 1,
+    "currentValue": 84000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Shed Calt Section",
+    "qty": 1.0,
+    "value": 200000.0,
+    "depreciationPct": 0.3,
+    "yearLived": 1,
+    "currentValue": 140000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Shed Feeding Table",
+    "qty": 1.0,
+    "value": 520000.0,
+    "depreciationPct": 0.3,
+    "yearLived": 1,
+    "currentValue": 364000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Shed for Cows",
+    "qty": 3.0,
+    "value": 1400000.0,
+    "depreciationPct": 0.3,
+    "yearLived": 1,
+    "currentValue": 980000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Boundary wall Bricks",
+    "qty": 2807.0,
+    "value": 600000.0,
+    "depreciationPct": 0.4,
+    "yearLived": 1,
+    "currentValue": 360000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Boundary wall Mud",
+    "qty": 1807.0,
+    "value": 140000.0,
+    "depreciationPct": 0.4,
+    "yearLived": 1,
+    "currentValue": 84000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Bunkers for silage storage",
+    "qty": 3.0,
+    "value": 350000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 175000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Facility",
+    "details": "Pipe work in sheds",
+    "qty": 0,
+    "value": 400000.0,
+    "depreciationPct": 1.0,
+    "yearLived": 1,
+    "currentValue": 0.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Energy",
+    "details": "Solar plates frame",
+    "qty": 2.0,
+    "value": 200000.0,
+    "depreciationPct": 0.5,
+    "yearLived": 1,
+    "currentValue": 100000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Uncategorized",
+    "details": "Total",
+    "qty": 0,
+    "value": 22427600.0,
+    "depreciationPct": 0,
+    "yearLived": 0,
+    "currentValue": 14706000.0,
+    "valuationDate": "2025-04-21"
+  },
+  {
+    "assetClass": "Engro Property",
+    "details": "Generator",
+    "qty": 1.0,
+    "value": 0,
+    "depreciationPct": 0,
+    "yearLived": 0,
+    "currentValue": 0,
+    "valuationDate": "2025-02-28"
+  },
+  {
+    "assetClass": "Engro Property",
+    "details": "Milk chiller",
+    "qty": 1.0,
+    "value": 0,
+    "depreciationPct": 0,
+    "yearLived": 0,
+    "currentValue": 0.0,
+    "valuationDate": "2025-02-28"
+  }
+]
