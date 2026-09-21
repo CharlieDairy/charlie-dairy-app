@@ -28,7 +28,7 @@ export async function getCowProfile(id: string) {
   ]);
 
   const distinctDays = await prisma.$queryRaw<{ days: number | bigint }[]>`
-    SELECT COUNT(DISTINCT date) as days FROM MilkingRecord WHERE cowId = ${id}
+    SELECT COUNT(DISTINCT date) as days FROM "MilkingRecord" WHERE "cowId" = ${id}
   `;
   const daysRecorded = Number(distinctDays[0]?.days ?? 0);
   const totalLitres = milkAgg._sum.litres ?? 0;

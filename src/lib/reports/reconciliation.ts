@@ -17,10 +17,10 @@ function toIsoDate(value: string | Date): string {
 
 export async function getProductionReconciliation(limit = 30): Promise<ReconciliationRow[]> {
   const production = await prisma.$queryRaw<{ date: string | Date; total: number }[]>`
-    SELECT date, CAST(SUM(litres) AS REAL) as total FROM MilkingRecord GROUP BY date ORDER BY date DESC LIMIT ${limit}
+    SELECT date, CAST(SUM(litres) AS REAL) as total FROM "MilkingRecord" GROUP BY date ORDER BY date DESC LIMIT ${limit}
   `;
   const sales = await prisma.$queryRaw<{ date: string | Date; total: number }[]>`
-    SELECT date, CAST(SUM(litres) AS REAL) as total FROM MilkSale GROUP BY date
+    SELECT date, CAST(SUM(litres) AS REAL) as total FROM "MilkSale" GROUP BY date
   `;
   const salesByDate = new Map(sales.map((s) => [toIsoDate(s.date), s.total]));
 

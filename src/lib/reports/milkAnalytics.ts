@@ -6,8 +6,8 @@ export type MonthlyMilkPoint = { month: string; monthLabel: string; litres: numb
 
 export async function getAvailableYears(): Promise<number[]> {
   const rows = await prisma.$queryRaw<{ year: number | bigint }[]>`
-    SELECT DISTINCT CAST(strftime('%Y', date / 1000, 'unixepoch') AS INTEGER) as year
-    FROM MilkingRecord
+    SELECT DISTINCT CAST(EXTRACT(YEAR FROM date) AS INTEGER) as year
+    FROM "MilkingRecord"
     ORDER BY year DESC
   `;
   const years = new Set(rows.map((r) => Number(r.year)));
@@ -51,12 +51,12 @@ export async function getTopLowProducers(year: number, limit = 5): Promise<{ top
   const rows = await prisma.$queryRaw<
     { cowId: string; tag: string; totalLitres: number; daysRecorded: number }[]
   >`
-    SELECT c.id as cowId, c.tag as tag,
-           CAST(SUM(m.litres) AS REAL) as totalLitres,
-           CAST(COUNT(DISTINCT m.date) AS REAL) as daysRecorded
-    FROM MilkingRecord m
-    JOIN Cow c ON c.id = m.cowId
-    WHERE m.date >= ${start} AND m.date < ${end} AND m.cowId IS NOT NULL
+    SELECT c.id as "cowId", c.tag as tag,
+           CAST(SUM(m.litres) AS REAL) as "totalLitres",
+           CAST(COUNT(DISTINCT m.date) AS REAL) as "daysRecorded"
+    FROM "MilkingRecord" m
+    JOIN "Cow" c ON c.id = m."cowId"
+    WHERE m.date >= ${start} AND m.date < ${end} AND m."cowId" IS NOT NULL
     GROUP BY c.id, c.tag
     HAVING COUNT(DISTINCT m.date) >= 5
   `;
