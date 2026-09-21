@@ -29,6 +29,10 @@ export default function AddAssetForm() {
         <label htmlFor="currentValue" className="text-sm font-medium text-neutral-700">Current Value (Rs)</label>
         <input id="currentValue" name="currentValue" type="number" step="1" min="0" required className="border border-neutral-300 rounded-md px-3 py-2 text-base w-36" />
       </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="photo" className="text-sm font-medium text-neutral-700">Photo (optional)</label>
+        <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" className="text-sm" />
+      </div>
       <button type="submit" disabled={isPending} className="bg-green-700 text-white rounded-md px-4 py-2 font-medium disabled:opacity-60">
         {isPending ? "Adding…" : "Add Asset"}
       </button>

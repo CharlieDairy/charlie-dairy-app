@@ -48,3 +48,7 @@ prisma/dev.db.backup-*
 
 # one-time migration dump (contains real farm data — never commit)
 scripts/deploy/dump/
+
+# user-uploaded files (asset photos etc.) — runtime data, not source, and
+# won't persist on a serverless deploy anyway (see src/lib/uploadImage.ts)
+/public/uploads/

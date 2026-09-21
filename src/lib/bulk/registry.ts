@@ -54,7 +54,7 @@ export const BULK_TYPES: BulkTypeMeta[] = [
     label: "Assets",
     hasDateFilter: false,
     importable: true,
-    headers: ["assetClass", "details", "qty", "value", "depreciationPct", "yearLived", "currentValue", "valuationDate"],
+    headers: ["assetClass", "details", "qty", "value", "depreciationPct", "yearLived", "currentValue", "valuationDate", "photoUrl"],
   },
   {
     key: "heatEvents",

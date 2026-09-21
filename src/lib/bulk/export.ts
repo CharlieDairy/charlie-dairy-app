@@ -90,7 +90,7 @@ export async function exportCsv(
         rows.push(
           ...data.map((r) => [
             r.assetClass, r.details, num(r.qty), num(r.value), num(r.depreciationPct),
-            String(r.yearLived), num(r.currentValue), dateOnly(r.valuationDate),
+            String(r.yearLived), num(r.currentValue), dateOnly(r.valuationDate), r.photoUrl ?? "",
           ])
         );
         break;
