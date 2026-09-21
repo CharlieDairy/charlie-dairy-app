@@ -1,6 +1,14 @@
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { moduleForPath } from "@/lib/modules";
+import { authConfig } from "@/auth.config";
+
+// Deliberately a separate, edge-safe NextAuth instance (not the one from
+// @/auth) -- importing @/auth here would pull the full Prisma client and
+// bcrypt into this Edge Function's bundle and blow past Vercel's 1MB edge
+// function size limit. This instance only ever reads/verifies the existing
+// JWT cookie; it never runs the Credentials provider or touches the DB.
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
