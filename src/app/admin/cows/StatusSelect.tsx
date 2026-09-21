@@ -2,9 +2,15 @@
 
 import { updateCowStatus } from "./actions";
 
-const STATUSES = ["MILKING", "DRY", "HEIFER", "CALF", "DORMANT", "SOLD", "DEAD"];
-
-export default function StatusSelect({ cowId, status }: { cowId: string; status: string }) {
+export default function StatusSelect({
+  cowId,
+  status,
+  options,
+}: {
+  cowId: string;
+  status: string;
+  options: { code: string; label: string }[];
+}) {
   return (
     <form
       action={updateCowStatus}
@@ -12,8 +18,8 @@ export default function StatusSelect({ cowId, status }: { cowId: string; status:
     >
       <input type="hidden" name="cowId" value={cowId} />
       <select name="status" defaultValue={status} className="border border-neutral-300 rounded px-2 py-1 text-sm">
-        {STATUSES.map((s) => (
-          <option key={s} value={s}>{s}</option>
+        {options.map((o) => (
+          <option key={o.code} value={o.code}>{o.label}</option>
         ))}
       </select>
     </form>

@@ -1,4 +1,5 @@
 import { getBreedingKpis, getBreedingRegister } from "@/lib/reports/breeding";
+import { getLabelMap, labelFor } from "@/lib/masterData";
 import StatCard from "@/components/StatCard";
 
 function fmtDate(d: Date | null): string {
@@ -6,7 +7,11 @@ function fmtDate(d: Date | null): string {
 }
 
 export default async function BreedingReportPage() {
-  const [kpis, register] = await Promise.all([getBreedingKpis(), getBreedingRegister()]);
+  const [kpis, register, statusLabels] = await Promise.all([
+    getBreedingKpis(),
+    getBreedingRegister(),
+    getLabelMap("COW_STATUS"),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,7 +50,7 @@ export default async function BreedingReportPage() {
             {register.map((r) => (
               <tr key={r.cowId} className="border-t border-neutral-100">
                 <td className="px-3 py-2 font-medium">{r.tag}</td>
-                <td className="px-3 py-2">{r.status}</td>
+                <td className="px-3 py-2">{labelFor(statusLabels, r.status)}</td>
                 <td className="px-3 py-2 text-right">{r.lactationNumber}</td>
                 <td className="px-3 py-2">{fmtDate(r.lastCalvingDate)}</td>
                 <td className="px-3 py-2">{fmtDate(r.latestInseminationDate)}</td>

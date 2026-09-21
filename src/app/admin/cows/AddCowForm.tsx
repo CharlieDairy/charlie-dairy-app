@@ -3,7 +3,7 @@
 import { useActionState, useRef, useEffect } from "react";
 import { addCow, type FormState } from "./actions";
 
-export default function AddCowForm() {
+export default function AddCowForm({ statusOptions }: { statusOptions: { code: string; label: string }[] }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(addCow, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -28,13 +28,9 @@ export default function AddCowForm() {
       <div className="flex flex-col gap-1">
         <label htmlFor="status" className="text-sm font-medium text-neutral-700">Status</label>
         <select id="status" name="status" required className="border border-neutral-300 rounded-md px-3 py-2 text-base">
-          <option value="MILKING">Milking</option>
-          <option value="DRY">Dry</option>
-          <option value="HEIFER">Heifer</option>
-          <option value="CALF">Calf</option>
-          <option value="DORMANT">Dormant</option>
-          <option value="SOLD">Sold</option>
-          <option value="DEAD">Dead</option>
+          {statusOptions.map((o) => (
+            <option key={o.code} value={o.code}>{o.label}</option>
+          ))}
         </select>
       </div>
       <div className="flex flex-col gap-1 flex-1 min-w-[150px]">

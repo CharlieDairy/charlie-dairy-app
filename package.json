@@ -12,7 +12,8 @@
     "db:migrate-from-excel": "python scripts/migrate/run_all.py && npm run db:seed",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:export-for-postgres": "tsx scripts/deploy/export-sqlite-data.ts",
-    "db:import-to-postgres": "tsx scripts/deploy/import-to-postgres.ts"
+    "db:import-to-postgres": "tsx scripts/deploy/import-to-postgres.ts",
+    "db:seed-master-data": "tsx scripts/deploy/seed-master-data.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

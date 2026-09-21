@@ -304,6 +304,21 @@ model CapitalEntry {
   @@index([partner])
 }
 
+model MasterDataItem {
+  id        String   @id @default(cuid())
+  category  String
+  code      String
+  label     String
+  active    Boolean  @default(true)
+  locked    Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, code])
+  @@index([category])
+}
+
 model Asset {
   id              String    @id @default(cuid())
   assetClass      String
