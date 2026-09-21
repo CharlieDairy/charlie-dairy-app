@@ -11,6 +11,57 @@ function loadJson<T>(filename: string): T {
   return JSON.parse(raw) as T;
 }
 
+type SeedCow = {
+  tag: string;
+  gender: string;
+  status: string;
+  condition?: string | null;
+  lastCalvingDate?: string | null;
+  expectedCalving?: string | null;
+  targetSellDate?: string | null;
+  notes?: string | null;
+};
+
+type SeedMilkingRecord = { cowTag: string; date: string; shift: string; litres: number };
+
+type SeedCashTransaction = {
+  date: string;
+  time?: string | null;
+  account?: string | null;
+  party?: string | null;
+  category: string;
+  mode: string;
+  amountIn: number;
+  amountOut: number;
+  enteredBy?: string | null;
+  projectLand?: string | null;
+  remark?: string | null;
+};
+
+type SeedFeedTransaction = { date: string; feedType: string; direction: string; quantity: number; rate?: number | null; cost?: number | null };
+
+type SeedCapitalEntry = {
+  date: string;
+  partner: string;
+  description: string;
+  debit: number;
+  credit: number;
+  bankAccount?: string | null;
+  type: string;
+  venture?: string | null;
+};
+
+type SeedAsset = {
+  assetClass: string;
+  details: string;
+  qty: number;
+  value: number;
+  depreciationPct: number;
+  yearLived: number;
+  currentValue: number;
+  valuationDate?: string | null;
+};
+
 async function seedUsers() {
   const users = [
     { name: "Admin", username: "admin", password: "changeme-admin", role: "ADMIN" as const },
@@ -28,12 +79,12 @@ async function seedUsers() {
 }
 
 async function seedCows() {
-  const cows = loadJson<any[]>("cows.json");
+  const cows = loadJson<SeedCow[]>("cows.json");
   await prisma.cow.createMany({
     data: cows.map((c) => ({
       tag: c.tag,
-      gender: c.gender,
-      status: c.status,
+      gender: c.gender as "FEMALE" | "MALE" | "UNKNOWN",
+      status: c.status as "MILKING" | "DRY" | "HEIFER" | "CALF" | "DORMANT" | "SOLD" | "DEAD",
       condition: c.condition ?? null,
       lastCalvingDate: c.lastCalvingDate ? new Date(c.lastCalvingDate) : null,
       expectedCalving: c.expectedCalving ? new Date(c.expectedCalving) : null,
@@ -45,7 +96,7 @@ async function seedCows() {
 }
 
 async function seedMilking() {
-  const records = loadJson<any[]>("milking_records.json");
+  const records = loadJson<SeedMilkingRecord[]>("milking_records.json");
   const cows = await prisma.cow.findMany({ select: { id: true, tag: true } });
   const tagToId = new Map(cows.map((c) => [c.tag, c.id]));
 
@@ -60,7 +111,7 @@ async function seedMilking() {
       return {
         cowId,
         date: new Date(r.date),
-        shift: r.shift,
+        shift: r.shift as "MORNING" | "AFTERNOON" | "EVENING",
         litres: r.litres,
       };
     });
@@ -71,7 +122,7 @@ async function seedMilking() {
 }
 
 async function seedCash() {
-  const rows = loadJson<any[]>("cash_transactions.json");
+  const rows = loadJson<SeedCashTransaction[]>("cash_transactions.json");
   await prisma.cashTransaction.createMany({
     data: rows.map((r) => ({
       date: new Date(r.date),
@@ -79,7 +130,7 @@ async function seedCash() {
       account: r.account,
       party: r.party,
       category: r.category,
-      mode: r.mode,
+      mode: r.mode as "CASH" | "BANK",
       amountIn: r.amountIn,
       amountOut: r.amountOut,
       enteredBy: r.enteredBy,
@@ -91,12 +142,12 @@ async function seedCash() {
 }
 
 async function seedFeed() {
-  const rows = loadJson<any[]>("feed_transactions.json");
+  const rows = loadJson<SeedFeedTransaction[]>("feed_transactions.json");
   await prisma.feedTransaction.createMany({
     data: rows.map((r) => ({
       date: new Date(r.date),
       feedType: r.feedType,
-      direction: r.direction,
+      direction: r.direction as "IN" | "OUT",
       quantity: r.quantity,
       rate: r.rate,
       cost: r.cost,
@@ -106,7 +157,7 @@ async function seedFeed() {
 }
 
 async function seedCapital() {
-  const rows = loadJson<any[]>("capital_entries.json");
+  const rows = loadJson<SeedCapitalEntry[]>("capital_entries.json");
   await prisma.capitalEntry.createMany({
     data: rows.map((r) => ({
       date: new Date(r.date),
@@ -115,7 +166,7 @@ async function seedCapital() {
       debit: r.debit,
       credit: r.credit,
       bankAccount: r.bankAccount,
-      type: r.type,
+      type: r.type as "CONTRIBUTION" | "WITHDRAWAL" | "LOAN" | "REPAYMENT" | "OTHER",
       venture: r.venture ?? null,
     })),
   });
@@ -123,7 +174,7 @@ async function seedCapital() {
 }
 
 async function seedAssets() {
-  const rows = loadJson<any[]>("assets.json");
+  const rows = loadJson<SeedAsset[]>("assets.json");
   await prisma.asset.createMany({
     data: rows.map((r) => ({
       assetClass: r.assetClass,
