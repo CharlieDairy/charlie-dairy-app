@@ -44,6 +44,7 @@ model Cow {
   gender            CowGender @default(UNKNOWN)
   status            CowStatus @default(DORMANT)
   condition         String?
+  dateOfBirth       DateTime?
   lastCalvingDate   DateTime?
   nextAiDate        DateTime?
   dryDate           DateTime?
@@ -329,5 +330,23 @@ model Asset {
   yearLived       Int       @default(0)
   currentValue    Float
   valuationDate   DateTime?
+  photoUrl        String?
   createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String?
+  action    String
+  entity    String
+  entityId  String?
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+
+  @@index([entity])
+  @@index([userId])
+  @@index([createdAt])
 }

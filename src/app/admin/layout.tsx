@@ -14,6 +14,7 @@ const navItems = [
   { href: "/admin/users", label: "Users & Access" },
   { href: "/admin/bulk", label: "Bulk Data" },
   { href: "/admin/master-data", label: "Master Data" },
+  { href: "/admin/audit-log", label: "Audit Log" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

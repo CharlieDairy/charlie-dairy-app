@@ -18,13 +18,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!username || !password) return null;
 
         const user = await prisma.user.findUnique({ where: { username } });
-        if (!user) return null;
+        const valid = user ? await bcrypt.compare(password, user.passwordHash) : false;
+        const success = !!user && valid && user.active;
 
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
-        if (!user.active) return null;
+        await prisma.auditLog.create({
+          data: {
+            userId: user?.id ?? null,
+            userName: user?.name ?? username,
+            action: success ? "login" : "login_failed",
+            entity: "User",
+            entityId: user?.id ?? null,
+            newValue: success
+              ? null
+              : JSON.stringify({ reason: !user ? "unknown username" : !valid ? "wrong password" : "account inactive" }),
+          },
+        }).catch((e) => console.error("[audit] failed to record login attempt", e));
 
-        return { id: user.id, name: user.name, role: user.role };
+        if (!success) return null;
+        return { id: user!.id, name: user!.name, role: user!.role };
       },
     }),
   ],
