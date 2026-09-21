@@ -5,6 +5,12 @@ import { doSignOut } from "@/app/actions/sign-out";
 export default async function EntryLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const role = (session?.user as { role?: string } | undefined)?.role;
+  const modules = (session?.user as { modules?: string[] } | undefined)?.modules ?? [];
+  // Matches middleware's own gate for the bare /admin dashboard: full admins
+  // always qualify, and an ENTRY user qualifies once they hold any module
+  // grant at all (e.g. a Farm Manager with just Operations) -- otherwise
+  // /admin would redirect them straight back here anyway.
+  const canSeeAdmin = role === "ADMIN" || modules.length > 0;
 
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-neutral-50">
@@ -13,9 +19,9 @@ export default async function EntryLayout({ children }: { children: React.ReactN
           Charlie Dairy — Data Entry
         </Link>
         <div className="flex items-center gap-3 text-sm">
-          {role === "ADMIN" && (
+          {canSeeAdmin && (
             <Link href="/admin" className="underline">
-              Admin
+              {role === "ADMIN" ? "Admin" : "Dashboard"}
             </Link>
           )}
           <form action={doSignOut}>
