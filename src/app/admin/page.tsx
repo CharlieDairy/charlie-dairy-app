@@ -1,4 +1,4 @@
-import { getDashboardSummary } from "@/lib/reports/dashboard";
+import { getDashboardSummary, getTodaySnapshot } from "@/lib/reports/dashboard";
 import {
   getAvailableYears,
   getBestMonth,
@@ -8,9 +8,13 @@ import {
   getSalesSummary,
   getTopLowProducers,
 } from "@/lib/reports/milkAnalytics";
+import { getBreedingKpis } from "@/lib/reports/breeding";
 import { getLabelMap } from "@/lib/masterData";
 import { formatRs, formatPct } from "@/lib/format";
 import StatCard from "@/components/StatCard";
+import PageHeader from "@/components/PageHeader";
+import Card from "@/components/Card";
+import Badge from "@/components/Badge";
 import YearlyMilkChart from "./YearlyMilkChart";
 import HerdCompositionChart from "./HerdCompositionChart";
 import ProductionVsSoldChart from "./ProductionVsSoldChart";
@@ -27,31 +31,68 @@ export default async function AdminDashboard({
     ? Number(params.year)
     : availableYears[0];
 
-  const [s, trend, producers, statusLabels, sales, productionVsSold] = await Promise.all([
+  const [s, today, trend, producers, statusLabels, sales, productionVsSold, breedingKpis] = await Promise.all([
     getDashboardSummary(),
+    getTodaySnapshot(),
     getMonthlyMilkTrend(year),
     getTopLowProducers(year),
     getLabelMap("COW_STATUS"),
     getSalesSummary(year),
     getProductionVsSold(year),
+    getBreedingKpis(),
   ]);
   const composition = await getHerdComposition(statusLabels);
   const bestMonth = getBestMonth(trend);
 
-  const milkingCount = composition.find((c) => c.status === "MILKING")?.count ?? 0;
+  const countFor = (status: string) => composition.find((c) => c.status === status)?.count ?? 0;
+  const milkingCount = countFor("MILKING");
   const nonMilkingCount = composition
     .filter((c) => c.status !== "MILKING" && c.status !== "SOLD" && c.status !== "DEAD")
     .reduce((sum, c) => sum + c.count, 0);
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-neutral-900">Dashboard</h1>
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-neutral-500">Year</label>
-          <YearSelector years={availableYears} selected={year} />
+      <PageHeader
+        title="Dashboard"
+        actions={
+          <>
+            <label className="text-sm text-text-muted">Year</label>
+            <YearSelector years={availableYears} selected={year} />
+          </>
+        }
+      />
+
+      {/* Level 1 — critical operational KPIs, always "as of today" (or the
+          most recent day with an entry, clearly labeled) */}
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-text">
+            Today {!today.isToday && <span className="text-xs font-normal text-text-muted">(no entry yet today — showing {today.date})</span>}
+          </h2>
         </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard label="Milk Today" value={`${today.milkLitres.toLocaleString()} L`} />
+          <StatCard label="Milk / Cow" value={`${today.milkPerCow.toFixed(1)} L`} />
+          <StatCard label="Revenue" value={formatRs(today.revenue)} tone="positive" />
+          <StatCard
+            label="Estimated Margin"
+            value={formatRs(today.estimatedMargin)}
+            tone={today.estimatedMargin >= 0 ? "positive" : "negative"}
+          />
+        </div>
+      </Card>
+
+      {/* Level 2 — operational status strip, scan in one glance */}
+      <div className="flex flex-wrap gap-2">
+        <Badge tone="success">{milkingCount} Milking</Badge>
+        <Badge tone="info">{breedingKpis.pregnantCount} Pregnant</Badge>
+        <Badge tone="neutral">{countFor("DRY")} Dry</Badge>
+        <Badge tone="neutral">{countFor("HEIFER")} Heifers</Badge>
+        <Badge tone="neutral">{countFor("CALF")} Calves</Badge>
+        {breedingKpis.dueNext30Days > 0 && <Badge tone="warning">{breedingKpis.dueNext30Days} Due to Calve (30d)</Badge>}
       </div>
+
+      {/* Level 3 — trends and detail */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Revenue" value={formatRs(s.totalRevenue)} />
         <StatCard label="Total Expense" value={formatRs(s.totalExpense)} />

@@ -41,6 +41,12 @@ plan, so their formula is settled before code exists.
 - **Unit:** litres
 - **Edge case:** deliberately **not** labeled "in-house consumption" — nothing tracks calf consumption, wastage, or rejected milk separately yet, so the gap is genuinely unattributed. Full Part 11 reconciliation (produced − calf − withdrawal − rejected − farm consumption − wastage = saleable) needs those sub-components to exist as data first (Phase 2/4 of the architecture plan).
 
+### Milk Today / Milk Per Cow / Revenue / Estimated Margin (Today card)
+- **Formula:** Milk Today = `SUM(MilkingRecord.litres WHERE date = today)`; Milk/Cow = `Milk Today / COUNT(Cow WHERE status='MILKING')`; Revenue = `SUM(CashTransaction.amountIn) + SUM(MilkSale.amount, excluding backfilled rows)` for today; Estimated Margin = Revenue − `SUM(CashTransaction.amountOut)` for today
+- **Source:** `getTodaySnapshot()` in `src/lib/reports/dashboard.ts`
+- **Unit:** litres / litres per cow / Rs
+- **Edge case:** falls back to the most recent date that has a milking record if today has none, and labels the card accordingly (`isToday: false`) — deliberately avoids showing a misleading "0 L" when the real cause is "no entry yet," not "no milk produced." This is the same honesty principle already applied to the Milk Sales and Production-vs-Sold cards.
+
 ### Herd Composition (Milking vs. Non-Milking)
 - **Formula:** Milking = `COUNT(Cow WHERE status='MILKING')`; Non-Milking = `COUNT(Cow WHERE status NOT IN ('MILKING','SOLD','DEAD'))`
 - **Source:** `getHerdComposition()` in `src/lib/reports/milkAnalytics.ts`, consumed in `src/app/admin/page.tsx`
