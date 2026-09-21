@@ -11,6 +11,7 @@ const navItems = [
   { href: "/admin/reports/herd", label: "Herd Summary" },
   { href: "/admin/reports/breeding", label: "Breeding & Reproduction" },
   { href: "/admin/reports/reconciliation", label: "Production Reconciliation" },
+  { href: "/admin/users", label: "Users & Access" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
