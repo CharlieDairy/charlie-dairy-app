@@ -31,6 +31,24 @@ function getDelegate(client: PrismaClient, model: string): FindUniqueDelegate | 
   return null;
 }
 
+// SQLite has exactly one writer for the whole database file. `base` here is
+// a second connection from the audited write's — when that write happens
+// inside an interactive prisma.$transaction(), the transaction's connection
+// holds SQLite's write lock until its callback returns, but the callback
+// can't return until this second-connection query finishes: a genuine
+// deadlock, not just slowness. Discovered in practice (not just reasoned
+// about) when recording a milk sale payment hung and then failed. Racing
+// against a short timeout bounds the wait instead of blocking on SQLite's
+// own multi-second busy_timeout, which was long enough to blow through the
+// transaction's own timeout and cascade into a second failure.
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  // Swallow a late rejection from the original promise once the timeout has
+  // already won the race — otherwise it surfaces as an unhandled rejection
+  // when it eventually settles after we've moved on.
+  const safe = promise.catch(() => fallback);
+  return Promise.race([safe, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+}
+
 async function recordAuditEntry(
   base: PrismaClient,
   model: string,
@@ -94,13 +112,24 @@ function buildClient() {
           if ((operation === "update" || operation === "delete") && whereId) {
             const delegate = getDelegate(base, model);
             if (delegate) {
-              before = await delegate.findUnique({ where: { id: whereId } }).catch(() => null);
+              // 300ms budget: comfortably covers a normal read, but bails
+              // out fast if `base`'s connection is contended (see
+              // withTimeout's comment) rather than risking a multi-second
+              // SQLite busy_timeout wait that could cascade into the
+              // enclosing transaction timing out too.
+              before = await withTimeout(delegate.findUnique({ where: { id: whereId } }).catch(() => null), 300, null);
             }
           }
 
           const result = await query(args);
 
-          await recordAuditEntry(base, model, operation, args, result, before);
+          // Not awaited: this write must never block the operation it's
+          // logging from returning. If it's competing with an open
+          // transaction's connection, it'll simply complete a moment later
+          // once that transaction commits and releases SQLite's write lock
+          // — see the withTimeout comment above for why awaiting it here
+          // caused a real deadlock.
+          void recordAuditEntry(base, model, operation, args, result, before);
 
           return result;
         },
