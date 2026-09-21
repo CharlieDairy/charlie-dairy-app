@@ -256,6 +256,28 @@ model MilkSale {
   createdAt DateTime @default(now())
 
   @@index([date])
+  @@index([buyer])
+}
+
+// A milk customer's payment. Always creates a linked CashTransaction in the
+// same action (see src/app/admin/reports/milk-sales/actions.ts) so this
+// money shows up in the real cash ledger / P&L -- never a parallel,
+// untracked balance. "buyer" matches MilkSale.buyer (same free-text-key
+// pattern already used across the app, e.g. Master Data categories).
+model CustomerPayment {
+  id                String           @id @default(cuid())
+  buyer             String
+  date              DateTime
+  amount            Float
+  mode              CashMode         @default(CASH)
+  notes             String?
+  cashTransactionId String?          @unique
+  cashTransaction   CashTransaction? @relation(fields: [cashTransactionId], references: [id])
+  enteredBy         String?
+  createdAt         DateTime         @default(now())
+
+  @@index([buyer])
+  @@index([date])
 }
 
 enum FeedDirection {
@@ -298,6 +320,8 @@ model CashTransaction {
   projectLand String?
   remark      String?
   createdAt   DateTime @default(now())
+
+  customerPayment CustomerPayment?
 
   @@index([date])
   @@index([category])

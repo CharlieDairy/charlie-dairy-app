@@ -23,6 +23,15 @@ function monthKey(date: Date) {
 // revenue here to avoid counting the same cash twice.
 const BACKFILL_MARKER = "Backfill (cash ledger)";
 
+// Same double-count problem, same shape: a milk sale's revenue is recognized
+// once, at sale time, via MilkSale.amount. When the customer later actually
+// pays, recordCustomerPayment() (src/app/admin/reports/milk-sales/actions.ts)
+// creates a CashTransaction so the cash movement is real and visible in the
+// ledger/audit log -- but it must NOT also count as new revenue, or every
+// paid sale would be counted twice. Excluded from the revenue sum here;
+// still a real, queryable CashTransaction row everywhere else.
+const CUSTOMER_PAYMENT_CATEGORY = "Milk Sale Payment";
+
 export async function getMonthlyPnl(): Promise<MonthlyPnl[]> {
   const [cash, sales] = await Promise.all([
     prisma.cashTransaction.findMany({ select: { date: true, category: true, amountIn: true, amountOut: true } }),
@@ -40,7 +49,7 @@ export async function getMonthlyPnl(): Promise<MonthlyPnl[]> {
 
   for (const c of cash) {
     const m = bucket(c.date);
-    if (c.amountIn > 0) {
+    if (c.amountIn > 0 && c.category !== CUSTOMER_PAYMENT_CATEGORY) {
       m.revenue += c.amountIn;
       m.revenueByCategory[c.category] = (m.revenueByCategory[c.category] ?? 0) + c.amountIn;
     }

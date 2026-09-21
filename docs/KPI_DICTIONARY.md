@@ -52,6 +52,12 @@ plan, so their formula is settled before code exists.
 - **Source:** `getHerdComposition()` in `src/lib/reports/milkAnalytics.ts`, consumed in `src/app/admin/page.tsx`
 - **Unit:** count
 
+### Customer Outstanding Balance
+- **Formula:** `SUM(MilkSale.amount WHERE buyer=X) − SUM(CustomerPayment.amount WHERE buyer=X)`
+- **Source:** `getCustomerSalesSummary()` in `src/lib/reports/milkSalesByCustomer.ts`
+- **Unit:** Rs
+- **Edge case:** a negative balance means the customer has paid more than their recorded sales total (shown as "credit" rather than a negative number, to read clearly). Recording a payment (`recordCustomerPayment()`, `src/app/admin/reports/milk-sales/actions.ts`) always creates a linked `CashTransaction` (category "Milk Sale Payment") in the same DB transaction, so the cash ledger and this balance can never drift apart — but that CashTransaction is deliberately **excluded** from the P&L revenue sum (`CUSTOMER_PAYMENT_CATEGORY` constant in `src/lib/reports/pnl.ts`), since the sale's revenue was already recognized once via `MilkSale.amount` at sale time. Including it too would double-count every paid sale — the same double-count class of bug as the earlier MilkSale-backfill issue, caught before shipping this time by tracing the P&L math before testing in the browser.
+
 ### Days Open
 - **Formula:** `conceptionDate (or today, if still open) − lastCalvingDate`, in days
 - **Source:** `calcDaysOpen()` in `src/lib/breeding/rules.ts`

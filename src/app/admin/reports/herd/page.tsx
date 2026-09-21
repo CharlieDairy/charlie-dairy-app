@@ -1,35 +1,18 @@
 import { getHerdSummary } from "@/lib/reports/herd";
+import PageHeader from "@/components/PageHeader";
+import MilkProductionTable from "./MilkProductionTable";
 
-export default async function HerdSummaryPage() {
+export default async function MilkProductionByCowPage() {
   const rows = await getHerdSummary();
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-neutral-900">Herd Summary</h1>
-      <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
-        <table className="min-w-full text-sm">
-          <thead className="bg-neutral-100">
-            <tr>
-              <th className="text-left px-3 py-2">Tag</th>
-              <th className="text-left px-3 py-2">Status</th>
-              <th className="text-right px-3 py-2">Days Milked</th>
-              <th className="text-right px-3 py-2">Total Litres</th>
-              <th className="text-right px-3 py-2">Avg L / Day</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.cowId} className="border-t border-neutral-100">
-                <td className="px-3 py-2">{r.tag}</td>
-                <td className="px-3 py-2">{r.status}</td>
-                <td className="px-3 py-2 text-right">{r.daysMilked}</td>
-                <td className="px-3 py-2 text-right">{r.totalLitres.toFixed(1)}</td>
-                <td className="px-3 py-2 text-right">{r.avgLitresPerDay.toFixed(1)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <PageHeader title="Milk Production by Cow" />
+      <p className="text-sm text-neutral-500 max-w-2xl">
+        Lifetime milk production per animal — days milked, total litres, and average litres/day. Search or sort any
+        column; click a tag to open that cow&apos;s full profile.
+      </p>
+      <MilkProductionTable rows={rows} />
     </div>
   );
 }

@@ -12,7 +12,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
 };
 
 export const MODULE_DESCRIPTIONS: Record<ModuleName, string> = {
-  OPERATIONS: "Cow Register, Breeding & Reproduction, Herd Summary, Production Reconciliation",
+  OPERATIONS: "Cow Register, Breeding & Reproduction, Milk Production, Milk Sales by Customer, Production Reconciliation",
   FINANCIAL: "Capital Ledger, Assets, P&L Statement, Cash Flow",
   PEOPLE: "Users & Access",
   ADMIN: "Master Data, Bulk Data, Audit Log",
@@ -25,6 +25,7 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/admin/reports/breeding", module: "OPERATIONS" },
   { prefix: "/admin/reports/herd", module: "OPERATIONS" },
   { prefix: "/admin/reports/reconciliation", module: "OPERATIONS" },
+  { prefix: "/admin/reports/milk-sales", module: "OPERATIONS" },
   { prefix: "/admin/capital", module: "FINANCIAL" },
   { prefix: "/admin/assets", module: "FINANCIAL" },
   { prefix: "/admin/reports/pl", module: "FINANCIAL" },
