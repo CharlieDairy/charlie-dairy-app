@@ -9,6 +9,7 @@ const navItems = [
   { href: "/admin/reports/pl", label: "P&L Statement" },
   { href: "/admin/reports/cashflow", label: "Cash Flow" },
   { href: "/admin/reports/herd", label: "Herd Summary" },
+  { href: "/admin/reports/breeding", label: "Breeding & Reproduction" },
   { href: "/admin/reports/reconciliation", label: "Production Reconciliation" },
 ];
 

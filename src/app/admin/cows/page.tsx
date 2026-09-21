@@ -18,6 +18,8 @@ export default async function CowsAdminPage() {
               <th className="text-left px-3 py-2">Status</th>
               <th className="text-left px-3 py-2">Condition</th>
               <th className="text-left px-3 py-2">Last Calving</th>
+              <th className="text-right px-3 py-2">Lactation #</th>
+              <th className="text-left px-3 py-2">Expected Calving</th>
               <th className="text-left px-3 py-2">Notes</th>
             </tr>
           </thead>
@@ -29,6 +31,8 @@ export default async function CowsAdminPage() {
                 <td className="px-3 py-2"><StatusSelect cowId={c.id} status={c.status} /></td>
                 <td className="px-3 py-2">{c.condition ?? "—"}</td>
                 <td className="px-3 py-2">{c.lastCalvingDate ? c.lastCalvingDate.toISOString().slice(0, 10) : "—"}</td>
+                <td className="px-3 py-2 text-right">{c.lactationNumber}</td>
+                <td className="px-3 py-2">{c.expectedCalving ? c.expectedCalving.toISOString().slice(0, 10) : "—"}</td>
                 <td className="px-3 py-2">{c.notes ?? "—"}</td>
               </tr>
             ))}

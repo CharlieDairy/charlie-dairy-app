@@ -5,6 +5,10 @@ const tiles = [
   { href: "/entry/cash", label: "Cash Entry", desc: "Record cash in / cash out" },
   { href: "/entry/feed", label: "Feed Entry", desc: "Record feed inward / outward" },
   { href: "/entry/milk-sale", label: "Milk Sale Entry", desc: "Record a milk sale" },
+  { href: "/entry/breeding/heat", label: "Heat Detection", desc: "Record a heat event" },
+  { href: "/entry/breeding/ai", label: "Insemination / Service", desc: "Record AI, natural service or embryo transfer" },
+  { href: "/entry/breeding/pregnancy-check", label: "Pregnancy Check", desc: "Record a pregnancy diagnosis" },
+  { href: "/entry/breeding/calving", label: "Calving", desc: "Record a calving and its calf" },
 ];
 
 export default function EntryHome() {

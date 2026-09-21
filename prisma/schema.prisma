@@ -48,11 +48,155 @@ model Cow {
   dryDate           DateTime?
   expectedCalving   DateTime?
   targetSellDate    DateTime?
+  lactationNumber   Int      @default(0)
   notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  milkingRecords MilkingRecord[]
+  milkingRecords    MilkingRecord[]
+  heatEvents        HeatEvent[]
+  inseminations     Insemination[]
+  pregnancyChecks   PregnancyCheck[]
+  calvingsAsDam     Calving[]        @relation("DamCalvings")
+  calfRecord        Calf?            @relation("CalfCow")
+}
+
+enum HeatDetectionMethod {
+  VISUAL
+  ACTIVITY_MONITOR
+  TAIL_PAINT
+  OTHER
+}
+
+model HeatEvent {
+  id              String   @id @default(cuid())
+  cowId           String
+  cow             Cow      @relation(fields: [cowId], references: [id])
+  detectedAt      DateTime
+  detectionMethod HeatDetectionMethod @default(VISUAL)
+  intensity       String?
+  notes           String?
+  enteredBy       String?
+  createdAt       DateTime @default(now())
+
+  insemination    Insemination?
+
+  @@index([cowId])
+  @@index([detectedAt])
+}
+
+enum BreedingMethod {
+  AI
+  NATURAL
+  EMBRYO_TRANSFER
+}
+
+model Insemination {
+  id            String   @id @default(cuid())
+  cowId         String
+  cow           Cow      @relation(fields: [cowId], references: [id])
+  heatEventId   String?  @unique
+  heatEvent     HeatEvent? @relation(fields: [heatEventId], references: [id])
+  date          DateTime
+  method        BreedingMethod @default(AI)
+  semenBatch    String?
+  bullTag       String?
+  technician    String?
+  serviceNumber Int      @default(1)
+  cost          Float?
+  notes         String?
+  enteredBy     String?
+  createdAt     DateTime @default(now())
+
+  pregnancyChecks PregnancyCheck[]
+  calvings        Calving[]
+
+  @@index([cowId])
+  @@index([date])
+}
+
+enum PregnancyResult {
+  PREGNANT
+  OPEN
+  INCONCLUSIVE
+}
+
+enum PregnancyCheckMethod {
+  PALPATION
+  ULTRASOUND
+  BLOOD_TEST
+  OBSERVATION
+}
+
+model PregnancyCheck {
+  id             String   @id @default(cuid())
+  cowId          String
+  cow            Cow      @relation(fields: [cowId], references: [id])
+  inseminationId String?
+  insemination   Insemination? @relation(fields: [inseminationId], references: [id])
+  date           DateTime
+  method         PregnancyCheckMethod @default(PALPATION)
+  result         PregnancyResult
+  notes          String?
+  performedBy    String?
+  createdAt      DateTime @default(now())
+
+  @@index([cowId])
+  @@index([date])
+}
+
+enum CalvingDifficulty {
+  UNASSISTED
+  EASY_PULL
+  HARD_PULL
+  VET_ASSISTED
+  CAESAREAN
+}
+
+enum CalfOutcome {
+  ALIVE
+  STILLBORN
+  DIED_WITHIN_24H
+}
+
+model Calving {
+  id               String   @id @default(cuid())
+  damId            String
+  dam              Cow      @relation("DamCalvings", fields: [damId], references: [id])
+  inseminationId   String?
+  insemination     Insemination? @relation(fields: [inseminationId], references: [id])
+  sireTag          String?
+  date             DateTime
+  gestationDays    Int?
+  difficulty       CalvingDifficulty @default(UNASSISTED)
+  assistedBy       String?
+  retainedPlacenta Boolean  @default(false)
+  complications    String?
+  calfCount        Int      @default(1)
+  notes            String?
+  enteredBy        String?
+  createdAt        DateTime @default(now())
+
+  calves           Calf[]
+
+  @@index([damId])
+  @@index([date])
+}
+
+model Calf {
+  id          String   @id @default(cuid())
+  calvingId   String
+  calving     Calving  @relation(fields: [calvingId], references: [id])
+  cowId       String?  @unique
+  cow         Cow?     @relation("CalfCow", fields: [cowId], references: [id])
+  sex         CowGender @default(UNKNOWN)
+  outcome     CalfOutcome @default(ALIVE)
+  birthWeight Float?
+  tag         String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@index([calvingId])
 }
 
 enum Shift {
