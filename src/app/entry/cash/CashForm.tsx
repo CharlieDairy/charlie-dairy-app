@@ -7,7 +7,7 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function CashForm({ categories }: { categories: string[] }) {
+export default function CashForm({ categories, vendorNames }: { categories: string[]; vendorNames: string[] }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(submitCash, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -49,7 +49,12 @@ export default function CashForm({ categories }: { categories: string[] }) {
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="party" className="text-sm font-medium text-neutral-700">Party (optional)</label>
-        <input id="party" name="party" type="text" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        <input id="party" name="party" type="text" list="party-options" placeholder="e.g. a vendor name, for Vendor Ledger" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        <datalist id="party-options">
+          {vendorNames.map((v) => (
+            <option key={v} value={v} />
+          ))}
+        </datalist>
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="remark" className="text-sm font-medium text-neutral-700">Remark</label>

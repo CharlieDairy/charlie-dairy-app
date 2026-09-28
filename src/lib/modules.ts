@@ -13,7 +13,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
 
 export const MODULE_DESCRIPTIONS: Record<ModuleName, string> = {
   OPERATIONS: "Herd, Breeding, Health, Milk, Weight and Feed & Inventory sections — animal records, all entry forms for these subjects, and their reports",
-  FINANCIAL: "Financial section — Cash Entry, Cash Flow, P&L Statement, Capital Ledger, Assets",
+  FINANCIAL: "Financial section — Cash Entry, Cash Flow, P&L Statement, Balance Sheet, Expense Breakdown, AR Aging, Vendor Ledger, Capital Ledger, Assets",
   PEOPLE: "Users & Access, and the Team section — employees, salary payments, attendance",
   ADMIN: "Master Data, Bulk Data, Audit Log",
 };
@@ -36,8 +36,12 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/admin/customers", module: "OPERATIONS" },
   { prefix: "/admin/capital", module: "FINANCIAL" },
   { prefix: "/admin/assets", module: "FINANCIAL" },
+  { prefix: "/admin/vendors", module: "FINANCIAL" },
   { prefix: "/admin/reports/pl", module: "FINANCIAL" },
   { prefix: "/admin/reports/cashflow", module: "FINANCIAL" },
+  { prefix: "/admin/reports/balance-sheet", module: "FINANCIAL" },
+  { prefix: "/admin/reports/expense-breakdown", module: "FINANCIAL" },
+  { prefix: "/admin/reports/ar-aging", module: "FINANCIAL" },
   { prefix: "/admin/users", module: "PEOPLE" },
   { prefix: "/admin/team", module: "PEOPLE" },
   { prefix: "/admin/master-data", module: "ADMIN" },

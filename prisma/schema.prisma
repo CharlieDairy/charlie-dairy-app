@@ -586,6 +586,22 @@ model Customer {
   updatedAt     DateTime @updatedAt
 }
 
+// Matched by name (case-insensitive) against CashTransaction.party, the
+// same free-text-key convention Customer uses against MilkSale.buyer -- no
+// FK, so existing cash rows link up the moment a vendor with that name
+// exists, and nothing needs backfilling.
+model Vendor {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  phone     String?
+  address   String?
+  category  String?
+  active    Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum CashMode {
   CASH
   BANK

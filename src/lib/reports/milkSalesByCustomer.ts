@@ -125,6 +125,60 @@ export type CustomerWithSales = {
 // same free-text-key match used everywhere else a Customer/FeedItem is
 // matched against a string field. Includes customers with zero sales
 // (a new customer added before their first sale is still a customer).
+export type ArAgingRow = {
+  buyer: string;
+  current: number;
+  days31to60: number;
+  days61to90: number;
+  over90: number;
+  total: number;
+};
+
+// Sales/payments aren't matched invoice-to-invoice (a payment is a lump sum
+// against a buyer, not tied to a specific sale) -- so aging is computed by
+// FIFO-consuming each buyer's lifetime payments against their oldest unpaid
+// sales first, the standard approach when there's no explicit invoice
+// matching. Whatever amount is left unconsumed per sale ages from that
+// sale's own date.
+export async function getArAging(asOf: Date = new Date()): Promise<ArAgingRow[]> {
+  const [sales, payments] = await Promise.all([
+    prisma.milkSale.findMany({ orderBy: { date: "asc" }, select: { buyer: true, date: true, amount: true } }),
+    prisma.customerPayment.groupBy({ by: ["buyer"], _sum: { amount: true } }),
+  ]);
+
+  const salesByBuyer = new Map<string, { date: Date; remaining: number }[]>();
+  for (const s of sales) {
+    if (!salesByBuyer.has(s.buyer)) salesByBuyer.set(s.buyer, []);
+    salesByBuyer.get(s.buyer)!.push({ date: s.date, remaining: s.amount });
+  }
+  const paidByBuyer = new Map(payments.map((p) => [p.buyer, p._sum.amount ?? 0]));
+
+  const rows: ArAgingRow[] = [];
+  for (const [buyer, saleList] of salesByBuyer) {
+    let paymentPool = paidByBuyer.get(buyer) ?? 0;
+    for (const s of saleList) {
+      if (paymentPool <= 0) break;
+      const consume = Math.min(paymentPool, s.remaining);
+      s.remaining -= consume;
+      paymentPool -= consume;
+    }
+
+    const bucket = { current: 0, days31to60: 0, days61to90: 0, over90: 0 };
+    for (const s of saleList) {
+      if (s.remaining <= 0.01) continue;
+      const ageDays = Math.floor((asOf.getTime() - s.date.getTime()) / 86_400_000);
+      if (ageDays <= 30) bucket.current += s.remaining;
+      else if (ageDays <= 60) bucket.days31to60 += s.remaining;
+      else if (ageDays <= 90) bucket.days61to90 += s.remaining;
+      else bucket.over90 += s.remaining;
+    }
+    const total = bucket.current + bucket.days31to60 + bucket.days61to90 + bucket.over90;
+    if (total > 0.01) rows.push({ buyer, ...bucket, total });
+  }
+
+  return rows.sort((a, b) => b.total - a.total);
+}
+
 export async function getCustomersWithSales(period: PeriodKey = "all"): Promise<CustomerWithSales[]> {
   const [customers, sales] = await Promise.all([
     prisma.customer.findMany({ orderBy: { name: "asc" } }),
