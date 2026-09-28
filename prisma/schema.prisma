@@ -549,12 +549,15 @@ model FeedTransaction {
   @@index([feedType])
 }
 
-// General farm consumables/supplies (disinfectants, syringes, fuel, spare
-// parts, packaging, etc.) -- kept separate from Feed and Medicine, which
-// already have their own dedicated stock tracking. A lightweight catalog
-// (unlike Feed's free-text feedType) so each item can carry a unit and an
-// optional reorder level for low-stock alerts.
-model InventoryItem {
+// Feed Master: the catalog of feed types (Silage, Wenda, Turi, Fodder, etc.)
+// used by Feed Entry and Feed Overview. Replaces the earlier separate
+// "general Inventory" module -- that module's stock ledger (InventoryTransaction)
+// duplicated what FeedTransaction already tracked and was dropped; this model
+// is the renamed survivor of its catalog half (InventoryItem), now scoped to
+// feed specifically. FeedTransaction.feedType stays free-text and is matched
+// against FeedItem.name for unit/category/reorder-level lookups, the same
+// string-match pattern already used for MasterDataItem labels.
+model FeedItem {
   id           String   @id @default(cuid())
   name         String   @unique
   unit         String
@@ -562,29 +565,23 @@ model InventoryItem {
   reorderLevel Float?
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
-
-  transactions InventoryTransaction[]
 }
 
-enum InventoryDirection {
-  IN
-  OUT
-}
-
-model InventoryTransaction {
-  id        String              @id @default(cuid())
-  itemId    String
-  item      InventoryItem       @relation(fields: [itemId], references: [id])
-  date      DateTime
-  direction InventoryDirection
-  quantity  Float
-  cost      Float?
-  notes     String?
-  enteredBy String?
-  createdAt DateTime            @default(now())
-
-  @@index([itemId])
-  @@index([date])
+// Milk customer master: real contact/commercial terms for a buyer, matched
+// against MilkSale.buyer by name (same free-text-key pattern as FeedItem/
+// MasterDataItem) so existing MilkSale history stays intact -- this doesn't
+// require re-keying any sales record.
+model Customer {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  phone         String?
+  address       String?
+  paymentTerms  String?
+  agreedRate    Float?
+  active        Boolean  @default(true)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 enum CashMode {

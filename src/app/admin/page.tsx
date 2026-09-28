@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { getFarmDashboard } from "@/lib/reports/farmDashboard";
-import { getInventoryOverview } from "@/lib/reports/inventory";
+import { getFeedOverview } from "@/lib/reports/feed";
 import { formatRs } from "@/lib/format";
 import DailyProductionChart from "./DailyProductionChart";
 import type { ReactNode } from "react";
@@ -16,7 +16,6 @@ function Ic({ children }: { children: ReactNode }) {
 const IconHeart = <Ic><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></Ic>;
 const IconActivity = <Ic><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></Ic>;
 const IconArchive = <Ic><rect x="2" y="3" width="20" height="5" rx="1" /><path d="M4 8v11a2 2 0 002 2h12a2 2 0 002-2V8" /><path d="M10 13h4" /></Ic>;
-const IconCoffee = <Ic><path d="M18 8h1a4 4 0 010 8h-1" /><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z" /><line x1="6" y1="1" x2="6" y2="4" /><line x1="10" y1="1" x2="10" y2="4" /><line x1="14" y1="1" x2="14" y2="4" /></Ic>;
 const IconGrid = <Ic><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></Ic>;
 const IconTrend = <Ic><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></Ic>;
 const IconDroplet = <Ic><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" /></Ic>;
@@ -109,8 +108,8 @@ const ALERT_TONE: Record<string, { border: string; bg: string }> = {
 
 const JUMP_LINKS: [string, string][] = [
   ["Animals", "/admin/cows"], ["Milk", "/entry/milking"], ["Sales", "/admin/reports/milk-sales"],
-  ["Breeding", "/admin/reports/breeding"], ["Vaccinations", "/entry/health/vaccination"], ["Feeds / stock", "/admin/reports/feed"],
-  ["Weight", "/admin/reports/weight"], ["Inventory", "/admin/reports/inventory"], ["Team", "/admin/team"],
+  ["Breeding", "/admin/reports/breeding"], ["Vaccinations", "/entry/health/vaccination"], ["Feed & Inventory", "/admin/reports/feed"],
+  ["Weight", "/admin/reports/weight"], ["Customers", "/admin/customers"], ["Team", "/admin/team"],
 ];
 
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ day?: string; period?: string; from?: string; to?: string }> }) {
@@ -119,7 +118,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const user = session?.user as { role?: string; modules?: string[] } | undefined;
   const finance = user?.role === "ADMIN" || !!user?.modules?.includes("FINANCIAL");
   const operations = user?.role === "ADMIN" || !!user?.modules?.includes("OPERATIONS");
-  const [d, inventory] = await Promise.all([getFarmDashboard(params), getInventoryOverview()]);
+  const [d, feed] = await Promise.all([getFarmDashboard(params), getFeedOverview()]);
   const sum = (v: Record<string, number>) => Object.values(v).reduce((n, a) => n + a, 0);
   const income = sum(d.income), expense = sum(d.expenses), net = income - expense;
   const sold = d.saleDay.reduce((n, s) => n + s.litres, 0);
@@ -127,7 +126,6 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const coverage = d.active.length ? Math.round(d.vaccinated / d.active.length * 100) : null;
   const overdueBreeding = d.breeding.filter(c => c.nextAiDate!.toISOString().slice(0, 10) < d.today).length;
   const breedingToday = d.breeding.filter(c => c.nextAiDate!.toISOString().slice(0, 10) === d.today).length;
-  const lowStockFeed = d.stocks.filter(s => s.balance > 0 && s.days !== null && s.days < 7).length;
   const alerts = [
     { title: "Breeding follow-up", count: overdueBreeding + breedingToday, detail: `${overdueBreeding} overdue · ${breedingToday} due today`, href: "/admin/reports/breeding", tone: "rose" as const },
     { title: "Milk records pending", count: d.dailyMilk.missing, detail: `${d.dailyMilk.recorded} animals recorded on ${d.day}`, href: "/entry/milking", tone: "amber" as const },
@@ -213,7 +211,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </div>
 
         <p className="text-xs text-slate-500">Operational summaries below reflect current records as of {d.today}; daily feeding cost follows the selected milk-book day.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           <Panel title="Breeding" href="/admin/reports/breeding" icon={IconHeart} tone="rose">
             <p className="font-bold text-xl mb-2">{overdueBreeding + breedingToday} follow-ups due</p>
             <Row label="Pregnant (expected date recorded)" value={d.pregnant} />
@@ -231,20 +229,13 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
             </div>
             <p className="text-xs text-slate-500 mt-2">Coverage means at least one vaccination record, not all vaccines up to date.</p>
           </Panel>
-          <Panel title="Inventory" href="/admin/reports/inventory" icon={IconArchive} tone="violet">
-            <p className="font-bold text-xl mb-2">{inventory.lowStockCount} low stock item{inventory.lowStockCount === 1 ? "" : "s"}</p>
-            <Row label="Feed types" value={d.stocks.length} />
-            <Row label="Feed: negative stock" value={d.stocks.filter(s => s.balance < 0).length} />
-            <Row label="Feed: under 7 days" value={lowStockFeed} />
-            <Row label="General items tracked" value={inventory.items.length} />
-            <p className="text-xs text-slate-500 mt-2">Feed movements and general Inventory items; medicine batches and expiry stock are not tracked.</p>
-          </Panel>
-          <Panel title="Feeding" href="/admin/reports/feed" icon={IconCoffee} tone="amber">
-            <p className="font-bold text-xl mb-2">Schedules not configured</p>
-            <Row label="Pending feedings" value="Not tracked" />
+          <Panel title="Feed & Inventory" href="/admin/reports/feed" icon={IconArchive} tone="violet">
+            <p className="font-bold text-xl mb-2">{feed.lowStockCount} low stock item{feed.lowStockCount === 1 ? "" : "s"}</p>
+            <Row label="Feed types tracked" value={d.stocks.length} />
+            <Row label="Negative stock" value={d.stocks.filter(s => s.balance < 0).length} />
             <Row label="Feed cost · selected day" value={feedValue(d.feedDay)} />
             <Row label="Cost · selected period" value={feedValue(d.feedPeriod)} />
-            <p className="text-xs text-slate-500 mt-2">Based on recorded feed issued, not purchases.</p>
+            <p className="text-xs text-slate-500 mt-2">Based on recorded feed issued, not purchases. Manage feed types in Feed Master.</p>
           </Panel>
         </div>
       </>}

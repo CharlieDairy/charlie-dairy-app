@@ -3,15 +3,16 @@ import { getTodaysSellableBalance } from "@/lib/reports/reconciliation";
 import MilkSaleForm from "./MilkSaleForm";
 
 export default async function MilkSaleEntryPage() {
-  const [rows, balance] = await Promise.all([
+  const [rows, customers, balance] = await Promise.all([
     prisma.milkSale.findMany({
       select: { buyer: true },
       distinct: ["buyer"],
       orderBy: { buyer: "asc" },
     }),
+    prisma.customer.findMany({ where: { active: true }, select: { name: true, agreedRate: true } }),
     getTodaysSellableBalance(),
   ]);
-  const buyers = rows.map((r) => r.buyer);
+  const buyers = Array.from(new Set([...customers.map((c) => c.name), ...rows.map((r) => r.buyer)])).sort();
 
   return (
     <div className="flex flex-col gap-4">
@@ -24,7 +25,7 @@ export default async function MilkSaleEntryPage() {
           stock or multi-day carryover isn&apos;t reflected here.
         </p>
       </div>
-      <MilkSaleForm buyers={buyers} />
+      <MilkSaleForm buyers={buyers} customerRates={customers.filter((c) => c.agreedRate !== null).map((c) => ({ name: c.name, agreedRate: c.agreedRate as number }))} />
     </div>
   );
 }

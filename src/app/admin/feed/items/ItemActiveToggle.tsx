@@ -1,10 +1,10 @@
 "use client";
 
-import { toggleInventoryItemActive } from "../actions";
+import { toggleFeedItemActive } from "../actions";
 
 export default function ItemActiveToggle({ id, active }: { id: string; active: boolean }) {
   return (
-    <form action={toggleInventoryItemActive}>
+    <form action={toggleFeedItemActive}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="active" value={(!active).toString()} />
       <button

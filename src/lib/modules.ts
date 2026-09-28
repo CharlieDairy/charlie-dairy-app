@@ -12,7 +12,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
 };
 
 export const MODULE_DESCRIPTIONS: Record<ModuleName, string> = {
-  OPERATIONS: "Herd, Breeding, Health, Milk, Weight, Feed and Inventory sections — animal records, all entry forms for these subjects, and their reports",
+  OPERATIONS: "Herd, Breeding, Health, Milk, Weight and Feed & Inventory sections — animal records, all entry forms for these subjects, and their reports",
   FINANCIAL: "Financial section — Cash Entry, Cash Flow, P&L Statement, Capital Ledger, Assets",
   PEOPLE: "Users & Access, and the Team section — employees, salary payments, attendance",
   ADMIN: "Master Data, Bulk Data, Audit Log",
@@ -32,8 +32,8 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/admin/health", module: "OPERATIONS" },
   { prefix: "/admin/reports/weight", module: "OPERATIONS" },
   { prefix: "/admin/weight", module: "OPERATIONS" },
-  { prefix: "/admin/reports/inventory", module: "OPERATIONS" },
-  { prefix: "/admin/inventory", module: "OPERATIONS" },
+  { prefix: "/admin/feed", module: "OPERATIONS" },
+  { prefix: "/admin/customers", module: "OPERATIONS" },
   { prefix: "/admin/capital", module: "FINANCIAL" },
   { prefix: "/admin/assets", module: "FINANCIAL" },
   { prefix: "/admin/reports/pl", module: "FINANCIAL" },
@@ -54,7 +54,6 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/entry/breeding", module: "OPERATIONS" },
   { prefix: "/entry/health", module: "OPERATIONS" },
   { prefix: "/entry/weight", module: "OPERATIONS" },
-  { prefix: "/entry/inventory", module: "OPERATIONS" },
   { prefix: "/entry/cash", module: "FINANCIAL" },
   { prefix: "/entry/team", module: "PEOPLE" },
 ];

@@ -7,7 +7,7 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function MilkSaleForm({ buyers }: { buyers: string[] }) {
+export default function MilkSaleForm({ buyers, customerRates = [] }: { buyers: string[]; customerRates?: { name: string; agreedRate: number }[] }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(submitMilkSale, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -17,6 +17,13 @@ export default function MilkSaleForm({ buyers }: { buyers: string[] }) {
     }
   }, [state]);
 
+  function handleBuyerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const match = customerRates.find((c) => c.name.toLowerCase() === e.target.value.trim().toLowerCase());
+    if (!match || !formRef.current) return;
+    const rateInput = formRef.current.elements.namedItem("rate") as HTMLInputElement | null;
+    if (rateInput && !rateInput.value) rateInput.value = match.agreedRate.toString();
+  }
+
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4 bg-white border border-neutral-200 rounded-lg p-4">
       <div className="flex flex-col gap-1">
@@ -25,12 +32,21 @@ export default function MilkSaleForm({ buyers }: { buyers: string[] }) {
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="buyer" className="text-sm font-medium text-neutral-700">Buyer</label>
-        <input id="buyer" name="buyer" list="buyer-options" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" placeholder="e.g. Engro, City, Farm Sale" />
+        <input
+          id="buyer"
+          name="buyer"
+          list="buyer-options"
+          required
+          onChange={handleBuyerChange}
+          className="border border-neutral-300 rounded-md px-3 py-2 text-base"
+          placeholder="e.g. Engro, City, Farm Sale"
+        />
         <datalist id="buyer-options">
           {buyers.map((b) => (
             <option key={b} value={b} />
           ))}
         </datalist>
+        <p className="text-xs text-neutral-400">Matching a Customer Master entry auto-fills its agreed rate below.</p>
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="litres" className="text-sm font-medium text-neutral-700">Litres</label>

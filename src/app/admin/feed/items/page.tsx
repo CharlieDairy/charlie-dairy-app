@@ -3,22 +3,24 @@ import PageHeader from "@/components/PageHeader";
 import AddItemForm from "./AddItemForm";
 import ItemActiveToggle from "./ItemActiveToggle";
 
-export default async function InventoryItemsPage() {
-  const items = await prisma.inventoryItem.findMany({ orderBy: { name: "asc" } });
+export default async function FeedItemsPage() {
+  const items = await prisma.feedItem.findMany({ orderBy: { name: "asc" } });
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Inventory Items" />
+      <PageHeader title="Feed Master" />
       <p className="text-sm text-neutral-500 max-w-2xl">
-        The item catalog used by Inventory Entry. Set a reorder level to have the Inventory Dashboard flag an item as
-        low stock once its balance on hand drops to or below it.
+        The feed type catalog used by Feed Entry and Feed Overview. Set a reorder level to have Feed Overview flag a
+        feed type as low stock once its balance on hand drops to or below it.
       </p>
-      <AddItemForm />
+      <div className="bg-white border border-neutral-200 rounded-lg p-4">
+        <AddItemForm />
+      </div>
       <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-100">
             <tr>
-              <th className="text-left px-3 py-2">Item</th>
+              <th className="text-left px-3 py-2">Feed Item</th>
               <th className="text-left px-3 py-2">Unit</th>
               <th className="text-left px-3 py-2">Category</th>
               <th className="text-right px-3 py-2">Reorder Level</th>
@@ -41,7 +43,7 @@ export default async function InventoryItemsPage() {
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-neutral-500">No inventory items defined yet.</td>
+                <td colSpan={6} className="px-3 py-6 text-center text-neutral-500">No feed items defined yet.</td>
               </tr>
             )}
           </tbody>

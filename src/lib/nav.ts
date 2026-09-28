@@ -48,7 +48,7 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     key: "milk",
-    label: "Milk",
+    label: "Milk Production and Sale",
     module: "OPERATIONS",
     items: [
       { href: "/entry/milking", label: "Milking Entry" },
@@ -57,6 +57,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/admin/reports/reconciliation", label: "Production Reconciliation" },
       { href: "/entry/milk-sale", label: "Milk Sale Entry" },
       { href: "/admin/reports/milk-sales", label: "Milk Sales by Customer" },
+      { href: "/admin/customers", label: "Customer Master" },
     ],
   },
   {
@@ -71,21 +72,12 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     key: "feed",
-    label: "Feed",
+    label: "Feed & Inventory",
     module: "OPERATIONS",
     items: [
       { href: "/entry/feed", label: "Feed Entry" },
       { href: "/admin/reports/feed", label: "Feed Overview" },
-    ],
-  },
-  {
-    key: "inventory",
-    label: "Inventory",
-    module: "OPERATIONS",
-    items: [
-      { href: "/admin/reports/inventory", label: "Inventory Dashboard" },
-      { href: "/entry/inventory", label: "Inventory Entry" },
-      { href: "/admin/inventory/items", label: "Inventory Items" },
+      { href: "/admin/feed/items", label: "Feed Master" },
     ],
   },
   {

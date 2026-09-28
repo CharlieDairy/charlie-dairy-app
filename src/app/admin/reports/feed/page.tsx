@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getFeedOverview } from "@/lib/reports/feed";
 import { formatRs } from "@/lib/format";
 import TrendStat from "@/components/TrendStat";
@@ -20,14 +21,19 @@ export default async function FeedOverviewPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-neutral-900">Feed</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-semibold text-neutral-900">Feed &amp; Inventory</h1>
+        <Link href="/admin/feed/items" className="text-sm text-primary underline">Manage Feed Master</Link>
+      </div>
       <p className="text-sm text-neutral-500 max-w-2xl">
         Stock on hand per feed type (running total of every Feed Entry in/out), how fast it&apos;s being used, and a
-        projection of how many days of stock remain at the current consumption rate.
+        projection of how many days of stock remain at the current consumption rate. Low Stock is flagged against the
+        reorder level set in Feed Master.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 max-w-3xl">
         <StatCard label="Total Stock on Hand" value={overview.totalBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
+        <StatCard label="Low Stock Items" value={overview.lowStockCount.toString()} tone={overview.lowStockCount > 0 ? "negative" : "positive"} />
         <TrendStat
           label="Consumed This Month"
           value={overview.quantityOut.current.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -44,6 +50,7 @@ export default async function FeedOverviewPage() {
               <th className="text-left px-3 py-2">Feed Type</th>
               <th className="text-right px-3 py-2">Balance on Hand</th>
               <th className="text-right px-3 py-2">Avg Daily Use (30d)</th>
+              <th className="text-right px-3 py-2">Reorder Level</th>
               <th className="text-left px-3 py-2">Stock Status</th>
               <th className="text-right px-3 py-2">Cost This Month</th>
             </tr>
@@ -58,8 +65,12 @@ export default async function FeedOverviewPage() {
                     {b.balance.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                   </td>
                   <td className="px-3 py-2 text-right">{b.avgDailyConsumption.toFixed(1)}</td>
+                  <td className="px-3 py-2 text-right">{b.reorderLevel ?? "—"}</td>
                   <td className="px-3 py-2">
-                    <Badge tone={status.tone}>{status.label}</Badge>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge tone={status.tone}>{status.label}</Badge>
+                      {b.lowStock && <Badge tone="danger">Low Stock</Badge>}
+                    </div>
                   </td>
                   <td className="px-3 py-2 text-right">{formatRs(b.costThisMonth)}</td>
                 </tr>
@@ -67,7 +78,7 @@ export default async function FeedOverviewPage() {
             })}
             {overview.balances.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-neutral-500">No feed transactions recorded yet.</td>
+                <td colSpan={6} className="px-3 py-6 text-center text-neutral-500">No feed transactions recorded yet.</td>
               </tr>
             )}
           </tbody>

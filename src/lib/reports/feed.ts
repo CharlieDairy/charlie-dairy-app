@@ -7,6 +7,8 @@ export type FeedTypeBalance = {
   avgDailyConsumption: number; // OUT quantity / day, trailing 30 days
   daysRemaining: number | null; // null when there's no recent consumption to project from
   costThisMonth: number;
+  reorderLevel: number | null; // from Feed Master (FeedItem), matched by name
+  lowStock: boolean;
 };
 
 export type FeedOverview = {
@@ -14,6 +16,7 @@ export type FeedOverview = {
   totalBalance: number;
   quantityOut: Comparison; // total OUT quantity, this month vs last
   costOut: Comparison; // total OUT cost, this month vs last
+  lowStockCount: number;
 };
 
 // Feed Entry only ever recorded individual in/out transactions -- there was
@@ -51,6 +54,9 @@ export async function getFeedOverview(referenceDate = new Date()): Promise<FeedO
   });
   const costMap = new Map(costByTypeThisMonth.map((c) => [c.feedType, c._sum.cost ?? 0]));
 
+  const feedItems = await prisma.feedItem.findMany({ select: { name: true, reorderLevel: true } });
+  const reorderLevelMap = new Map(feedItems.map((f) => [f.name.toLowerCase(), f.reorderLevel]));
+
   const balanceMap = new Map<string, number>();
   for (const tx of allTx) {
     const delta = tx.direction === "IN" ? tx.quantity : -tx.quantity;
@@ -65,12 +71,15 @@ export async function getFeedOverview(referenceDate = new Date()): Promise<FeedO
   const balances: FeedTypeBalance[] = Array.from(balanceMap.entries())
     .map(([feedType, balance]) => {
       const avgDailyConsumption = (recentOutMap.get(feedType) ?? 0) / 30;
+      const reorderLevel = reorderLevelMap.get(feedType.toLowerCase()) ?? null;
       return {
         feedType,
         balance,
         avgDailyConsumption,
         daysRemaining: avgDailyConsumption > 0 ? balance / avgDailyConsumption : null,
         costThisMonth: costMap.get(feedType) ?? 0,
+        reorderLevel,
+        lowStock: reorderLevel !== null && balance <= reorderLevel,
       };
     })
     .sort((a, b) => a.feedType.localeCompare(b.feedType));
@@ -80,5 +89,6 @@ export async function getFeedOverview(referenceDate = new Date()): Promise<FeedO
     totalBalance: balances.reduce((sum, b) => sum + b.balance, 0),
     quantityOut: compare(currentMonthOut._sum.quantity ?? 0, previousMonthOut._sum.quantity ?? 0),
     costOut: compare(currentMonthOut._sum.cost ?? 0, previousMonthOut._sum.cost ?? 0),
+    lowStockCount: balances.filter((b) => b.lowStock).length,
   };
 }
