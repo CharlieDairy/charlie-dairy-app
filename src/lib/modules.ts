@@ -26,6 +26,7 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/admin/reports/herd", module: "OPERATIONS" },
   { prefix: "/admin/reports/reconciliation", module: "OPERATIONS" },
   { prefix: "/admin/reports/milk-sales", module: "OPERATIONS" },
+  { prefix: "/admin/reports/feed", module: "OPERATIONS" },
   { prefix: "/admin/capital", module: "FINANCIAL" },
   { prefix: "/admin/assets", module: "FINANCIAL" },
   { prefix: "/admin/reports/pl", module: "FINANCIAL" },

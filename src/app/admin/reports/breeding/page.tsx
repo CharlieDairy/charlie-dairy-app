@@ -1,16 +1,18 @@
-import { getBreedingKpis, getBreedingRegister } from "@/lib/reports/breeding";
+import { getBreedingKpis, getBreedingRegister, getCalvingsMonthComparison } from "@/lib/reports/breeding";
 import { getLabelMap, labelFor } from "@/lib/masterData";
 import StatCard from "@/components/StatCard";
+import TrendStat from "@/components/TrendStat";
 
 function fmtDate(d: Date | null): string {
   return d ? d.toISOString().slice(0, 10) : "—";
 }
 
 export default async function BreedingReportPage() {
-  const [kpis, register, statusLabels] = await Promise.all([
+  const [kpis, register, statusLabels, calvingsComparison] = await Promise.all([
     getBreedingKpis(),
     getBreedingRegister(),
     getLabelMap("COW_STATUS"),
+    getCalvingsMonthComparison(),
   ]);
 
   return (
@@ -29,6 +31,7 @@ export default async function BreedingReportPage() {
           tone={kpis.conceptionRatePct !== null ? (kpis.conceptionRatePct >= 50 ? "positive" : "negative") : undefined}
         />
         <StatCard label="Services / Conception" value={kpis.servicesPerConception !== null ? kpis.servicesPerConception.toString() : "—"} />
+        <TrendStat label="Calvings This Month" value={calvingsComparison.current.toString()} comparison={calvingsComparison} />
       </div>
 
       <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">

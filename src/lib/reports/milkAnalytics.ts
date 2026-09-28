@@ -1,6 +1,42 @@
 import { prisma } from "@/lib/prisma";
+import { compare, monthRanges, type Comparison } from "@/lib/compare";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// This-month-vs-last-month totals for the Milk section's stat strip
+// (Channab-style trend framing: "Rising/falling producer identification",
+// "Monthly profit and loss trends"). Avg/day divides by calendar days
+// elapsed so a still-in-progress current month compares fairly against a
+// complete previous month.
+export async function getMilkMonthComparison(referenceDate = new Date()): Promise<{ totalLitres: Comparison; avgPerDay: Comparison }> {
+  const { currentStart, nextStart, previousStart } = monthRanges(referenceDate);
+
+  const [currentAgg, previousAgg] = await Promise.all([
+    prisma.milkingRecord.aggregate({ where: { date: { gte: currentStart, lt: nextStart } }, _sum: { litres: true } }),
+    prisma.milkingRecord.aggregate({ where: { date: { gte: previousStart, lt: currentStart } }, _sum: { litres: true } }),
+  ]);
+
+  const currentTotal = currentAgg._sum.litres ?? 0;
+  const previousTotal = previousAgg._sum.litres ?? 0;
+
+  const daysElapsedCurrent = Math.min(
+    Math.ceil((Math.min(Date.now(), nextStart.getTime()) - currentStart.getTime()) / 86_400_000),
+    daysInMonth(currentStart)
+  );
+  const daysInPrevious = daysInMonth(previousStart);
+
+  return {
+    totalLitres: compare(currentTotal, previousTotal),
+    avgPerDay: compare(
+      daysElapsedCurrent > 0 ? currentTotal / daysElapsedCurrent : 0,
+      daysInPrevious > 0 ? previousTotal / daysInPrevious : 0
+    ),
+  };
+}
+
+function daysInMonth(monthStart: Date): number {
+  return new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
+}
 
 export type MonthlyMilkPoint = { month: string; monthLabel: string; litres: number };
 

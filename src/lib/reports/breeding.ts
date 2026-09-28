@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { calcDaysOpen } from "@/lib/breeding/rules";
+import { compare, monthRanges, type Comparison } from "@/lib/compare";
 
 export type BreedingKpis = {
   pregnantCount: number;
@@ -68,6 +69,17 @@ export async function getBreedingKpis(): Promise<BreedingKpis> {
     conceptionRatePct,
     servicesPerConception,
   };
+}
+
+// Calvings this month vs last -- the one naturally periodic breeding metric
+// (the KPI strip above is otherwise all current-snapshot, not trend-shaped).
+export async function getCalvingsMonthComparison(referenceDate = new Date()): Promise<Comparison> {
+  const { currentStart, nextStart, previousStart } = monthRanges(referenceDate);
+  const [current, previous] = await Promise.all([
+    prisma.calving.count({ where: { date: { gte: currentStart, lt: nextStart } } }),
+    prisma.calving.count({ where: { date: { gte: previousStart, lt: currentStart } } }),
+  ]);
+  return compare(current, previous);
 }
 
 export async function getBreedingRegister(): Promise<BreedingRegisterRow[]> {

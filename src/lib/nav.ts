@@ -45,7 +45,10 @@ export const NAV_SECTIONS: NavSection[] = [
     key: "feed",
     label: "Feed",
     module: "OPERATIONS",
-    items: [{ href: "/entry/feed", label: "Feed Entry" }],
+    items: [
+      { href: "/entry/feed", label: "Feed Entry" },
+      { href: "/admin/reports/feed", label: "Feed Overview" },
+    ],
   },
   {
     key: "financial",

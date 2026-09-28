@@ -1,12 +1,23 @@
 import { getMonthlyPnl } from "@/lib/reports/pnl";
 import { formatRs } from "@/lib/format";
+import { compare } from "@/lib/compare";
+import TrendStat from "@/components/TrendStat";
 
 export default async function PnlPage() {
   const monthly = await getMonthlyPnl();
+  const current = monthly[monthly.length - 1];
+  const previous = monthly[monthly.length - 2];
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">P&L Statement</h1>
+      {current && previous && (
+        <div className="grid grid-cols-3 gap-4 max-w-2xl">
+          <TrendStat label={`Revenue (${current.month})`} value={formatRs(current.revenue)} comparison={compare(current.revenue, previous.revenue)} />
+          <TrendStat label={`Expense (${current.month})`} value={formatRs(current.expense)} comparison={compare(current.expense, previous.expense)} invertTone />
+          <TrendStat label={`Net (${current.month})`} value={formatRs(current.net)} comparison={compare(current.net, previous.net)} />
+        </div>
+      )}
       <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-100">
