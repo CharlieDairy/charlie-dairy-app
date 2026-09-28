@@ -2,6 +2,7 @@ import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import Card from "@/components/Card";
 import { formatRs } from "@/lib/format";
+import { auth } from "@/auth";
 import { getCustomerSalesSummary, getCustomerDetail, getDistinctBuyers } from "@/lib/reports/milkSalesByCustomer";
 import CustomerSalesTable from "./CustomerSalesTable";
 import RecordPaymentForm from "./RecordPaymentForm";
@@ -16,6 +17,8 @@ export default async function MilkSalesByCustomerPage({
   searchParams: Promise<{ buyer?: string }>;
 }) {
   const params = await searchParams;
+  const session = await auth();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
   const [summary, buyers] = await Promise.all([getCustomerSalesSummary(), getDistinctBuyers()]);
   const detail = params.buyer ? await getCustomerDetail(params.buyer) : null;
 
@@ -27,7 +30,7 @@ export default async function MilkSalesByCustomerPage({
         the Cash ledger — it shows up in Cash Flow and P&amp;L immediately, not as a separate untracked number.
       </p>
 
-      <CustomerSalesTable rows={summary} />
+      <CustomerSalesTable rows={summary} isAdmin={isAdmin} />
 
       <Card>
         <h2 className="font-semibold text-text mb-2">Record a Payment</h2>

@@ -21,6 +21,9 @@ export default function DataTable<T>({
   pageSize = 25,
   onRowClick,
   emptyMessage = "No records found.",
+  selectable = false,
+  selectedKeys,
+  onToggleSelect,
 }: {
   data: T[];
   columns: DataTableColumn<T>[];
@@ -32,6 +35,10 @@ export default function DataTable<T>({
   pageSize?: number;
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
+  /** Adds a checkbox column plus a select-all-on-page checkbox in the header. */
+  selectable?: boolean;
+  selectedKeys?: Set<string>;
+  onToggleSelect?: (key: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -99,6 +106,23 @@ export default function DataTable<T>({
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-100 sticky top-0">
             <tr>
+              {selectable && (
+                <th className="px-3 py-2 w-8">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all on this page"
+                    checked={pageRows.length > 0 && pageRows.every((r) => selectedKeys?.has(rowKey(r)))}
+                    onChange={() => {
+                      const allSelected = pageRows.every((r) => selectedKeys?.has(rowKey(r)));
+                      for (const r of pageRows) {
+                        const key = rowKey(r);
+                        const isSelected = selectedKeys?.has(key) ?? false;
+                        if (allSelected === isSelected) onToggleSelect?.(key);
+                      }
+                    }}
+                  />
+                </th>
+              )}
               {columns.map((c) => (
                 <th
                   key={c.key}
@@ -114,22 +138,35 @@ export default function DataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {pageRows.map((row) => (
-              <tr
-                key={rowKey(row)}
-                className={`border-t border-border ${onRowClick ? "cursor-pointer hover:bg-neutral-50" : ""}`}
-                onClick={() => onRowClick?.(row)}
-              >
-                {columns.map((c) => (
-                  <td key={c.key} className={`px-3 py-2 ${c.align === "right" ? "text-right" : "text-left"}`}>
-                    {c.render(row)}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {pageRows.map((row) => {
+              const key = rowKey(row);
+              return (
+                <tr
+                  key={key}
+                  className={`border-t border-border ${onRowClick ? "cursor-pointer hover:bg-neutral-50" : ""}`}
+                  onClick={() => onRowClick?.(row)}
+                >
+                  {selectable && (
+                    <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select row ${key}`}
+                        checked={selectedKeys?.has(key) ?? false}
+                        onChange={() => onToggleSelect?.(key)}
+                      />
+                    </td>
+                  )}
+                  {columns.map((c) => (
+                    <td key={c.key} className={`px-3 py-2 ${c.align === "right" ? "text-right" : "text-left"}`}>
+                      {c.render(row)}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
             {pageRows.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-6 text-center text-text-muted">
+                <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-3 py-6 text-center text-text-muted">
                   {emptyMessage}
                 </td>
               </tr>

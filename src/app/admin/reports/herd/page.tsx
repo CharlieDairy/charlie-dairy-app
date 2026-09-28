@@ -1,10 +1,13 @@
 import { getHerdSummary } from "@/lib/reports/herd";
 import { getMilkMonthComparison } from "@/lib/reports/milkAnalytics";
+import { auth } from "@/auth";
 import PageHeader from "@/components/PageHeader";
 import TrendStat from "@/components/TrendStat";
 import MilkProductionTable from "./MilkProductionTable";
 
 export default async function MilkProductionByCowPage() {
+  const session = await auth();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
   const [rows, monthComparison] = await Promise.all([getHerdSummary(), getMilkMonthComparison()]);
 
   return (
@@ -26,7 +29,7 @@ export default async function MilkProductionByCowPage() {
         Lifetime milk production per animal — days milked, total litres, and average litres/day. Search or sort any
         column; click a tag to open that cow&apos;s full profile.
       </p>
-      <MilkProductionTable rows={rows} />
+      <MilkProductionTable rows={rows} isAdmin={isAdmin} />
     </div>
   );
 }
