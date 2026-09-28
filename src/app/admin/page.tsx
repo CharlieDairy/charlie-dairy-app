@@ -3,15 +3,19 @@ import {
   getAvailableYears,
   getBestMonth,
   getHerdComposition,
+  getMilkMonthComparison,
   getMonthlyMilkTrend,
   getProductionVsSold,
   getSalesSummary,
   getTopLowProducers,
 } from "@/lib/reports/milkAnalytics";
 import { getBreedingKpis } from "@/lib/reports/breeding";
+import { getMonthlyPnl } from "@/lib/reports/pnl";
 import { getLabelMap } from "@/lib/masterData";
 import { formatRs, formatPct } from "@/lib/format";
+import { compare } from "@/lib/compare";
 import StatCard from "@/components/StatCard";
+import TrendStat from "@/components/TrendStat";
 import PageHeader from "@/components/PageHeader";
 import Card from "@/components/Card";
 import Badge from "@/components/Badge";
@@ -31,7 +35,7 @@ export default async function AdminDashboard({
     ? Number(params.year)
     : availableYears[0];
 
-  const [s, today, trend, producers, statusLabels, sales, productionVsSold, breedingKpis] = await Promise.all([
+  const [s, today, trend, producers, statusLabels, sales, productionVsSold, breedingKpis, monthlyPnl, milkMonthComparison] = await Promise.all([
     getDashboardSummary(),
     getTodaySnapshot(),
     getMonthlyMilkTrend(year),
@@ -40,9 +44,13 @@ export default async function AdminDashboard({
     getSalesSummary(year),
     getProductionVsSold(year),
     getBreedingKpis(),
+    getMonthlyPnl(),
+    getMilkMonthComparison(),
   ]);
   const composition = await getHerdComposition(statusLabels);
   const bestMonth = getBestMonth(trend);
+  const currentPnl = monthlyPnl[monthlyPnl.length - 1];
+  const previousPnl = monthlyPnl[monthlyPnl.length - 2];
 
   const countFor = (status: string) => composition.find((c) => c.status === status)?.count ?? 0;
   const milkingCount = countFor("MILKING");
@@ -81,6 +89,21 @@ export default async function AdminDashboard({
           />
         </div>
       </Card>
+
+      {/* Channab-style trend framing: this month vs last, not just a
+          current snapshot -- the same comparison logic used on every
+          section's own dashboard (Herd, Breeding, Milk, Feed, Financial). */}
+      {currentPnl && previousPnl && (
+        <Card>
+          <h2 className="font-semibold text-text mb-3">This Month vs Last Month</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <TrendStat label={`Revenue (${currentPnl.month})`} value={formatRs(currentPnl.revenue)} comparison={compare(currentPnl.revenue, previousPnl.revenue)} />
+            <TrendStat label={`Expense (${currentPnl.month})`} value={formatRs(currentPnl.expense)} comparison={compare(currentPnl.expense, previousPnl.expense)} invertTone />
+            <TrendStat label={`Net (${currentPnl.month})`} value={formatRs(currentPnl.net)} comparison={compare(currentPnl.net, previousPnl.net)} />
+            <TrendStat label="Milk This Month" value={`${milkMonthComparison.totalLitres.current.toLocaleString(undefined, { maximumFractionDigits: 0 })} L`} comparison={milkMonthComparison.totalLitres} />
+          </div>
+        </Card>
+      )}
 
       {/* Level 2 — operational status strip, scan in one glance */}
       <div className="flex flex-wrap gap-2">
