@@ -523,6 +523,44 @@ model FeedTransaction {
   @@index([feedType])
 }
 
+// General farm consumables/supplies (disinfectants, syringes, fuel, spare
+// parts, packaging, etc.) -- kept separate from Feed and Medicine, which
+// already have their own dedicated stock tracking. A lightweight catalog
+// (unlike Feed's free-text feedType) so each item can carry a unit and an
+// optional reorder level for low-stock alerts.
+model InventoryItem {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  unit         String
+  category     String?
+  reorderLevel Float?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  transactions InventoryTransaction[]
+}
+
+enum InventoryDirection {
+  IN
+  OUT
+}
+
+model InventoryTransaction {
+  id        String              @id @default(cuid())
+  itemId    String
+  item      InventoryItem       @relation(fields: [itemId], references: [id])
+  date      DateTime
+  direction InventoryDirection
+  quantity  Float
+  cost      Float?
+  notes     String?
+  enteredBy String?
+  createdAt DateTime            @default(now())
+
+  @@index([itemId])
+  @@index([date])
+}
+
 enum CashMode {
   CASH
   BANK

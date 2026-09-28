@@ -78,6 +78,16 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    key: "inventory",
+    label: "Inventory",
+    module: "OPERATIONS",
+    items: [
+      { href: "/admin/reports/inventory", label: "Inventory Dashboard" },
+      { href: "/entry/inventory", label: "Inventory Entry" },
+      { href: "/admin/inventory/items", label: "Inventory Items" },
+    ],
+  },
+  {
     key: "financial",
     label: "Financial",
     module: "FINANCIAL",
