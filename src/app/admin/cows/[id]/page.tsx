@@ -8,6 +8,7 @@ import WeightForm from "../WeightForm";
 import MovementForm from "../MovementForm";
 import LactationChart from "../LactationChart";
 import WeightChart from "../WeightChart";
+import CowCustomFieldsForm from "../CowCustomFieldsForm";
 
 function fmtDate(d: Date | null | undefined): string {
   return d ? d.toISOString().slice(0, 10) : "—";
@@ -25,7 +26,7 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
   const { id } = await params;
   const profile = await getCowProfile(id);
   if (!profile) notFound();
-  const { cow, milking, lactationSeries } = profile;
+  const { cow, milking, lactationSeries, customFields } = profile;
 
   const [statusLabels, genderLabels, locationRows] = await Promise.all([
     getLabelMap("COW_STATUS"),
@@ -48,6 +49,7 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
           <div>
             <h1 className="text-2xl font-semibold text-neutral-900">Cow {cow.tag}</h1>
             <p className="text-sm text-neutral-500">
+              {cow.breed && <>{cow.breed} · </>}
               {labelFor(genderLabels, cow.gender)} · {labelFor(statusLabels, cow.status)}
               {currentLocation && <> · {currentLocation}</>}
             </p>
@@ -94,6 +96,7 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
           <h2 className="font-semibold text-neutral-900">Overview</h2>
           <CowEditForm
             cowId={cow.id}
+            breed={cow.breed}
             condition={cow.condition}
             purchasePrice={cow.purchasePrice}
             source={cow.source}
@@ -102,6 +105,7 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
           />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm mt-2">
+          <div><span className="text-neutral-500">Breed:</span> {cow.breed ?? "—"}</div>
           <div><span className="text-neutral-500">Condition:</span> {cow.condition ?? "—"}</div>
           <div><span className="text-neutral-500">Last Calving:</span> {fmtDate(cow.lastCalvingDate)}</div>
           <div><span className="text-neutral-500">Expected Calving:</span> {fmtDate(cow.expectedCalving)}</div>
@@ -157,6 +161,16 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
         <div className="border-t border-neutral-100 pt-3">
           <MovementForm cowId={cow.id} locations={locations} />
         </div>
+      </div>
+
+      <div className="bg-white border border-neutral-200 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-neutral-900">Custom Fields</h2>
+          <Link href="/admin/cows/custom-fields" className="text-xs text-neutral-500 underline">
+            Manage Fields
+          </Link>
+        </div>
+        <CowCustomFieldsForm cowId={cow.id} fields={customFields} />
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-lg p-4">

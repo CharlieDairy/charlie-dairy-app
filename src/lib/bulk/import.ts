@@ -96,17 +96,24 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
           if (seenTags.has(tag)) errors.push(`Row ${rowNum}: duplicate tag "${tag}" within this file.`);
           seenTags.add(tag);
         }
-        const gender = parseEnum(cells, 1, "gender", rowNum, errors, ["FEMALE", "MALE", "UNKNOWN"] as const, "UNKNOWN", false);
-        const status = parseEnum(cells, 2, "status", rowNum, errors, ["MILKING", "DRY", "HEIFER", "CALF", "DORMANT", "SOLD", "DEAD"] as const, "DORMANT", false);
-        const condition = cell(cells, 3) || null;
-        const lastCalvingDate = parseDate(cells, 4, "lastCalvingDate", rowNum, errors, false);
-        const nextAiDate = parseDate(cells, 5, "nextAiDate", rowNum, errors, false);
-        const dryDate = parseDate(cells, 6, "dryDate", rowNum, errors, false);
-        const expectedCalving = parseDate(cells, 7, "expectedCalving", rowNum, errors, false);
-        const targetSellDate = parseDate(cells, 8, "targetSellDate", rowNum, errors, false);
-        const lactationNumber = parseNum(cells, 9, "lactationNumber", rowNum, errors, false, 0);
-        const notes = cell(cells, 10) || null;
-        parsed.push({ tag, gender, status, condition, lastCalvingDate, nextAiDate, dryDate, expectedCalving, targetSellDate, lactationNumber, notes });
+        const breed = cell(cells, 1) || null;
+        const gender = parseEnum(cells, 2, "gender", rowNum, errors, ["FEMALE", "MALE", "UNKNOWN"] as const, "UNKNOWN", false);
+        const status = parseEnum(cells, 3, "status", rowNum, errors, ["MILKING", "DRY", "HEIFER", "CALF", "DORMANT", "SOLD", "DEAD"] as const, "DORMANT", false);
+        const dateOfBirth = parseDate(cells, 4, "dateOfBirth", rowNum, errors, false);
+        const condition = cell(cells, 5) || null;
+        const lastCalvingDate = parseDate(cells, 6, "lastCalvingDate", rowNum, errors, false);
+        const nextAiDate = parseDate(cells, 7, "nextAiDate", rowNum, errors, false);
+        const dryDate = parseDate(cells, 8, "dryDate", rowNum, errors, false);
+        const expectedCalving = parseDate(cells, 9, "expectedCalving", rowNum, errors, false);
+        const targetSellDate = parseDate(cells, 10, "targetSellDate", rowNum, errors, false);
+        const lactationNumber = parseNum(cells, 11, "lactationNumber", rowNum, errors, false, 0);
+        const purchasePrice = parseOptNum(cells, 12, "purchasePrice", rowNum, errors);
+        const source = cell(cells, 13) || null;
+        const notes = cell(cells, 14) || null;
+        parsed.push({
+          tag, breed, gender, status, dateOfBirth, condition, lastCalvingDate, nextAiDate, dryDate,
+          expectedCalving, targetSellDate, lactationNumber, purchasePrice, source, notes,
+        });
       });
       if (errors.length > 0) return FAIL("Fix the errors below and re-upload. Nothing was imported.", errors);
 

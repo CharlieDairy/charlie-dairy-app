@@ -16,6 +16,7 @@ export default async function CowsAdminPage() {
   const rows = cows.map((c) => ({
     id: c.id,
     tag: c.tag,
+    breed: c.breed,
     gender: c.gender,
     status: c.status,
     dateOfBirth: c.dateOfBirth ? c.dateOfBirth.toISOString() : null,

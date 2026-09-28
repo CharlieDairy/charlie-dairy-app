@@ -20,7 +20,7 @@ export async function getCowProfile(id: string) {
   });
   if (!cow) return null;
 
-  const [milkAgg, qualityAgg, recentMilking] = await Promise.all([
+  const [milkAgg, qualityAgg, recentMilking, customFieldDefs, customFieldValues] = await Promise.all([
     prisma.milkingRecord.aggregate({
       where: { cowId: id },
       _sum: { litres: true },
@@ -31,7 +31,11 @@ export async function getCowProfile(id: string) {
       _avg: { fatPct: true, snfPct: true },
     }),
     prisma.milkingRecord.findMany({ where: { cowId: id }, orderBy: { date: "desc" }, take: 10 }),
+    prisma.cowCustomFieldDef.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.cowCustomFieldValue.findMany({ where: { cowId: id } }),
   ]);
+  const valueMap = new Map(customFieldValues.map((v) => [v.fieldDefId, v.value]));
+  const customFields = customFieldDefs.map((def) => ({ def, value: valueMap.get(def.id) ?? "" }));
 
   const distinctDays = await prisma.$queryRaw<{ days: number | bigint }[]>`
     SELECT COUNT(DISTINCT date) as days FROM "MilkingRecord" WHERE "cowId" = ${id}
@@ -66,6 +70,7 @@ export async function getCowProfile(id: string) {
       avgSnfPct: qualityAgg._avg.snfPct,
     },
     lactationSeries,
+    customFields,
   };
 }
 

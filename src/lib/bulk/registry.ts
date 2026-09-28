@@ -7,8 +7,8 @@ export const BULK_TYPES: BulkTypeMeta[] = [
     hasDateFilter: false,
     importable: true,
     headers: [
-      "tag", "gender", "status", "condition", "lastCalvingDate", "nextAiDate",
-      "dryDate", "expectedCalving", "targetSellDate", "lactationNumber", "notes",
+      "tag", "breed", "gender", "status", "dateOfBirth", "condition", "lastCalvingDate", "nextAiDate",
+      "dryDate", "expectedCalving", "targetSellDate", "lactationNumber", "purchasePrice", "source", "notes",
     ],
   },
   {

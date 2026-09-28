@@ -18,6 +18,10 @@ export default function AddCowForm({ statusOptions }: { statusOptions: { code: s
         <input id="tag" name="tag" required className="border border-neutral-300 rounded-md px-3 py-2 text-base w-28" />
       </div>
       <div className="flex flex-col gap-1">
+        <label htmlFor="breed" className="text-sm font-medium text-neutral-700">Breed</label>
+        <input id="breed" name="breed" placeholder="e.g. Sahiwal" className="border border-neutral-300 rounded-md px-3 py-2 text-base w-32" />
+      </div>
+      <div className="flex flex-col gap-1">
         <label htmlFor="gender" className="text-sm font-medium text-neutral-700">Gender</label>
         <select id="gender" name="gender" required className="border border-neutral-300 rounded-md px-3 py-2 text-base">
           <option value="FEMALE">Female</option>

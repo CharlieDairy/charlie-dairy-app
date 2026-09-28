@@ -9,6 +9,7 @@ export type FormState = { success: boolean; message: string } | undefined;
 
 export async function addCow(_prev: FormState, formData: FormData): Promise<FormState> {
   const tag = (formData.get("tag") as string | null)?.trim();
+  const breed = (formData.get("breed") as string | null)?.trim() || null;
   const gender = formData.get("gender") as string | null;
   const status = formData.get("status") as string | null;
   const dateOfBirthRaw = formData.get("dateOfBirth") as string | null;
@@ -26,6 +27,7 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
   await prisma.cow.create({
     data: {
       tag,
+      breed,
       gender: gender as "FEMALE" | "MALE" | "UNKNOWN",
       status: status as never,
       dateOfBirth: dateOfBirthRaw ? new Date(dateOfBirthRaw) : null,
@@ -41,6 +43,7 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
 // from the cow's profile page (mirrors the Assets edit pattern).
 export async function updateCowDetails(_prev: FormState, formData: FormData): Promise<FormState> {
   const id = formData.get("id") as string | null;
+  const breed = (formData.get("breed") as string | null)?.trim() || null;
   const condition = (formData.get("condition") as string | null)?.trim() || null;
   const purchasePriceRaw = formData.get("purchasePrice") as string | null;
   const source = (formData.get("source") as string | null)?.trim() || null;
@@ -70,6 +73,7 @@ export async function updateCowDetails(_prev: FormState, formData: FormData): Pr
   await prisma.cow.update({
     where: { id },
     data: {
+      breed,
       condition,
       purchasePrice: purchasePrice !== null && !Number.isNaN(purchasePrice) ? purchasePrice : null,
       source,

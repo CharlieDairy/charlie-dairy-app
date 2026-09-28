@@ -5,6 +5,7 @@ import { updateCowDetails, type FormState } from "./actions";
 
 export default function CowEditForm({
   cowId,
+  breed,
   condition,
   purchasePrice,
   source,
@@ -12,6 +13,7 @@ export default function CowEditForm({
   photoUrl,
 }: {
   cowId: string;
+  breed: string | null;
   condition: string | null;
   purchasePrice: number | null;
   source: string | null;
@@ -60,6 +62,10 @@ export default function CowEditForm({
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="breed" className="text-sm font-medium text-neutral-700">Breed</label>
+          <input id="breed" name="breed" placeholder="e.g. Sahiwal, Holstein" defaultValue={breed ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="condition" className="text-sm font-medium text-neutral-700">Condition</label>
           <input id="condition" name="condition" defaultValue={condition ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />

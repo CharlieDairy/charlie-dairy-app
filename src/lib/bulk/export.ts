@@ -37,10 +37,10 @@ export async function exportCsv(
         const data = await prisma.cow.findMany({ orderBy: { tag: "asc" } });
         rows.push(
           ...data.map((c) => [
-            c.tag, c.gender, c.status, c.condition ?? "",
+            c.tag, c.breed ?? "", c.gender, c.status, dateOnly(c.dateOfBirth), c.condition ?? "",
             dateOnly(c.lastCalvingDate), dateOnly(c.nextAiDate), dateOnly(c.dryDate),
             dateOnly(c.expectedCalving), dateOnly(c.targetSellDate),
-            String(c.lactationNumber), c.notes ?? "",
+            String(c.lactationNumber), num(c.purchasePrice), c.source ?? "", c.notes ?? "",
           ])
         );
         break;

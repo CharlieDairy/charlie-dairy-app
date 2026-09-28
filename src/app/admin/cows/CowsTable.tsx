@@ -8,6 +8,7 @@ import DeleteCowButton from "./DeleteCowButton";
 export type CowRow = {
   id: string;
   tag: string;
+  breed: string | null;
   gender: string;
   status: string;
   dateOfBirth: string | null; // ISO date, serialized from the server component
@@ -52,6 +53,7 @@ export default function CowsTable({
         </Link>
       ),
     },
+    { key: "breed", header: "Breed", sortValue: (c) => c.breed ?? "", render: (c) => c.breed ?? "—" },
     { key: "gender", header: "Gender", sortValue: (c) => c.gender, render: (c) => c.gender },
     {
       key: "status",

@@ -63,6 +63,7 @@ enum CowStatus {
 model Cow {
   id                String   @id @default(cuid())
   tag               String   @unique
+  breed             String?
   gender            CowGender @default(UNKNOWN)
   status            CowStatus @default(DORMANT)
   condition         String?
@@ -88,6 +89,43 @@ model Cow {
   calfRecord        Calf?            @relation("CalfCow")
   weightRecords     WeightRecord[]
   movements         CowMovement[]
+  customFieldValues CowCustomFieldValue[]
+}
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+}
+
+// Channab's "add custom fields to capture the data that matters to your
+// farm — purchase price, source, insurance details, and more." Purchase
+// price/source are real fixed Cow columns here already; this is the
+// admin-defined, open-ended extension point for anything else a farm wants
+// to track per animal without needing a schema change every time.
+model CowCustomFieldDef {
+  id        String          @id @default(cuid())
+  label     String
+  fieldType CustomFieldType @default(TEXT)
+  sortOrder Int             @default(0)
+  active    Boolean         @default(true)
+  createdAt DateTime        @default(now())
+
+  values    CowCustomFieldValue[]
+}
+
+model CowCustomFieldValue {
+  id         String            @id @default(cuid())
+  cowId      String
+  cow        Cow               @relation(fields: [cowId], references: [id])
+  fieldDefId String
+  fieldDef   CowCustomFieldDef @relation(fields: [fieldDefId], references: [id])
+  value      String
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([cowId, fieldDefId])
+  @@index([cowId])
+  @@index([fieldDefId])
 }
 
 // Herd Management: per-animal weight over time, shown as a trend on the cow
