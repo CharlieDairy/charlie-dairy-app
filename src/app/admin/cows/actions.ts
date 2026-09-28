@@ -189,3 +189,54 @@ export async function deleteCow(_prev: DeleteState, formData: FormData): Promise
   revalidatePath("/admin/cows");
   return { success: true, message: `Cow ${cow.tag} deleted.` };
 }
+
+export type BulkDeleteState = { success: boolean; message: string } | undefined;
+
+// Multiple-select delete is Admin-only -- checked here server-side (not just
+// hidden in the UI) since a Manager could otherwise call this action
+// directly. Same conservative history guard as the single-cow delete: any
+// cow with recorded milking/breeding/calving history is skipped, not force-
+// deleted, so a batch selection can never silently destroy production data.
+export async function deleteCows(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
+  const session = await auth();
+  if ((session?.user as { role?: string } | undefined)?.role !== "ADMIN") {
+    return { success: false, message: "Only Admin can delete multiple animals." };
+  }
+
+  const cowIds = formData.getAll("cowIds") as string[];
+  if (cowIds.length === 0) return { success: false, message: "No animals selected." };
+
+  const cows = await prisma.cow.findMany({ where: { id: { in: cowIds } } });
+  const [milking, calvingsAsDam, heat, ai, preg, calves] = await Promise.all([
+    prisma.milkingRecord.groupBy({ by: ["cowId"], where: { cowId: { in: cowIds } }, _count: true }),
+    prisma.calving.groupBy({ by: ["damId"], where: { damId: { in: cowIds } }, _count: true }),
+    prisma.heatEvent.groupBy({ by: ["cowId"], where: { cowId: { in: cowIds } }, _count: true }),
+    prisma.insemination.groupBy({ by: ["cowId"], where: { cowId: { in: cowIds } }, _count: true }),
+    prisma.pregnancyCheck.groupBy({ by: ["cowId"], where: { cowId: { in: cowIds } }, _count: true }),
+    prisma.calf.findMany({ where: { cowId: { in: cowIds } }, select: { cowId: true } }),
+  ]);
+  const linkedIds = new Set([
+    ...milking.map((m) => m.cowId),
+    ...calvingsAsDam.map((c) => c.damId),
+    ...heat.map((h) => h.cowId),
+    ...ai.map((a) => a.cowId),
+    ...preg.map((p) => p.cowId),
+    ...calves.map((c) => c.cowId),
+  ]);
+
+  const deletable = cowIds.filter((id) => !linkedIds.has(id));
+  const skipped = cows.filter((c) => linkedIds.has(c.id));
+
+  if (deletable.length > 0) {
+    await prisma.cow.deleteMany({ where: { id: { in: deletable } } });
+  }
+
+  revalidatePath("/admin/cows");
+  if (skipped.length > 0) {
+    return {
+      success: deletable.length > 0,
+      message: `Deleted ${deletable.length} of ${cowIds.length}. Skipped (has recorded history): ${skipped.map((c) => c.tag).join(", ")}.`,
+    };
+  }
+  return { success: true, message: `Deleted ${deletable.length} animal${deletable.length === 1 ? "" : "s"}.` };
+}

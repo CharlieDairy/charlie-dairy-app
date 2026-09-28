@@ -28,12 +28,27 @@ function ageFromDob(dobIso: string | null): string {
 export default function AnimalCard({
   animal,
   statusOptions,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
 }: {
   animal: AnimalRow;
   statusOptions: { code: string; label: string }[];
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   return (
     <div className="bg-white border border-neutral-200 rounded-lg p-3 flex gap-3">
+      {selectable && (
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onToggleSelect?.(animal.id)}
+          aria-label={`Select ${animal.tag}`}
+          className="mt-1 shrink-0"
+        />
+      )}
       {animal.photoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={animal.photoUrl} alt={`Cow ${animal.tag}`} className="w-16 h-16 object-cover rounded-md border border-neutral-200 shrink-0" />

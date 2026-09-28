@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { getHerdOverview, getAnimalCategories } from "@/lib/reports/herdOverview";
 import StatCard from "@/components/StatCard";
 import AnimalListClient from "./AnimalListClient";
@@ -12,6 +13,8 @@ function monthsSince(d: Date | null): number | null {
 }
 
 export default async function CowsAdminPage() {
+  const session = await auth();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
   const [overview, categories, cows, statusItems, latestWeights] = await Promise.all([
     getHerdOverview(),
     getAnimalCategories(),
@@ -59,7 +62,7 @@ export default async function CowsAdminPage() {
         <StatCard label="Milk (L)" value={overview.milkToday.toLocaleString(undefined, { maximumFractionDigits: 1 })} />
       </div>
 
-      <AnimalListClient animals={animals} categories={categories} statusOptions={allStatusOptions} />
+      <AnimalListClient animals={animals} categories={categories} statusOptions={allStatusOptions} isAdmin={isAdmin} />
     </div>
   );
 }
