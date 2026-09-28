@@ -17,7 +17,7 @@ export default function YearlyMilkChart({ data, bestMonth }: { data: MonthlyMilk
           />
           <Bar dataKey="litres" radius={[4, 4, 0, 0]}>
             {data.map((d) => (
-              <Cell key={d.month} fill={d.monthLabel === bestMonth ? "#15803d" : "#86efac"} />
+              <Cell key={d.month} fill={d.monthLabel === bestMonth ? "#a97c1a" : "#ecd699"} />
             ))}
           </Bar>
         </BarChart>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { doSignOut } from "@/app/actions/sign-out";
 import { visibleSections } from "@/lib/nav";
 import type { ModuleName } from "@/lib/modules";
@@ -15,7 +16,10 @@ export default function AppSidebar({ role, modules }: { role: string | undefined
   return (
     <header className="print:hidden bg-green-900 text-white p-4 flex flex-col gap-1 md:w-64 md:shrink-0">
       <div className="flex items-center justify-between md:block">
-        <Link href="/admin" className="font-semibold text-lg">Charlie Dairy</Link>
+        <Link href="/admin" className="flex items-center gap-2 font-semibold text-lg">
+          <Image src="/logo.png" alt="Charlie Dairy" width={36} height={36} className="rounded-full bg-green-50" priority />
+          Charlie Dairy
+        </Link>
         <form action={doSignOut} className="md:mt-4">
           <button type="submit" className="text-sm underline text-green-100">Sign out</button>
         </form>

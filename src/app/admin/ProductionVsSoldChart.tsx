@@ -25,7 +25,7 @@ export default function ProductionVsSoldChart({ data }: { data: ProductionVsSold
             formatter={(value) => (value === "unaccountedDisplay" ? "Unaccounted / not yet recorded" : "Recorded Sales")}
             wrapperStyle={{ fontSize: 12 }}
           />
-          <Bar dataKey="sold" stackId="a" fill="#15803d" radius={[0, 0, 0, 0]} />
+          <Bar dataKey="sold" stackId="a" fill="#a97c1a" radius={[0, 0, 0, 0]} />
           <Bar dataKey="unaccountedDisplay" stackId="a" fill="#d4d4d4" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>

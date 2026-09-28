@@ -4,8 +4,8 @@ import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recha
 import type { HerdCompositionRow } from "@/lib/reports/milkAnalytics";
 
 const COLORS: Record<string, string> = {
-  MILKING: "#15803d",
-  DRY: "#86efac",
+  MILKING: "#a97c1a",
+  DRY: "#ecd699",
   HEIFER: "#60a5fa",
   CALF: "#fbbf24",
   DORMANT: "#a3a3a3",
