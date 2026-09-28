@@ -16,7 +16,9 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Herd",
     module: "OPERATIONS",
     items: [
-      { href: "/admin/cows", label: "Cow Register" },
+      { href: "/admin/cows", label: "Animals" },
+      { href: "/admin/cows/add", label: "Add Animal" },
+      { href: "/admin/cows/import", label: "Import Animals" },
       { href: "/admin/cows/custom-fields", label: "Custom Fields" },
     ],
   },

@@ -4,16 +4,21 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 export async function addCow(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await auth();
   const tag = (formData.get("tag") as string | null)?.trim();
   const breed = (formData.get("breed") as string | null)?.trim() || null;
   const gender = formData.get("gender") as string | null;
   const status = formData.get("status") as string | null;
   const dateOfBirthRaw = formData.get("dateOfBirth") as string | null;
+  const purchasePriceRaw = formData.get("purchasePrice") as string | null;
+  const location = (formData.get("location") as string | null)?.trim() || null;
   const notes = (formData.get("notes") as string | null)?.trim() || null;
+  const photo = formData.get("photo") as File | null;
 
   if (!tag || !gender || !status) {
     return { success: false, message: "Tag, gender and status are required." };
@@ -24,19 +29,36 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
     return { success: false, message: `Cow tag "${tag}" already exists.` };
   }
 
-  await prisma.cow.create({
+  const purchasePrice = purchasePriceRaw ? parseFloat(purchasePriceRaw) : null;
+
+  let photoUrl: string | null = null;
+  if (photo && photo.size > 0) {
+    const uploaded = await saveUploadedImage(photo, "cows");
+    if (uploaded.error) return { success: false, message: uploaded.error };
+    photoUrl = uploaded.url;
+  }
+
+  const cow = await prisma.cow.create({
     data: {
       tag,
       breed,
       gender: gender as "FEMALE" | "MALE" | "UNKNOWN",
       status: status as never,
       dateOfBirth: dateOfBirthRaw ? new Date(dateOfBirthRaw) : null,
+      purchasePrice: purchasePrice !== null && !Number.isNaN(purchasePrice) ? purchasePrice : null,
       notes,
+      photoUrl,
     },
   });
 
+  if (location) {
+    await prisma.cowMovement.create({
+      data: { cowId: cow.id, date: new Date(), location, enteredBy: session?.user?.name ?? null },
+    });
+  }
+
   revalidatePath("/admin/cows");
-  return { success: true, message: `Cow ${tag} added.` };
+  redirect(`/admin/cows/${cow.id}`);
 }
 
 // Herd Management: purchase price / source / photo, editable after creation

@@ -56,7 +56,7 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
           </div>
         </div>
         <Link href="/admin/cows" className="text-sm text-neutral-500 underline">
-          ← Back to Cow Register
+          ← Back to Animals
         </Link>
       </div>
 
