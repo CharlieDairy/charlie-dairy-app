@@ -170,6 +170,30 @@ export async function getProductionVsSold(year: number): Promise<ProductionVsSol
   }));
 }
 
+export type DimRow = { cowId: string; tag: string; dim: number };
+
+// Channab's "Fresh Cows (<60 DIM)" and "Dry-Off Candidates" -- both derived
+// from Cow.lastCalvingDate, which already exists. 305 days is the standard
+// dairy lactation length used as the dry-off trigger; there's no farm-
+// specific override for this yet, so it's a fixed threshold, not configurable.
+export async function getFreshAndDryOffCows(referenceDate = new Date()): Promise<{ fresh: DimRow[]; dryOff: DimRow[] }> {
+  const cows = await prisma.cow.findMany({
+    where: { status: "MILKING", lastCalvingDate: { not: null } },
+    select: { id: true, tag: true, lastCalvingDate: true },
+  });
+
+  const withDim: DimRow[] = cows.map((c) => ({
+    cowId: c.id,
+    tag: c.tag,
+    dim: Math.floor((referenceDate.getTime() - c.lastCalvingDate!.getTime()) / 86_400_000),
+  }));
+
+  return {
+    fresh: withDim.filter((c) => c.dim < 60).sort((a, b) => a.dim - b.dim),
+    dryOff: withDim.filter((c) => c.dim > 305).sort((a, b) => b.dim - a.dim),
+  };
+}
+
 export type HerdCompositionRow = { status: string; label: string; count: number };
 
 export async function getHerdComposition(labelMap: Map<string, string>): Promise<HerdCompositionRow[]> {
