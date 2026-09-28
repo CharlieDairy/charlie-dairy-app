@@ -431,6 +431,7 @@ model MilkSale {
   id        String   @id @default(cuid())
   date      DateTime
   buyer     String
+  shift     Shift?
   litres    Float
   rate      Float?
   fatPct    Float?

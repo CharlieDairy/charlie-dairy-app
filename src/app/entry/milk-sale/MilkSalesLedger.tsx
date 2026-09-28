@@ -8,6 +8,7 @@ export type LedgerSaleRow = {
   id: string;
   date: string; // ISO date, yyyy-mm-dd
   buyer: string;
+  shift: "MORNING" | "AFTERNOON" | "EVENING" | null;
   litres: number;
   rate: number | null;
   amount: number;
@@ -29,16 +30,33 @@ function DeleteButton({ id }: { id: string }) {
   );
 }
 
-function EditRow({ sale, onCancel }: { sale: LedgerSaleRow; onCancel: () => void }) {
+function EditRow({ sale, onCancel, colSpan, showSessions }: { sale: LedgerSaleRow; onCancel: () => void; colSpan: number; showSessions: boolean }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(updateMilkSale, undefined);
 
   if (state?.success) onCancel();
 
   return (
     <tr className="border-t border-neutral-100 bg-amber-50/40">
-      <td colSpan={6} className="px-3 py-2">
+      <td colSpan={colSpan} className="px-3 py-2">
         <form action={formAction} className="flex flex-wrap items-end gap-2">
           <input type="hidden" name="id" value={sale.id} />
+          {!showSessions && (
+            // Preserved as-is -- this simpler ledger doesn't expose a shift
+            // editor, so editing here must never silently clear a shift tag
+            // set elsewhere (e.g. the Milk Sales page's Add Sale form).
+            <input type="hidden" name="shift" value={sale.shift ?? ""} />
+          )}
+          {showSessions && (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-neutral-500">Session</label>
+              <select name="shift" defaultValue={sale.shift ?? ""} className="border border-neutral-300 rounded px-2 py-1 text-sm">
+                <option value="">Unspecified</option>
+                <option value="MORNING">Morning</option>
+                <option value="AFTERNOON">Afternoon</option>
+                <option value="EVENING">Evening</option>
+              </select>
+            </div>
+          )}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-neutral-500">Date</label>
             <input name="date" type="date" defaultValue={sale.date} required className="border border-neutral-300 rounded px-2 py-1 text-sm" />
@@ -72,8 +90,13 @@ function EditRow({ sale, onCancel }: { sale: LedgerSaleRow; onCancel: () => void
   );
 }
 
-export default function MilkSalesLedger({ sales }: { sales: LedgerSaleRow[] }) {
+function shiftLitres(s: LedgerSaleRow, shift: "MORNING" | "AFTERNOON" | "EVENING"): string {
+  return s.shift === shift ? s.litres.toFixed(1) : "0.0";
+}
+
+export default function MilkSalesLedger({ sales, showSessions = false }: { sales: LedgerSaleRow[]; showSessions?: boolean }) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const colCount = showSessions ? 9 : 6;
 
   return (
     <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
@@ -82,7 +105,16 @@ export default function MilkSalesLedger({ sales }: { sales: LedgerSaleRow[] }) {
           <tr>
             <th className="text-left px-3 py-2">Date</th>
             <th className="text-left px-3 py-2">Customer</th>
-            <th className="text-right px-3 py-2">Litres</th>
+            {showSessions ? (
+              <>
+                <th className="text-right px-3 py-2">1st</th>
+                <th className="text-right px-3 py-2">2nd</th>
+                <th className="text-right px-3 py-2">3rd</th>
+                <th className="text-right px-3 py-2">Total</th>
+              </>
+            ) : (
+              <th className="text-right px-3 py-2">Litres</th>
+            )}
             <th className="text-right px-3 py-2">Rate</th>
             <th className="text-right px-3 py-2">Amount</th>
             <th className="text-left px-3 py-2">Actions</th>
@@ -91,12 +123,21 @@ export default function MilkSalesLedger({ sales }: { sales: LedgerSaleRow[] }) {
         <tbody>
           {sales.map((s) =>
             editingId === s.id ? (
-              <EditRow key={s.id} sale={s} onCancel={() => setEditingId(null)} />
+              <EditRow key={s.id} sale={s} onCancel={() => setEditingId(null)} colSpan={colCount} showSessions={showSessions} />
             ) : (
               <tr key={s.id} className="border-t border-neutral-100">
                 <td className="px-3 py-2">{s.date}</td>
                 <td className="px-3 py-2 font-medium">{s.buyer}</td>
-                <td className="px-3 py-2 text-right">{s.litres.toFixed(1)}</td>
+                {showSessions ? (
+                  <>
+                    <td className="px-3 py-2 text-right">{shiftLitres(s, "MORNING")}</td>
+                    <td className="px-3 py-2 text-right">{shiftLitres(s, "AFTERNOON")}</td>
+                    <td className="px-3 py-2 text-right">{shiftLitres(s, "EVENING")}</td>
+                    <td className="px-3 py-2 text-right font-medium">{s.litres.toFixed(1)}L</td>
+                  </>
+                ) : (
+                  <td className="px-3 py-2 text-right">{s.litres.toFixed(1)}</td>
+                )}
                 <td className="px-3 py-2 text-right">{s.rate !== null ? `Rs ${s.rate.toFixed(2)}` : "—"}</td>
                 <td className="px-3 py-2 text-right">{formatRs(s.amount)}</td>
                 <td className="px-3 py-2">
@@ -112,7 +153,7 @@ export default function MilkSalesLedger({ sales }: { sales: LedgerSaleRow[] }) {
           )}
           {sales.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-3 py-6 text-center text-neutral-400">No sales recorded in this period.</td>
+              <td colSpan={colCount} className="px-3 py-6 text-center text-neutral-400">No sales recorded in this period.</td>
             </tr>
           )}
         </tbody>

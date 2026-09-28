@@ -56,7 +56,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/admin/reports/milk-analytics", label: "Milk Analytics" },
       { href: "/admin/reports/reconciliation", label: "Production Reconciliation" },
       { href: "/admin/customers", label: "Customers" },
-      { href: "/admin/reports/milk-sales", label: "Milk Sales by Customer" },
+      { href: "/admin/reports/milk-sales", label: "Milk Sales" },
     ],
   },
   {

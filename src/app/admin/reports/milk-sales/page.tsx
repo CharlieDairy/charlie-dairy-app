@@ -1,72 +1,98 @@
 import Link from "next/link";
-import PageHeader from "@/components/PageHeader";
+import { prisma } from "@/lib/prisma";
 import Card from "@/components/Card";
 import StatCard from "@/components/StatCard";
 import { formatRs } from "@/lib/format";
-import { auth } from "@/auth";
-import { getCustomerSalesSummary, getCustomerDetail, getDistinctBuyers } from "@/lib/reports/milkSalesByCustomer";
-import type { PeriodKey } from "@/lib/reports/herd";
-import CustomerSalesTable from "./CustomerSalesTable";
+import { getCustomerDetail, getDistinctBuyers } from "@/lib/reports/milkSalesByCustomer";
+import { periodRange, type PeriodKey } from "@/lib/reports/herd";
+import type { LedgerSaleRow } from "@/app/entry/milk-sale/MilkSalesLedger";
+import MilkSalesLedger from "@/app/entry/milk-sale/MilkSalesLedger";
+import PeriodSelect from "./PeriodSelect";
+import AddSaleToggle from "./AddSaleToggle";
 import RecordPaymentForm from "./RecordPaymentForm";
 
 function fmtDate(d: Date): string {
   return new Date(d).toISOString().slice(0, 10);
 }
 
-const PERIODS: { key: PeriodKey; label: string }[] = [
-  { key: "day", label: "Today" },
-  { key: "week", label: "This Week" },
-  { key: "month", label: "This Month" },
-  { key: "year", label: "This Year" },
-  { key: "all", label: "All Time" },
-];
-
-export default async function MilkSalesByCustomerPage({
+export default async function MilkSalesPage({
   searchParams,
 }: {
   searchParams: Promise<{ buyer?: string; period?: string }>;
 }) {
   const params = await searchParams;
-  const period: PeriodKey = PERIODS.some((p) => p.key === params.period) ? (params.period as PeriodKey) : "month";
-  const session = await auth();
-  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
-  const [summary, buyers] = await Promise.all([getCustomerSalesSummary(period), getDistinctBuyers()]);
-  const detail = params.buyer ? await getCustomerDetail(params.buyer) : null;
+  const period: PeriodKey = (["day", "week", "month", "year", "all"] as const).includes(params.period as PeriodKey)
+    ? (params.period as PeriodKey)
+    : "all";
+  const range = periodRange(period);
 
-  const totalLitres = summary.reduce((n, s) => n + s.totalLitres, 0);
-  const totalRevenue = summary.reduce((n, s) => n + s.totalSaleAmount, 0);
-  const totalOutstanding = summary.reduce((n, s) => n + s.outstandingBalance, 0);
+  const [customers, buyers, sales, detail] = await Promise.all([
+    prisma.customer.findMany({ where: { active: true }, select: { name: true, agreedRate: true } }),
+    getDistinctBuyers(),
+    prisma.milkSale.findMany({
+      where: {
+        ...(range ? { date: { gte: range.start, lt: range.end } } : {}),
+        ...(params.buyer ? { buyer: params.buyer } : {}),
+      },
+      orderBy: { date: "desc" },
+      select: { id: true, date: true, buyer: true, shift: true, litres: true, rate: true, amount: true },
+    }),
+    params.buyer ? getCustomerDetail(params.buyer) : null,
+  ]);
+
+  const ledgerRows: LedgerSaleRow[] = sales.map((s) => ({
+    id: s.id,
+    date: s.date.toISOString().slice(0, 10),
+    buyer: s.buyer,
+    shift: s.shift,
+    litres: s.litres,
+    rate: s.rate,
+    amount: s.amount,
+  }));
+
+  const sum = (shift: "MORNING" | "AFTERNOON" | "EVENING" | null) =>
+    sales.filter((s) => s.shift === shift).reduce((n, s) => n + s.litres, 0);
+  const morning = sum("MORNING");
+  const afternoon = sum("AFTERNOON");
+  const evening = sum("EVENING");
+  const total = sales.reduce((n, s) => n + s.litres, 0);
+  const totalAmount = sales.reduce((n, s) => n + s.amount, 0);
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Milk Sales by Customer" />
-      <p className="text-sm text-neutral-500 max-w-2xl">
-        Every customer&apos;s sales, rate, and running balance. Recording a payment here also creates a real entry in
-        the Cash ledger — it shows up in Cash Flow and P&amp;L immediately, not as a separate untracked number.
-        Outstanding balance is always lifetime; Sales/Revenue reflect the selected period.
-      </p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-semibold text-neutral-900">Milk Sales</h1>
+        <div className="flex items-center gap-2">
+          <PeriodSelect period={period} />
+          <a href="/api/bulk/export?type=milkSales" className="bg-neutral-800 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-neutral-900">
+            Download CSV
+          </a>
+        </div>
+      </div>
 
-      <div className="flex gap-1.5 flex-wrap">
-        {PERIODS.map((p) => (
-          <Link
-            key={p.key}
-            href={`?period=${p.key}`}
-            className={`text-xs rounded-full px-3 py-1.5 border ${
-              period === p.key ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-neutral-100"
-            }`}
-          >
-            {p.label}
+      {params.buyer && (
+        <div className="flex items-center gap-3 text-sm bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          <span>Viewing: <strong>{params.buyer}</strong></span>
+          <Link href="/admin/reports/milk-sales" className="text-primary underline">Clear filter</Link>
+          <Link href={`/admin/reports/milk-sales/invoice?buyer=${encodeURIComponent(params.buyer)}`} className="text-primary underline ml-auto">
+            Print Statement
           </Link>
-        ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard label="1st Sale" value={`${morning.toLocaleString()} L`} />
+        <StatCard label="2nd Sale" value={`${afternoon.toLocaleString()} L`} />
+        <StatCard label="3rd Sale" value={`${evening.toLocaleString()} L`} />
+        <StatCard label="Total" value={`${total.toLocaleString()} L · ${formatRs(totalAmount)}`} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
-        <StatCard label="Customers" value={summary.length.toString()} />
-        <StatCard label="Total Sales" value={`${totalLitres.toLocaleString()} L · ${formatRs(totalRevenue)}`} />
-        <StatCard label="Outstanding" value={formatRs(totalOutstanding)} tone={totalOutstanding > 0 ? "negative" : "positive"} />
-      </div>
+      <AddSaleToggle
+        buyers={buyers}
+        customerRates={customers.filter((c) => c.agreedRate !== null).map((c) => ({ name: c.name, agreedRate: c.agreedRate as number }))}
+      />
 
-      <CustomerSalesTable rows={summary} isAdmin={isAdmin} />
+      <MilkSalesLedger sales={ledgerRows} showSessions />
 
       <Card>
         <h2 className="font-semibold text-text mb-2">Record a Payment</h2>
@@ -75,73 +101,30 @@ export default async function MilkSalesByCustomerPage({
 
       {detail && params.buyer && (
         <Card>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-text">{params.buyer} — Detail</h2>
-            <div className="flex items-center gap-4">
-              <Link href={`/admin/reports/milk-sales/invoice?buyer=${encodeURIComponent(params.buyer)}`} className="text-sm text-green-700 underline font-medium">
-                Print Statement
-              </Link>
-              <Link href="/admin/reports/milk-sales" className="text-sm text-neutral-500 underline">
-                Clear selection
-              </Link>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <p className="text-xs font-medium text-neutral-500 uppercase mb-2">Sales ({detail.sales.length})</p>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-neutral-500">
-                    <th className="text-left py-1 font-normal">Date</th>
-                    <th className="text-right py-1 font-normal">Litres</th>
-                    <th className="text-right py-1 font-normal">Rate</th>
-                    <th className="text-right py-1 font-normal">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.sales.map((s) => (
-                    <tr key={s.id} className="border-t border-neutral-100">
-                      <td className="py-1">{fmtDate(s.date)}</td>
-                      <td className="py-1 text-right">{s.litres}</td>
-                      <td className="py-1 text-right">{s.rate !== null ? `Rs ${s.rate.toFixed(2)}` : "—"}</td>
-                      <td className="py-1 text-right">{formatRs(s.amount)}</td>
-                    </tr>
-                  ))}
-                  {detail.sales.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="py-3 text-center text-neutral-400">No sales recorded.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-neutral-500 uppercase mb-2">Payments ({detail.payments.length})</p>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-neutral-500">
-                    <th className="text-left py-1 font-normal">Date</th>
-                    <th className="text-left py-1 font-normal">Mode</th>
-                    <th className="text-right py-1 font-normal">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.payments.map((p) => (
-                    <tr key={p.id} className="border-t border-neutral-100">
-                      <td className="py-1">{fmtDate(p.date)}</td>
-                      <td className="py-1">{p.mode}</td>
-                      <td className="py-1 text-right">{formatRs(p.amount)}</td>
-                    </tr>
-                  ))}
-                  {detail.payments.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="py-3 text-center text-neutral-400">No payments recorded yet.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <h2 className="font-semibold text-text mb-3">{params.buyer} — Payments</h2>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-neutral-500">
+                <th className="text-left py-1 font-normal">Date</th>
+                <th className="text-left py-1 font-normal">Mode</th>
+                <th className="text-right py-1 font-normal">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {detail.payments.map((p) => (
+                <tr key={p.id} className="border-t border-neutral-100">
+                  <td className="py-1">{fmtDate(p.date)}</td>
+                  <td className="py-1">{p.mode}</td>
+                  <td className="py-1 text-right">{formatRs(p.amount)}</td>
+                </tr>
+              ))}
+              {detail.payments.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="py-3 text-center text-neutral-400">No payments recorded yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </Card>
       )}
     </div>

@@ -49,6 +49,23 @@ export default function MilkSaleForm({ buyers, customerRates = [] }: { buyers: s
         <p className="text-xs text-neutral-400">Matching a Customer Master entry auto-fills its agreed rate below.</p>
       </div>
       <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-neutral-700">Session (optional)</span>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2">
+            <input type="radio" name="shift" value="" defaultChecked /> Unspecified
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="radio" name="shift" value="MORNING" /> Morning
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="radio" name="shift" value="AFTERNOON" /> Afternoon
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="radio" name="shift" value="EVENING" /> Evening
+          </label>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1">
         <label htmlFor="litres" className="text-sm font-medium text-neutral-700">Litres</label>
         <input id="litres" name="litres" type="number" step="0.1" min="0" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
       </div>

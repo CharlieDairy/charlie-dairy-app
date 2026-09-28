@@ -10,6 +10,7 @@ export async function submitMilkSale(_prev: FormState, formData: FormData): Prom
   const session = await auth();
   const dateRaw = formData.get("date") as string | null;
   const buyer = (formData.get("buyer") as string | null)?.trim();
+  const shiftRaw = (formData.get("shift") as string | null) || null;
   const litresRaw = formData.get("litres") as string | null;
   const rateRaw = formData.get("rate") as string | null;
   const amountRaw = formData.get("amount") as string | null;
@@ -29,6 +30,7 @@ export async function submitMilkSale(_prev: FormState, formData: FormData): Prom
     data: {
       date: new Date(dateRaw),
       buyer,
+      shift: shiftRaw ? (shiftRaw as "MORNING" | "AFTERNOON" | "EVENING") : null,
       litres,
       rate: rate ?? undefined,
       amount,
@@ -45,6 +47,7 @@ export async function updateMilkSale(_prev: FormState, formData: FormData): Prom
   const id = formData.get("id") as string | null;
   const dateRaw = formData.get("date") as string | null;
   const buyer = (formData.get("buyer") as string | null)?.trim();
+  const shiftRaw = (formData.get("shift") as string | null) || null;
   const litresRaw = formData.get("litres") as string | null;
   const rateRaw = formData.get("rate") as string | null;
   const amountRaw = formData.get("amount") as string | null;
@@ -62,7 +65,7 @@ export async function updateMilkSale(_prev: FormState, formData: FormData): Prom
 
   await prisma.milkSale.update({
     where: { id },
-    data: { date: new Date(dateRaw), buyer, litres, rate: rate ?? undefined, amount },
+    data: { date: new Date(dateRaw), buyer, shift: shiftRaw ? (shiftRaw as "MORNING" | "AFTERNOON" | "EVENING") : null, litres, rate: rate ?? undefined, amount },
   });
 
   revalidatePath("/entry/milk-sale");

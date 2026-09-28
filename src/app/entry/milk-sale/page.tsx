@@ -34,7 +34,7 @@ export default async function MilkSaleEntryPage({
     prisma.milkSale.findMany({
       where: range ? { date: { gte: range.start, lt: range.end } } : undefined,
       orderBy: { date: "desc" },
-      select: { id: true, date: true, buyer: true, litres: true, rate: true, amount: true },
+      select: { id: true, date: true, buyer: true, shift: true, litres: true, rate: true, amount: true },
     }),
   ]);
   const buyers = Array.from(new Set([...customers.map((c) => c.name), ...rows.map((r) => r.buyer)])).sort();
@@ -43,6 +43,7 @@ export default async function MilkSaleEntryPage({
     id: s.id,
     date: s.date.toISOString().slice(0, 10),
     buyer: s.buyer,
+    shift: s.shift,
     litres: s.litres,
     rate: s.rate,
     amount: s.amount,
