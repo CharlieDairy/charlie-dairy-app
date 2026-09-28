@@ -14,7 +14,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
 export const MODULE_DESCRIPTIONS: Record<ModuleName, string> = {
   OPERATIONS: "Herd, Breeding, Milk and Feed sections — animal records, all breeding/milking/feed entry forms, and their reports",
   FINANCIAL: "Financial section — Cash Entry, Cash Flow, P&L Statement, Capital Ledger, Assets",
-  PEOPLE: "Users & Access",
+  PEOPLE: "Users & Access, and the Team section — employees, salary payments, attendance",
   ADMIN: "Master Data, Bulk Data, Audit Log",
 };
 
@@ -34,6 +34,7 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/admin/reports/pl", module: "FINANCIAL" },
   { prefix: "/admin/reports/cashflow", module: "FINANCIAL" },
   { prefix: "/admin/users", module: "PEOPLE" },
+  { prefix: "/admin/team", module: "PEOPLE" },
   { prefix: "/admin/master-data", module: "ADMIN" },
   { prefix: "/admin/bulk", module: "ADMIN" },
   { prefix: "/admin/audit-log", module: "ADMIN" },
@@ -48,6 +49,7 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/entry/breeding", module: "OPERATIONS" },
   { prefix: "/entry/health", module: "OPERATIONS" },
   { prefix: "/entry/cash", module: "FINANCIAL" },
+  { prefix: "/entry/team", module: "PEOPLE" },
 ];
 
 /** Returns the module a given /admin path requires, or null if it needs no specific module (e.g. the dashboard itself). */

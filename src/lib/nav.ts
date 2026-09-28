@@ -80,6 +80,17 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    key: "team",
+    label: "Team",
+    module: "PEOPLE",
+    items: [
+      { href: "/admin/team", label: "Employees" },
+      { href: "/admin/team/add", label: "Add Employee" },
+      { href: "/entry/team/salary", label: "Salary Payment" },
+      { href: "/entry/team/attendance", label: "Attendance" },
+    ],
+  },
+  {
     key: "people",
     label: "People",
     module: "PEOPLE",

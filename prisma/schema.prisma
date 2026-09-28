@@ -422,6 +422,70 @@ model CustomerPayment {
   @@index([date])
 }
 
+// Team/HR module. Users & Access already covers app logins/permissions --
+// this is the separate, real concern of actual farm staff (who may or may
+// not have an app login at all), their pay, and their attendance.
+model Employee {
+  id            String   @id @default(cuid())
+  name          String
+  position      String?
+  phone         String?
+  monthlySalary Float?
+  joinDate      DateTime?
+  active        Boolean  @default(true)
+  notes         String?
+  photoUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salaryPayments    SalaryPayment[]
+  attendanceRecords AttendanceRecord[]
+}
+
+// Always creates a linked CashTransaction in the same action (matching
+// CustomerPayment's pattern above) so a salary payment is never a parallel,
+// untracked number -- it shows up in Cash Flow/P&L immediately, filed under
+// the same "Opex Salaries" category this farm's real historical cash ledger
+// already uses.
+model SalaryPayment {
+  id                String           @id @default(cuid())
+  employeeId        String
+  employee          Employee         @relation(fields: [employeeId], references: [id])
+  date              DateTime
+  amount            Float
+  forMonth          String?
+  mode              CashMode         @default(CASH)
+  notes             String?
+  cashTransactionId String?          @unique
+  cashTransaction   CashTransaction? @relation(fields: [cashTransactionId], references: [id])
+  enteredBy         String?
+  createdAt         DateTime         @default(now())
+
+  @@index([employeeId])
+  @@index([date])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LEAVE
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  employeeId String
+  employee   Employee         @relation(fields: [employeeId], references: [id])
+  date       DateTime
+  status     AttendanceStatus @default(PRESENT)
+  notes      String?
+  enteredBy  String?
+  createdAt  DateTime         @default(now())
+
+  @@unique([employeeId, date])
+  @@index([date])
+}
+
 enum FeedDirection {
   IN
   OUT
@@ -464,6 +528,7 @@ model CashTransaction {
   createdAt   DateTime @default(now())
 
   customerPayment CustomerPayment?
+  salaryPayment   SalaryPayment?
 
   @@index([date])
   @@index([category])
