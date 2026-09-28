@@ -209,6 +209,22 @@ model WeightRecord {
   @@index([date])
 }
 
+// Target weight range at a given age checkpoint, optionally specific to a
+// breed (null = applies to any breed). Lets the Weight Dashboard flag an
+// animal as under/on/over target for its age instead of just showing a
+// number with no reference point -- Channab's "Weight Standards".
+model WeightStandard {
+  id          String   @id @default(cuid())
+  breed       String?
+  ageMonths   Int
+  minWeightKg Float
+  maxWeightKg Float
+  createdAt   DateTime @default(now())
+
+  @@unique([breed, ageMonths])
+  @@index([ageMonths])
+}
+
 // Herd Management: location/movement history per animal (e.g. between sheds
 // or a treatment area), mirroring Channab's movement tracking.
 model CowMovement {

@@ -29,6 +29,8 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/admin/reports/feed", module: "OPERATIONS" },
   { prefix: "/admin/reports/health", module: "OPERATIONS" },
   { prefix: "/admin/health", module: "OPERATIONS" },
+  { prefix: "/admin/reports/weight", module: "OPERATIONS" },
+  { prefix: "/admin/weight", module: "OPERATIONS" },
   { prefix: "/admin/capital", module: "FINANCIAL" },
   { prefix: "/admin/assets", module: "FINANCIAL" },
   { prefix: "/admin/reports/pl", module: "FINANCIAL" },
@@ -48,6 +50,7 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/entry/milk-sale", module: "OPERATIONS" },
   { prefix: "/entry/breeding", module: "OPERATIONS" },
   { prefix: "/entry/health", module: "OPERATIONS" },
+  { prefix: "/entry/weight", module: "OPERATIONS" },
   { prefix: "/entry/cash", module: "FINANCIAL" },
   { prefix: "/entry/team", module: "PEOPLE" },
 ];

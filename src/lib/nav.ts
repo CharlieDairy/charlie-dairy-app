@@ -59,6 +59,16 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    key: "weight",
+    label: "Weight",
+    module: "OPERATIONS",
+    items: [
+      { href: "/admin/reports/weight", label: "Weight Dashboard" },
+      { href: "/entry/weight", label: "Weight Entry" },
+      { href: "/admin/weight/standards", label: "Weight Standards" },
+    ],
+  },
+  {
     key: "feed",
     label: "Feed",
     module: "OPERATIONS",
