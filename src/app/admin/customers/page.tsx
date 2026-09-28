@@ -1,54 +1,53 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import StatCard from "@/components/StatCard";
 import { formatRs } from "@/lib/format";
-import AddCustomerForm from "./AddCustomerForm";
+import { getCustomersWithSales } from "@/lib/reports/milkSalesByCustomer";
+import type { PeriodKey } from "@/lib/reports/herd";
+import CustomersTable from "./CustomersTable";
+import FilterBar from "./FilterBar";
+import AddCustomerToggle from "./AddCustomerToggle";
 
-export default async function CustomersPage() {
-  const customers = await prisma.customer.findMany({ orderBy: { name: "asc" } });
+export default async function CustomersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; period?: string }>;
+}) {
+  const params = await searchParams;
+  const status = params.status === "hidden" || params.status === "all" ? params.status : "active";
+  const period: PeriodKey = (["day", "week", "month", "year", "all"] as const).includes(params.period as PeriodKey)
+    ? (params.period as PeriodKey)
+    : "month";
+
+  const all = await getCustomersWithSales(period);
+  const rows = status === "all" ? all : all.filter((c) => (status === "active" ? c.active : !c.active));
+
+  const totalLitres = rows.reduce((n, r) => n + r.totalLitres, 0);
+  const totalRevenue = rows.reduce((n, r) => n + r.totalSaleAmount, 0);
+  const totalOutstanding = rows.reduce((n, r) => n + r.outstandingBalance, 0);
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-neutral-900">Customer Master</h1>
-      <p className="text-sm text-neutral-500 max-w-2xl">
-        Milk buyers with their contact details, payment terms and agreed rate. Matched by name against Milk Sale
-        Entry&apos;s buyer field — the agreed rate auto-fills there when it recognizes a customer.
-      </p>
-      <AddCustomerForm />
-      <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
-        <table className="min-w-full text-sm">
-          <thead className="bg-neutral-100">
-            <tr>
-              <th className="text-left px-3 py-2">Customer</th>
-              <th className="text-left px-3 py-2">Phone</th>
-              <th className="text-left px-3 py-2">Payment Terms</th>
-              <th className="text-right px-3 py-2">Agreed Rate</th>
-              <th className="text-left px-3 py-2">Status</th>
-              <th className="text-left px-3 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customers.map((c) => (
-              <tr key={c.id} className="border-t border-neutral-100">
-                <td className="px-3 py-2 font-medium">{c.name}</td>
-                <td className="px-3 py-2">{c.phone ?? "—"}</td>
-                <td className="px-3 py-2">{c.paymentTerms ?? "—"}</td>
-                <td className="px-3 py-2 text-right">{c.agreedRate !== null ? `${formatRs(c.agreedRate)}/L` : "—"}</td>
-                <td className="px-3 py-2">{c.active ? "Active" : "Hidden"}</td>
-                <td className="px-3 py-2">
-                  <Link href={`/admin/customers/${c.id}`} className="text-xs rounded px-2 py-1 border border-neutral-300 text-neutral-700 hover:bg-neutral-100">
-                    Edit
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {customers.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-neutral-500">No customers added yet.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-semibold text-neutral-900">Customers</h1>
+        <div className="flex items-center gap-3">
+          <Link href="/entry/milk-sale" className="text-sm text-primary underline">+ Add Sale</Link>
+          <AddCustomerToggle />
+        </div>
       </div>
+      <p className="text-sm text-neutral-500 max-w-2xl">
+        Milk buyers with contact details, payment terms, agreed rate and their sales summary in one place. Matched by
+        name against Milk Sale Entry&apos;s buyer field — the agreed rate there auto-fills when it recognizes a customer.
+      </p>
+
+      <FilterBar status={status} period={period} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+        <StatCard label="Customers" value={rows.length.toString()} />
+        <StatCard label="Total Sales" value={`${totalLitres.toLocaleString()} L · ${formatRs(totalRevenue)}`} />
+        <StatCard label="Outstanding" value={formatRs(totalOutstanding)} tone={totalOutstanding > 0 ? "negative" : "positive"} />
+      </div>
+
+      <CustomersTable rows={rows} />
     </div>
   );
 }

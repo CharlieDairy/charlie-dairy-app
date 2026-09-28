@@ -110,3 +110,38 @@ export async function getDistinctBuyers(): Promise<string[]> {
   const rows = await prisma.milkSale.findMany({ select: { buyer: true }, distinct: ["buyer"], orderBy: { buyer: "asc" } });
   return rows.map((r) => r.buyer);
 }
+
+export type CustomerWithSales = {
+  id: string;
+  name: string;
+  phone: string | null;
+  active: boolean;
+  totalLitres: number;
+  totalSaleAmount: number;
+  outstandingBalance: number;
+};
+
+// Joins Customer master records with their sales summary, by name -- the
+// same free-text-key match used everywhere else a Customer/FeedItem is
+// matched against a string field. Includes customers with zero sales
+// (a new customer added before their first sale is still a customer).
+export async function getCustomersWithSales(period: PeriodKey = "all"): Promise<CustomerWithSales[]> {
+  const [customers, sales] = await Promise.all([
+    prisma.customer.findMany({ orderBy: { name: "asc" } }),
+    getCustomerSalesSummary(period),
+  ]);
+  const salesMap = new Map(sales.map((s) => [s.buyer.toLowerCase(), s]));
+
+  return customers.map((c) => {
+    const s = salesMap.get(c.name.toLowerCase());
+    return {
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      active: c.active,
+      totalLitres: s?.totalLitres ?? 0,
+      totalSaleAmount: s?.totalSaleAmount ?? 0,
+      outstandingBalance: s?.outstandingBalance ?? 0,
+    };
+  });
+}
