@@ -104,6 +104,9 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/admin/team/add", label: "Add Employee" },
       { href: "/entry/team/salary", label: "Salary Payment" },
       { href: "/entry/team/attendance", label: "Attendance" },
+      { href: "/admin/team/attendance-calendar", label: "Attendance Calendar" },
+      { href: "/admin/team/attendance-reports", label: "Attendance Reports" },
+      { href: "/entry/team/mark-absence", label: "Mark Absence" },
     ],
   },
   {

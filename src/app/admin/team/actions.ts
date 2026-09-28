@@ -137,5 +137,37 @@ export async function markAttendance(_prev: FormState, formData: FormData): Prom
 
   revalidatePath("/admin/team");
   revalidatePath("/entry/team/attendance");
+  revalidatePath("/admin/team/attendance-calendar");
+  revalidatePath("/admin/team/attendance-reports");
   return { success: true, message: "Attendance saved." };
+}
+
+// A one-tap shortcut for the common case (someone didn't show up) so
+// marking it doesn't require opening the full team-wide daily form and
+// stepping through every other employee's dropdown just to flag one person.
+export async function markAbsence(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await auth();
+  const employeeId = formData.get("employeeId") as string | null;
+  const dateRaw = formData.get("date") as string | null;
+  if (!employeeId || !dateRaw) {
+    return { success: false, message: "Employee and date are required." };
+  }
+
+  const employee = await prisma.employee.findUnique({ where: { id: employeeId }, select: { name: true } });
+  if (!employee) return { success: false, message: "Employee not found." };
+
+  const date = new Date(dateRaw);
+  const enteredBy = session?.user?.name ?? null;
+
+  await prisma.attendanceRecord.upsert({
+    where: { employeeId_date: { employeeId, date } },
+    update: { status: "ABSENT", enteredBy },
+    create: { employeeId, date, status: "ABSENT", enteredBy },
+  });
+
+  revalidatePath("/admin/team");
+  revalidatePath("/entry/team/attendance");
+  revalidatePath("/admin/team/attendance-calendar");
+  revalidatePath("/admin/team/attendance-reports");
+  return { success: true, message: `${employee.name} marked absent for ${dateRaw}.` };
 }
