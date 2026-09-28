@@ -103,16 +103,11 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    key: "people",
-    label: "People",
-    module: "PEOPLE",
-    items: [{ href: "/admin/users", label: "Users & Access" }],
-  },
-  {
     key: "admin",
     label: "Admin",
     module: "ADMIN",
     items: [
+      { href: "/admin/users", label: "Users & Access" },
       { href: "/admin/master-data", label: "Master Data" },
       { href: "/admin/bulk", label: "Bulk Data" },
       { href: "/admin/audit-log", label: "Audit Log" },
