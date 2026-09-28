@@ -1,31 +1,16 @@
-import Link from "next/link";
 import { auth } from "@/auth";
-import { doSignOut } from "@/app/actions/sign-out";
+import AppSidebar from "@/components/AppSidebar";
+import type { ModuleName } from "@/lib/modules";
 
 export default async function EntryLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const role = (session?.user as { role?: string } | undefined)?.role;
+  const modules = ((session?.user as { modules?: string[] } | undefined)?.modules ?? []) as ModuleName[];
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-neutral-50">
-      <header className="bg-green-800 text-white px-4 py-3 flex items-center justify-between">
-        <Link href="/entry" className="font-semibold">
-          Charlie Dairy — Data Entry
-        </Link>
-        <div className="flex items-center gap-3 text-sm">
-          {/* Every logged-in user can reach the Dashboard by default now
-              (see middleware.ts), so this link is unconditional. */}
-          <Link href="/admin" className="underline">
-            {role === "ADMIN" ? "Admin" : "Dashboard"}
-          </Link>
-          <form action={doSignOut}>
-            <button type="submit" className="underline">
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-      <main className="flex-1 p-4 max-w-2xl w-full mx-auto">{children}</main>
+    <div className="flex flex-col min-h-screen bg-neutral-50 md:flex-row">
+      <AppSidebar role={role} modules={modules} />
+      <main className="flex-1 p-4 md:p-8 max-w-2xl w-full mx-auto">{children}</main>
     </div>
   );
 }

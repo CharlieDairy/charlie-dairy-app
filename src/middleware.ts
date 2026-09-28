@@ -27,7 +27,11 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  if (pathname.startsWith("/admin") && role !== "ADMIN") {
+  // /entry itself (the bare data-entry menu) stays open to any logged-in
+  // user -- it's just a menu, and its own tiles are filtered per module
+  // already (see src/app/entry/page.tsx). Individual /entry/<form> paths
+  // are gated the same way /admin/* sections are.
+  if ((pathname.startsWith("/admin") || pathname.startsWith("/entry/")) && role !== "ADMIN") {
     const required = moduleForPath(pathname);
     // The bare dashboard (no specific module required) is open to every
     // logged-in user by default; a specific section still needs that exact

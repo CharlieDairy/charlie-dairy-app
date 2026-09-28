@@ -12,8 +12,8 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
 };
 
 export const MODULE_DESCRIPTIONS: Record<ModuleName, string> = {
-  OPERATIONS: "Cow Register, Breeding & Reproduction, Milk Production, Milk Sales by Customer, Production Reconciliation",
-  FINANCIAL: "Capital Ledger, Assets, P&L Statement, Cash Flow",
+  OPERATIONS: "Herd, Breeding, Milk and Feed sections — animal records, all breeding/milking/feed entry forms, and their reports",
+  FINANCIAL: "Financial section — Cash Entry, Cash Flow, P&L Statement, Capital Ledger, Assets",
   PEOPLE: "Users & Access",
   ADMIN: "Master Data, Bulk Data, Audit Log",
 };
@@ -34,6 +34,16 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   { prefix: "/admin/master-data", module: "ADMIN" },
   { prefix: "/admin/bulk", module: "ADMIN" },
   { prefix: "/admin/audit-log", module: "ADMIN" },
+  // Data Entry forms (/entry/*) -- previously ungated server-side (only
+  // hidden from nav), so a user could reach any form by URL regardless of
+  // their granted modules. Same module per subject as its admin/report
+  // counterpart above, so a Financial-only user genuinely can't submit
+  // Milking/Breeding/Feed entries and vice versa.
+  { prefix: "/entry/milking", module: "OPERATIONS" },
+  { prefix: "/entry/feed", module: "OPERATIONS" },
+  { prefix: "/entry/milk-sale", module: "OPERATIONS" },
+  { prefix: "/entry/breeding", module: "OPERATIONS" },
+  { prefix: "/entry/cash", module: "FINANCIAL" },
 ];
 
 /** Returns the module a given /admin path requires, or null if it needs no specific module (e.g. the dashboard itself). */
