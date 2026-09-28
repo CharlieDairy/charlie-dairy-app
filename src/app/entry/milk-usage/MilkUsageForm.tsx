@@ -23,9 +23,12 @@ export default function MilkUsageForm() {
       </div>
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium text-neutral-700">Use Type</span>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <label className="flex items-center gap-2">
-            <input type="radio" name="type" value="FARM_USE" defaultChecked /> Farm Use
+            <input type="radio" name="type" value="CALF_USE" defaultChecked /> Calf Use
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="radio" name="type" value="FARM_USE" /> Farm Use
           </label>
           <label className="flex items-center gap-2">
             <input type="radio" name="type" value="EMPLOYEE_USE" /> Employee Use
@@ -38,7 +41,7 @@ export default function MilkUsageForm() {
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="notes" className="text-sm font-medium text-neutral-700">Notes (optional)</label>
-        <input id="notes" name="notes" placeholder="e.g. Calf feeding, staff ration" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        <input id="notes" name="notes" placeholder="e.g. Calf pen 2, staff ration" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
       </div>
       {state && (
         <p className={`text-sm ${state.success ? "text-green-700" : "text-red-600"}`} role="status">

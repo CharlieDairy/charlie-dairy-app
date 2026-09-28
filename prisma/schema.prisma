@@ -404,13 +404,15 @@ model MilkingRecord {
 enum MilkUsageType {
   FARM_USE
   EMPLOYEE_USE
+  CALF_USE
 }
 
-// Daily production isn't all sellable -- some is consumed on-farm (calves,
-// household) or given to staff. Recording that explicitly, instead of
-// letting it disappear into the unexplained "produced minus sold" variance
-// on Production Reconciliation, is what makes that gap a real reconciled
-// number: Produced - FarmUse - EmployeeUse - Sold should trend to zero.
+// Daily production isn't all sellable -- some is consumed by calves, given
+// to farm employees, or used elsewhere on the farm (household etc.).
+// Recording that explicitly, instead of letting it disappear into the
+// unexplained "produced minus sold" variance on Production Reconciliation,
+// is what makes that gap a real reconciled number:
+// Produced - CalfUse - FarmUse - EmployeeUse - Sold should trend to zero.
 // Valued at the farm's average sale rate for a notional (non-cash) cost
 // line -- no CashTransaction is created since no money actually moves.
 model MilkUsageRecord {
