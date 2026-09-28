@@ -88,11 +88,28 @@ export default function AnimalListClient({
           onSubmit={(e) => {
             if (!confirm(`Delete ${selected.size} selected animal${selected.size === 1 ? "" : "s"}? This can't be undone.`)) e.preventDefault();
           }}
-          className="flex items-center gap-3"
+          className="flex items-center gap-3 flex-wrap"
         >
           {Array.from(selected).map((id) => (
             <input key={id} type="hidden" name="cowIds" value={id} />
           ))}
+          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+            <input
+              type="checkbox"
+              checked={filtered.length > 0 && filtered.every((a) => selected.has(a.id))}
+              onChange={() => {
+                const allSelected = filtered.length > 0 && filtered.every((a) => selected.has(a.id));
+                setSelected((prev) => {
+                  const next = new Set(prev);
+                  for (const a of filtered) {
+                    if (allSelected) next.delete(a.id); else next.add(a.id);
+                  }
+                  return next;
+                });
+              }}
+            />
+            Select All ({filtered.length})
+          </label>
           <button
             type="submit"
             disabled={selected.size === 0 || isPending}

@@ -3,6 +3,7 @@ import { MASTER_CATEGORIES } from "@/lib/masterData";
 import LabelEditor from "./LabelEditor";
 import MasterActiveToggle from "./MasterActiveToggle";
 import AddItemForm from "./AddItemForm";
+import DeleteItemButton from "./DeleteItemButton";
 
 export default async function MasterDataPage() {
   const items = await prisma.masterDataItem.findMany({ orderBy: [{ category: "asc" }, { sortOrder: "asc" }] });
@@ -16,10 +17,10 @@ export default async function MasterDataPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Master Data</h1>
       <p className="text-sm text-neutral-500 max-w-2xl">
-        Rename how statuses and categories are displayed across the app, or hide ones you don&apos;t
-        use. &ldquo;Fixed list&rdquo; categories can be renamed and hidden but not added to — their
-        codes are tied to logic elsewhere (e.g. breeding rules check for the <code>SOLD</code>/
-        <code>DEAD</code> cow status). Open lists can have new entries added freely.
+        Rename how statuses and categories are displayed across the app, hide ones you don&apos;t use, or
+        add/delete entries in open lists. &ldquo;Fixed list&rdquo; categories can be renamed and hidden but not
+        added to or deleted — their codes are tied to logic elsewhere (e.g. breeding rules check for the
+        <code>SOLD</code>/<code>DEAD</code> cow status). Open lists can have entries added or deleted freely.
       </p>
 
       <div className="flex flex-col gap-4">
@@ -57,7 +58,10 @@ export default async function MasterDataPage() {
                           </span>
                         </td>
                         <td className="px-2 py-2">
-                          <MasterActiveToggle id={item.id} active={item.active} />
+                          <div className="flex items-center gap-2">
+                            <MasterActiveToggle id={item.id} active={item.active} />
+                            {!cat.locked && <DeleteItemButton id={item.id} label={item.label} />}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -53,3 +53,20 @@ export async function addItem(_prev: FormState, formData: FormData): Promise<For
   revalidatePath("/admin/master-data");
   return { success: true, message: `Added "${label}".` };
 }
+
+export async function deleteItem(_prev: FormState, formData: FormData): Promise<FormState> {
+  const id = formData.get("id") as string | null;
+  if (!id) return { success: false, message: "Missing item id." };
+
+  const item = await prisma.masterDataItem.findUnique({ where: { id } });
+  if (!item) return { success: false, message: "Item not found." };
+
+  const def = getCategoryDef(item.category);
+  if (def?.locked) {
+    return { success: false, message: `${def.label} is a fixed list — you can rename or hide entries, but not delete them.` };
+  }
+
+  await prisma.masterDataItem.delete({ where: { id } });
+  revalidatePath("/admin/master-data");
+  return { success: true, message: `Deleted "${item.label}".` };
+}

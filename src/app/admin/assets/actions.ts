@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -103,4 +104,44 @@ export async function deleteAsset(formData: FormData): Promise<void> {
   }
   revalidatePath("/admin/assets");
   redirect("/admin/assets");
+}
+
+// Same inline-list delete as deleteAsset, but returns state instead of
+// redirecting -- used from the Assets list row itself, which is already on
+// /admin/assets, so a redirect there would just be a no-op reload.
+export async function deleteAssetInline(_prev: FormState, formData: FormData): Promise<FormState> {
+  const id = formData.get("id") as string | null;
+  if (!id) return { success: false, message: "Missing asset id." };
+
+  const asset = await prisma.asset.findUnique({ where: { id } });
+  if (!asset) return { success: false, message: "Asset not found." };
+
+  await deleteUploadedImage(asset.photoUrl);
+  await prisma.asset.delete({ where: { id } });
+
+  revalidatePath("/admin/assets");
+  return { success: true, message: `Deleted "${asset.details}".` };
+}
+
+export type BulkDeleteState = { success: boolean; message: string } | undefined;
+
+// Admin-only: deletes every selected asset (and its uploaded photo). No
+// "safe subset" guard like the Animal List's bulk delete -- an asset has no
+// dependent transactional history elsewhere in the schema, so there's
+// nothing to protect against.
+export async function deleteAssets(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
+  const session = await auth();
+  if ((session?.user as { role?: string } | undefined)?.role !== "ADMIN") {
+    return { success: false, message: "Only Admin can bulk-delete assets." };
+  }
+
+  const ids = formData.getAll("assetIds") as string[];
+  if (ids.length === 0) return { success: false, message: "No assets selected." };
+
+  const assets = await prisma.asset.findMany({ where: { id: { in: ids } } });
+  await Promise.all(assets.map((a) => deleteUploadedImage(a.photoUrl)));
+  const { count } = await prisma.asset.deleteMany({ where: { id: { in: ids } } });
+
+  revalidatePath("/admin/assets");
+  return { success: true, message: `Deleted ${count} asset${count === 1 ? "" : "s"}.` };
 }
