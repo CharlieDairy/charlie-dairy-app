@@ -1,19 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import DataTable, { type DataTableColumn } from "@/components/DataTable";
 import type { HerdRow } from "@/lib/reports/herd";
 import { deleteMilkProductionForCows, type BulkDeleteState } from "./actions";
 
 export default function MilkProductionTable({ rows, isAdmin = false }: { rows: HerdRow[]; isAdmin?: boolean }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [state, formAction, isPending] = useActionState<BulkDeleteState, FormData>(deleteMilkProductionForCows, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (state?.success) setSelected(new Set());
   }, [state]);
+
+  const statuses = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) counts.set(r.status, (counts.get(r.status) ?? 0) + 1);
+    return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [rows]);
+
+  const filteredRows = useMemo(
+    () => (statusFilter === "ALL" ? rows : rows.filter((r) => r.status === statusFilter)),
+    [rows, statusFilter]
+  );
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -44,6 +56,27 @@ export default function MilkProductionTable({ rows, isAdmin = false }: { rows: H
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="flex gap-1.5 flex-wrap">
+        <button
+          onClick={() => setStatusFilter("ALL")}
+          className={`text-xs rounded-full px-3 py-1.5 border ${
+            statusFilter === "ALL" ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-neutral-100"
+          }`}
+        >
+          All {rows.length}
+        </button>
+        {statuses.map(([status, count]) => (
+          <button
+            key={status}
+            onClick={() => setStatusFilter(status)}
+            className={`text-xs rounded-full px-3 py-1.5 border ${
+              statusFilter === status ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-neutral-100"
+            }`}
+          >
+            {status} {count}
+          </button>
+        ))}
+      </div>
       {isAdmin && (
         <form
           ref={formRef}
@@ -67,7 +100,7 @@ export default function MilkProductionTable({ rows, isAdmin = false }: { rows: H
         </form>
       )}
       <DataTable
-        data={rows}
+        data={filteredRows}
         columns={columns}
         rowKey={(r) => r.cowId}
         searchPlaceholder="Search by tag or status…"
