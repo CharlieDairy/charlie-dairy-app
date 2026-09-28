@@ -12,6 +12,7 @@ export type CowRow = {
   status: string;
   dateOfBirth: string | null; // ISO date, serialized from the server component
   lactationNumber: number;
+  photoUrl: string | null;
 };
 
 function ageFromDob(dobIso: string | null): string {
@@ -30,6 +31,17 @@ export default function CowsTable({
   statusOptions: { code: string; label: string }[];
 }) {
   const columns: DataTableColumn<CowRow>[] = [
+    {
+      key: "photo",
+      header: "",
+      render: (c) =>
+        c.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={c.photoUrl} alt={`Cow ${c.tag}`} className="w-8 h-8 object-cover rounded-full border border-neutral-200" />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-neutral-100 border border-neutral-200" />
+        ),
+    },
     {
       key: "tag",
       header: "Tag",

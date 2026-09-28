@@ -14,15 +14,21 @@ export async function getCowProfile(id: string) {
       heatEvents: { orderBy: { detectedAt: "desc" }, take: 10 },
       inseminations: { orderBy: { date: "desc" }, take: 10 },
       pregnancyChecks: { orderBy: { date: "desc" }, take: 10 },
+      weightRecords: { orderBy: { date: "asc" } },
+      movements: { orderBy: { date: "desc" } },
     },
   });
   if (!cow) return null;
 
-  const [milkAgg, recentMilking] = await Promise.all([
+  const [milkAgg, qualityAgg, recentMilking] = await Promise.all([
     prisma.milkingRecord.aggregate({
       where: { cowId: id },
       _sum: { litres: true },
       _count: { _all: true },
+    }),
+    prisma.milkingRecord.aggregate({
+      where: { cowId: id, fatPct: { not: null } },
+      _avg: { fatPct: true, snfPct: true },
     }),
     prisma.milkingRecord.findMany({ where: { cowId: id }, orderBy: { date: "desc" }, take: 10 }),
   ]);
@@ -33,6 +39,21 @@ export async function getCowProfile(id: string) {
   const daysRecorded = Number(distinctDays[0]?.days ?? 0);
   const totalLitres = milkAgg._sum.litres ?? 0;
 
+  // Lactation curve: daily total litres (all shifts summed), most recent 180
+  // days of recorded data -- a per-animal production trend the way Channab's
+  // "lactation performance per animal" chart shows it.
+  const lactationRows = await prisma.$queryRaw<{ date: Date; total: number }[]>`
+    SELECT date, CAST(SUM(litres) AS REAL) as total
+    FROM "MilkingRecord"
+    WHERE "cowId" = ${id}
+    GROUP BY date
+    ORDER BY date DESC
+    LIMIT 180
+  `;
+  const lactationSeries = lactationRows
+    .map((r) => ({ date: r.date.toISOString().slice(0, 10), litres: r.total }))
+    .reverse();
+
   return {
     cow,
     milking: {
@@ -41,7 +62,10 @@ export async function getCowProfile(id: string) {
       daysRecorded,
       avgPerDay: daysRecorded > 0 ? totalLitres / daysRecorded : 0,
       recent: recentMilking,
+      avgFatPct: qualityAgg._avg.fatPct,
+      avgSnfPct: qualityAgg._avg.snfPct,
     },
+    lactationSeries,
   };
 }
 

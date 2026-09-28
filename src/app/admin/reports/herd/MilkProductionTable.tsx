@@ -20,6 +20,8 @@ export default function MilkProductionTable({ rows }: { rows: HerdRow[] }) {
     { key: "days", header: "Days Milked", align: "right", sortValue: (r) => r.daysMilked, render: (r) => r.daysMilked },
     { key: "total", header: "Total Litres", align: "right", sortValue: (r) => r.totalLitres, render: (r) => r.totalLitres.toFixed(1) },
     { key: "avg", header: "Avg L / Day", align: "right", sortValue: (r) => r.avgLitresPerDay, render: (r) => r.avgLitresPerDay.toFixed(1) },
+    { key: "fat", header: "Avg Fat %", align: "right", sortValue: (r) => r.avgFatPct ?? -1, render: (r) => (r.avgFatPct != null ? `${r.avgFatPct.toFixed(1)}%` : "—") },
+    { key: "snf", header: "Avg SNF %", align: "right", sortValue: (r) => r.avgSnfPct ?? -1, render: (r) => (r.avgSnfPct != null ? `${r.avgSnfPct.toFixed(1)}%` : "—") },
   ];
 
   return (

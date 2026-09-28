@@ -17,6 +17,7 @@ export default async function CowsAdminPage() {
     status: c.status,
     dateOfBirth: c.dateOfBirth ? c.dateOfBirth.toISOString() : null,
     lactationNumber: c.lactationNumber,
+    photoUrl: c.photoUrl,
   }));
 
   return (

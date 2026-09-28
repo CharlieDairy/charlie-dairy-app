@@ -40,7 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex flex-col min-h-screen bg-neutral-50 md:flex-row">
-      <header className="bg-green-900 text-white p-4 flex flex-col gap-1 md:w-64 md:shrink-0">
+      <header className="print:hidden bg-green-900 text-white p-4 flex flex-col gap-1 md:w-64 md:shrink-0">
         <div className="flex items-center justify-between md:block">
           <Link href="/admin" className="font-semibold text-lg">Charlie Dairy</Link>
           <form action={doSignOut} className="md:mt-4">

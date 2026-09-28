@@ -38,9 +38,14 @@ export default async function MilkSalesByCustomerPage({
         <Card>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-text">{params.buyer} — Detail</h2>
-            <Link href="/admin/reports/milk-sales" className="text-sm text-neutral-500 underline">
-              Clear selection
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link href={`/admin/reports/milk-sales/invoice?buyer=${encodeURIComponent(params.buyer)}`} className="text-sm text-green-700 underline font-medium">
+                Print Statement
+              </Link>
+              <Link href="/admin/reports/milk-sales" className="text-sm text-neutral-500 underline">
+                Clear selection
+              </Link>
+            </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>

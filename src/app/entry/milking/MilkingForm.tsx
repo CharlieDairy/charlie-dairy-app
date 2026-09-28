@@ -45,6 +45,16 @@ export default function MilkingForm({ cows }: { cows: { id: string; tag: string 
         <label htmlFor="litres" className="text-sm font-medium text-neutral-700">Litres</label>
         <input id="litres" name="litres" type="number" step="0.1" min="0" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
       </div>
+      <div className="flex gap-3">
+        <div className="flex flex-col gap-1 flex-1">
+          <label htmlFor="fatPct" className="text-sm font-medium text-neutral-700">Fat % (optional)</label>
+          <input id="fatPct" name="fatPct" type="number" step="0.1" min="0" max="100" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        </div>
+        <div className="flex flex-col gap-1 flex-1">
+          <label htmlFor="snfPct" className="text-sm font-medium text-neutral-700">SNF % (optional)</label>
+          <input id="snfPct" name="snfPct" type="number" step="0.1" min="0" max="100" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        </div>
+      </div>
       {state && (
         <p className={`text-sm ${state.success ? "text-green-700" : "text-red-600"}`} role="status">
           {state.message}

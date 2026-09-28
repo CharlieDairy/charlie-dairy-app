@@ -74,6 +74,9 @@ model Cow {
   targetSellDate    DateTime?
   lactationNumber   Int      @default(0)
   notes             String?
+  photoUrl          String?
+  purchasePrice     Float?
+  source            String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -83,6 +86,39 @@ model Cow {
   pregnancyChecks   PregnancyCheck[]
   calvingsAsDam     Calving[]        @relation("DamCalvings")
   calfRecord        Calf?            @relation("CalfCow")
+  weightRecords     WeightRecord[]
+  movements         CowMovement[]
+}
+
+// Herd Management: per-animal weight over time, shown as a trend on the cow
+// profile (mirrors Channab's weight dashboard / growth target monitoring).
+model WeightRecord {
+  id        String   @id @default(cuid())
+  cowId     String
+  cow       Cow      @relation(fields: [cowId], references: [id])
+  date      DateTime
+  weightKg  Float
+  enteredBy String?
+  createdAt DateTime @default(now())
+
+  @@index([cowId])
+  @@index([date])
+}
+
+// Herd Management: location/movement history per animal (e.g. between sheds
+// or a treatment area), mirroring Channab's movement tracking.
+model CowMovement {
+  id        String   @id @default(cuid())
+  cowId     String
+  cow       Cow      @relation(fields: [cowId], references: [id])
+  date      DateTime
+  location  String
+  notes     String?
+  enteredBy String?
+  createdAt DateTime @default(now())
+
+  @@index([cowId])
+  @@index([date])
 }
 
 enum HeatDetectionMethod {
@@ -236,6 +272,8 @@ model MilkingRecord {
   date      DateTime
   shift     Shift
   litres    Float
+  fatPct    Float?
+  snfPct    Float?
   enteredBy String?
   createdAt DateTime @default(now())
 
