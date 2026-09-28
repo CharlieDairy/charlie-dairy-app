@@ -1,225 +1,73 @@
-import { getDashboardSummary, getTodaySnapshot } from "@/lib/reports/dashboard";
-import {
-  getAvailableYears,
-  getBestMonth,
-  getHerdComposition,
-  getMilkMonthComparison,
-  getMonthlyMilkTrend,
-  getProductionVsSold,
-  getSalesSummary,
-  getTopLowProducers,
-} from "@/lib/reports/milkAnalytics";
-import { getBreedingKpis } from "@/lib/reports/breeding";
-import { getMonthlyPnl } from "@/lib/reports/pnl";
-import { getLabelMap } from "@/lib/masterData";
-import { formatRs, formatPct } from "@/lib/format";
-import { compare } from "@/lib/compare";
-import StatCard from "@/components/StatCard";
-import TrendStat from "@/components/TrendStat";
-import PageHeader from "@/components/PageHeader";
-import Card from "@/components/Card";
-import Badge from "@/components/Badge";
-import YearlyMilkChart from "./YearlyMilkChart";
-import HerdCompositionChart from "./HerdCompositionChart";
-import ProductionVsSoldChart from "./ProductionVsSoldChart";
-import YearSelector from "./YearSelector";
+import Link from "next/link";
+import { auth } from "@/auth";
+import { getFarmDashboard } from "@/lib/reports/farmDashboard";
+import { formatRs } from "@/lib/format";
+import DailyProductionChart from "./DailyProductionChart";
+import type { ReactNode } from "react";
 
-export default async function AdminDashboard({
-  searchParams,
-}: {
-  searchParams: Promise<{ year?: string }>;
-}) {
+function Panel({ title, href, children, className = "" }: { title: string; href?: string; children: ReactNode; className?: string }) {
+  return <section className={`rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden ${className}`}><div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3"><h2 className="font-semibold text-slate-900">{title}</h2>{href && <Link className="text-sm text-teal-700 hover:underline" href={href}>Open →</Link>}</div><div className="p-5">{children}</div></section>;
+}
+function Metric({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return <div className="rounded-2xl border border-slate-200 border-l-4 border-l-teal-500 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className="text-3xl font-bold text-slate-900 my-2">{value}</p><p className="text-xs text-slate-500">{detail}</p></div>;
+}
+function Row({ label, value }: { label: string; value: ReactNode }) { return <div className="flex justify-between gap-4 py-2 text-sm"><span className="text-slate-500">{label}</span><span className="font-semibold text-right">{value}</span></div>; }
+function Breakdown({ title, values }: { title: string; values: Record<string, number> }) {
+  const rows = Object.entries(values).filter(([, v]) => v !== 0).sort((a, b) => b[1] - a[1]);
+  const total = rows.reduce((n, [, v]) => n + v, 0);
+  return <div><h3 className="text-xs font-semibold uppercase text-slate-500 mb-2">{title}</h3>{rows.map(([name, amount]) => <div key={name} className="border-b border-slate-100 py-3 flex justify-between gap-3 text-sm"><span>{name}</span><span className="text-right font-semibold">{formatRs(amount)}<small className="block text-slate-400 font-normal">{total ? (amount / total * 100).toFixed(1) : 0}%</small></span></div>)}{!rows.length && <p className="text-sm text-slate-500">No entries in this period.</p>}</div>;
+}
+export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ day?: string; period?: string; from?: string; to?: string }> }) {
   const params = await searchParams;
-  const availableYears = await getAvailableYears();
-  const year = params.year && availableYears.includes(Number(params.year))
-    ? Number(params.year)
-    : availableYears[0];
-
-  const [s, today, trend, producers, statusLabels, sales, productionVsSold, breedingKpis, monthlyPnl, milkMonthComparison] = await Promise.all([
-    getDashboardSummary(),
-    getTodaySnapshot(),
-    getMonthlyMilkTrend(year),
-    getTopLowProducers(year),
-    getLabelMap("COW_STATUS"),
-    getSalesSummary(year),
-    getProductionVsSold(year),
-    getBreedingKpis(),
-    getMonthlyPnl(),
-    getMilkMonthComparison(),
-  ]);
-  const composition = await getHerdComposition(statusLabels);
-  const bestMonth = getBestMonth(trend);
-  const currentPnl = monthlyPnl[monthlyPnl.length - 1];
-  const previousPnl = monthlyPnl[monthlyPnl.length - 2];
-
-  const countFor = (status: string) => composition.find((c) => c.status === status)?.count ?? 0;
-  const milkingCount = countFor("MILKING");
-  const nonMilkingCount = composition
-    .filter((c) => c.status !== "MILKING" && c.status !== "SOLD" && c.status !== "DEAD")
-    .reduce((sum, c) => sum + c.count, 0);
-
-  return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Dashboard"
-        actions={
-          <>
-            <label className="text-sm text-text-muted">Year</label>
-            <YearSelector years={availableYears} selected={year} />
-          </>
-        }
-      />
-
-      {/* Level 1 — critical operational KPIs, always "as of today" (or the
-          most recent day with an entry, clearly labeled) */}
-      <Card>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-text">
-            Today {!today.isToday && <span className="text-xs font-normal text-text-muted">(no entry yet today — showing {today.date})</span>}
-          </h2>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Milk Today" value={`${today.milkLitres.toLocaleString()} L`} />
-          <StatCard label="Milk / Cow" value={`${today.milkPerCow.toFixed(1)} L`} />
-          <StatCard label="Revenue" value={formatRs(today.revenue)} tone="positive" />
-          <StatCard
-            label="Estimated Margin"
-            value={formatRs(today.estimatedMargin)}
-            tone={today.estimatedMargin >= 0 ? "positive" : "negative"}
-          />
-        </div>
-      </Card>
-
-      {/* Channab-style trend framing: this month vs last, not just a
-          current snapshot -- the same comparison logic used on every
-          section's own dashboard (Herd, Breeding, Milk, Feed, Financial). */}
-      {currentPnl && previousPnl && (
-        <Card>
-          <h2 className="font-semibold text-text mb-3">This Month vs Last Month</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <TrendStat label={`Revenue (${currentPnl.month})`} value={formatRs(currentPnl.revenue)} comparison={compare(currentPnl.revenue, previousPnl.revenue)} />
-            <TrendStat label={`Expense (${currentPnl.month})`} value={formatRs(currentPnl.expense)} comparison={compare(currentPnl.expense, previousPnl.expense)} invertTone />
-            <TrendStat label={`Net (${currentPnl.month})`} value={formatRs(currentPnl.net)} comparison={compare(currentPnl.net, previousPnl.net)} />
-            <TrendStat label="Milk This Month" value={`${milkMonthComparison.totalLitres.current.toLocaleString(undefined, { maximumFractionDigits: 0 })} L`} comparison={milkMonthComparison.totalLitres} />
-          </div>
-        </Card>
-      )}
-
-      {/* Level 2 — operational status strip, scan in one glance */}
-      <div className="flex flex-wrap gap-2">
-        <Badge tone="success">{milkingCount} Milking</Badge>
-        <Badge tone="info">{breedingKpis.pregnantCount} Pregnant</Badge>
-        <Badge tone="neutral">{countFor("DRY")} Dry</Badge>
-        <Badge tone="neutral">{countFor("HEIFER")} Heifers</Badge>
-        <Badge tone="neutral">{countFor("CALF")} Calves</Badge>
-        {breedingKpis.dueNext30Days > 0 && <Badge tone="warning">{breedingKpis.dueNext30Days} Due to Calve (30d)</Badge>}
-      </div>
-
-      {/* Level 3 — trends and detail */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total Revenue" value={formatRs(s.totalRevenue)} />
-        <StatCard label="Total Expense" value={formatRs(s.totalExpense)} />
-        <StatCard label="Net Income" value={formatRs(s.netIncome)} tone={s.netIncome >= 0 ? "positive" : "negative"} />
-        <StatCard label="Net Margin" value={formatPct(s.netMargin)} tone={s.netMargin >= 0 ? "positive" : "negative"} />
-        <StatCard label="Closing Cash (cumulative)" value={formatRs(s.closingCash)} tone={s.closingCash >= 0 ? "positive" : "negative"} />
-        <StatCard label="Active Herd Size" value={s.activeHerdSize.toString()} />
-        <StatCard label="Total Milk Recorded" value={`${Math.round(s.totalMilkLitres).toLocaleString()} L`} />
-        <StatCard label="Net Capital Raised" value={formatRs(s.capitalRaised)} />
-      </div>
-      <p className="text-sm text-neutral-500">
-        Figures are computed live from recorded cash transactions and milking records — not hand-maintained.
-        Capital Raised covers all partner ledger entries (multiple ventures); see the Capital Ledger page to filter by venture.
-      </p>
-
-      <div className="bg-white border border-neutral-200 rounded-lg p-4">
-        <h2 className="font-semibold text-neutral-900 mb-2">Milk Sales — {year}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Litres Sold" value={`${sales.totalLitresSold.toLocaleString()} L`} />
-          <StatCard label="Revenue" value={formatRs(sales.totalRsSold)} tone="positive" />
-          <StatCard label="Customers (identified)" value={sales.customerCount.toString()} />
-          <StatCard label="Sale Records" value={sales.recordCount.toString()} />
-        </div>
-        {sales.recordCount > sales.recordsWithQuantity && (
-          <p className="text-xs text-neutral-400 mt-2">
-            {sales.recordCount - sales.recordsWithQuantity} of {sales.recordCount} sale records have no recorded
-            quantity (older cash-ledger entries only recorded the amount received, not litres) — Revenue is complete,
-            but Litres Sold undercounts actual volume for {year}. &ldquo;Customers&rdquo; only counts sales with a
-            named buyer; most historical entries never recorded who bought it, so this will read low until Milk
-            Sale Entry is used going forward.
-          </p>
-        )}
-      </div>
-
-      <div className="bg-white border border-neutral-200 rounded-lg p-4">
-        <h2 className="font-semibold text-neutral-900 mb-1">Milk Production — {year}</h2>
-        {bestMonth ? (
-          <p className="text-sm text-neutral-500 mb-2">
-            Best month: <span className="font-medium text-green-700">{bestMonth.monthLabel}</span> with{" "}
-            {bestMonth.litres.toLocaleString()} L
-          </p>
-        ) : (
-          <p className="text-sm text-neutral-400 mb-2">No milking records for {year} yet.</p>
-        )}
-        <YearlyMilkChart data={trend} bestMonth={bestMonth?.monthLabel ?? null} />
-      </div>
-
-      <div className="bg-white border border-neutral-200 rounded-lg p-4">
-        <h2 className="font-semibold text-neutral-900 mb-1">Production vs. Sold — {year}</h2>
-        <p className="text-xs text-neutral-400 mb-2">
-          &ldquo;Unaccounted&rdquo; is produced minus recorded sales — it is not necessarily in-house consumption;
-          nothing currently tracks calf/household use, wastage, or rejected milk separately, so this gap can include
-          any of those plus sales that just haven&apos;t been logged yet.
-        </p>
-        <ProductionVsSoldChart data={productionVsSold} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-neutral-200 rounded-lg p-4">
-          <h2 className="font-semibold text-neutral-900 mb-1">Herd Composition</h2>
-          <p className="text-sm text-neutral-500 mb-2">
-            <span className="font-medium text-green-700">{milkingCount} milking</span> ·{" "}
-            <span className="font-medium text-neutral-700">{nonMilkingCount} non-milking</span>
-          </p>
-          <HerdCompositionChart data={composition} />
-        </div>
-
-        <div className="bg-white border border-neutral-200 rounded-lg p-4">
-          <h2 className="font-semibold text-neutral-900 mb-1">Producer Performance — {year}</h2>
-          <p className="text-xs text-neutral-400 mb-3">Ranked by average litres/day; needs 5+ recorded days to qualify.</p>
-          {producers.top.length === 0 ? (
-            <p className="text-sm text-neutral-400">Not enough recorded milking days yet for {year}.</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-2">Top Producers</p>
-                <table className="w-full text-sm">
-                  <tbody>
-                    {producers.top.map((p) => (
-                      <tr key={p.cowId} className="border-t border-neutral-100">
-                        <td className="py-1 font-medium">{p.tag}</td>
-                        <td className="py-1 text-right text-neutral-600">{p.avgPerDay} L/d</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-red-600 uppercase tracking-wide mb-2">Low Producers</p>
-                <table className="w-full text-sm">
-                  <tbody>
-                    {producers.low.map((p) => (
-                      <tr key={p.cowId} className="border-t border-neutral-100">
-                        <td className="py-1 font-medium">{p.tag}</td>
-                        <td className="py-1 text-right text-neutral-600">{p.avgPerDay} L/d</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+  const session = await auth();
+  const user = session?.user as { role?: string; modules?: string[] } | undefined;
+  const finance = user?.role === "ADMIN" || !!user?.modules?.includes("FINANCIAL");
+  const operations = user?.role === "ADMIN" || !!user?.modules?.includes("OPERATIONS");
+  const d = await getFarmDashboard(params);
+  const sum = (v: Record<string, number>) => Object.values(v).reduce((n, a) => n + a, 0);
+  const income = sum(d.income), expense = sum(d.expenses), net = income - expense;
+  const sold = d.saleDay.reduce((n, s) => n + s.litres, 0);
+  const salesComplete = d.saleDay.length > 0 && d.saleDay.every(s => s.litres > 0);
+  const coverage = d.active.length ? Math.round(d.vaccinated / d.active.length * 100) : null;
+  const overdueBreeding = d.breeding.filter(c => c.nextAiDate!.toISOString().slice(0, 10) < d.today).length;
+  const breedingToday = d.breeding.filter(c => c.nextAiDate!.toISOString().slice(0, 10) === d.today).length;
+  const lowStock = d.stocks.filter(s => s.balance > 0 && s.days !== null && s.days < 7).length;
+  const alerts = [
+    { title: "Breeding follow-up", count: overdueBreeding + breedingToday, detail: `${overdueBreeding} overdue · ${breedingToday} due today`, href: "/admin/reports/breeding" },
+    { title: "Milk records pending", count: d.dailyMilk.missing, detail: `${d.dailyMilk.recorded} animals recorded on ${d.day}`, href: "/entry/milking" },
+    { title: "No vaccination record", count: d.neverVaccinated, detail: "Recorded coverage, not proof of immunity", href: "/admin/reports/health" },
+    { title: "Calving dates to review", count: d.overdueCalvings, detail: "Past expected date; confirm outcome", href: "/admin/reports/breeding" },
+    { title: "Incomplete sale quantities", count: d.missingQuantities, detail: "Milk reconciliation remains incomplete", href: "/admin/reports/milk-sales" },
+  ].filter(a => a.count > 0);
+  const periods = [["week", "This week"], ["month", "This month"], ["last-month", "Last month"], ["quarter", "Last 3 months"], ["year", "This year"], ["last-year", "Last year"]];
+  const dayLink = (offset: number) => { const date = new Date(`${d.day}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + offset); return `?${new URLSearchParams({ ...params, day: date.toISOString().slice(0, 10) })}`; };
+  const feedValue = (f: { amount: number; count: number; missing: number }) => !f.count ? "Not recorded" : `${formatRs(f.amount)}${f.missing ? " · incomplete costs" : ""}`;
+  return <div className="flex flex-col gap-5 text-slate-900">
+    <header className="flex flex-wrap justify-between gap-4 items-center"><div><h1 className="text-2xl font-bold">Charlie Dairy Farm</h1><p className="text-sm text-slate-500">{d.today} · Pakistan time{operations ? ` · ${alerts.length} checks need attention` : ""}</p></div><div className="flex flex-wrap gap-2">{(operations ? [["Record milk", "/entry/milking"], ["+ Animal", "/admin/cows/add"], ["Breeding", "/admin/reports/breeding"]] : []).concat(finance ? [["Expense", "/entry/cash"]] : []).map(([label, href]) => <Link key={href} href={href} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-teal-50">{label}</Link>)}</div></header>
+    {operations && <>
+    <form className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3"><span className="text-xs text-slate-500 font-semibold">DAY</span><Link href={dayLink(-1)} aria-label="Previous day" className="px-2">‹</Link><label className="sr-only" htmlFor="dashboard-day">Milk book date</label><input id="dashboard-day" className="rounded-lg border border-teal-200 p-2 text-sm" type="date" name="day" defaultValue={d.day} max={d.today}/><input type="hidden" name="period" value={params.period ?? "month"}/>{params.from && <input type="hidden" name="from" value={params.from}/>} {params.to && <input type="hidden" name="to" value={params.to}/>}<button className="rounded-lg border px-3 py-2 text-sm">Apply day</button>{d.day < d.today && <Link href={dayLink(1)} aria-label="Next day" className="px-2">›</Link>}<p className="text-xs text-slate-500 ml-auto">7-day average: {d.average7 === null ? "Not available" : `${d.average7.toFixed(1)} L · ${d.averageDays}/7 days recorded`}</p></form>
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+      <Metric label="Milk recorded" value={d.dailyMilk.records ? `${d.dailyMilk.litres.toFixed(1)} L` : "Pending"} detail={d.previous !== null && d.dailyMilk.records ? `${(d.dailyMilk.litres - d.previous).toFixed(1)} L vs previous day · may be partial` : "No comparable complete-day result yet"}/>
+      <Metric label="Sold on selected day" value={salesComplete ? `${sold.toFixed(1)} L` : d.saleDay.length ? "Incomplete" : "Not recorded"} detail={`${formatRs(d.saleDay.reduce((n, s) => n + s.amount, 0))} recorded · ${new Set(d.saleDay.map(s => s.buyer).filter(Boolean)).size} named buyers`}/>
+      <Metric label="Production less recorded sales" value={d.dailyMilk.records && salesComplete ? `${(d.dailyMilk.litres - sold).toFixed(1)} L` : "Unreconciled"} detail="Not confirmed unsold stock: use, waste and opening stock need reconciliation"/>
+      <Metric label="Average per recorded cow" value={d.dailyMilk.average === null ? "Pending" : `${d.dailyMilk.average.toFixed(1)} L`} detail={`${d.dailyMilk.recorded} cows recorded · current milking herd ${d.expected.length}`}/>
     </div>
-  );
+    <p className="text-xs text-slate-500">AM: {d.morning.records ? `${d.morning.litres.toFixed(1)} L` : "pending"} · PM: {d.evening.records ? `${d.evening.litres.toFixed(1)} L` : "pending"}. Missing-entry checks use the current milking herd; historical herd membership may differ. Explicit zero entries remain zero.</p>
+    <Panel title="Needs attention"><div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">{alerts.map(a => <Link key={a.title} href={a.href} className="rounded-xl border border-amber-200 bg-amber-50 p-3"><div className="flex justify-between gap-3 font-semibold text-sm"><span>{a.title}</span><span className="text-xl">{a.count}</span></div><p className="text-xs text-slate-500 mt-1">{a.detail}</p></Link>)}</div>{!alerts.length && <p>No exceptions in these checks.</p>}</Panel>
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4"><Panel title="Production vs sales · last 14 days" href="/admin/reports/reconciliation" className="xl:col-span-2"><DailyProductionChart data={d.series}/><p className="text-xs text-slate-500">Gaps mean missing or incomplete records, not zero production or sales.</p></Panel><Panel title={`Herd composition · ${d.active.length} active now`} href="/admin/cows">{["MILKING", "DRY", "HEIFER", "CALF"].map(status => <Row key={status} label={status.toLowerCase()} value={d.active.filter(c => c.status === status).length}/>)}<div className="border-t mt-3 pt-2 grid grid-cols-2 gap-x-3"><Row label="Female" value={d.active.filter(c => c.gender === "FEMALE").length}/><Row label="Male" value={d.active.filter(c => c.gender === "MALE").length}/><Row label="Unknown sex" value={d.active.filter(c => c.gender === "UNKNOWN").length}/><Row label="Sold" value={d.cows.filter(c => c.status === "SOLD").length}/><Row label="Deceased" value={d.cows.filter(c => c.status === "DEAD").length}/><Row label="Dormant / unclassified" value={d.cows.filter(c => !["MILKING", "DRY", "HEIFER", "CALF", "SOLD", "DEAD"].includes(c.status)).length}/></div></Panel></div>
+    <p className="text-xs text-slate-500">Operational summaries below reflect current records as of {d.today}; daily feeding cost follows the selected milk-book day.</p>
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+      <Panel title="Breeding" href="/admin/reports/breeding"><p className="font-bold text-xl">{overdueBreeding + breedingToday} follow-ups due</p><Row label="Pregnant (expected date recorded)" value={d.pregnant}/><Row label="Need breeding / due service" value={overdueBreeding + breedingToday}/><Row label="Calvings in next 30 days" value={d.calvings}/><Row label="Herd on target" value="Not configured"/><p className="text-xs text-slate-500">Uses recorded service dates; eligibility targets are not configured.</p></Panel>
+      <Panel title="Health" href="/admin/reports/health"><p className="font-bold text-xl">{coverage === null ? "—" : `${coverage}%`} recorded coverage</p><Row label="No vaccination record" value={d.neverVaccinated}/><Row label="Vaccine schedules due ≤30 days" value={d.dueVaccines}/><Row label="Treatments recorded · 30 days" value={d.treatments}/><p className="text-xs text-slate-500">Coverage means at least one vaccination record, not all vaccines up to date.</p></Panel>
+      <Panel title="Inventory · feed" href="/admin/reports/feed"><p className="font-bold text-xl">{d.stocks.length} feed types</p><Row label="Stock valuation" value="Not configured"/><Row label="Critical: negative stock" value={d.stocks.filter(s => s.balance < 0).length}/><Row label="Warnings: under 7 days" value={lowStock}/><Row label="Recorded out of stock" value={d.stocks.filter(s => s.balance === 0).length}/><p className="text-xs text-slate-500">Feed movements only; medicine batches and expiry stock are not tracked.</p></Panel>
+      <Panel title="Feeding" href="/admin/reports/feed"><p className="font-bold text-xl">Schedules not configured</p><Row label="Pending feedings" value="Not tracked"/><Row label="Feed cost · selected day" value={feedValue(d.feedDay)}/><Row label="Cost · selected period" value={feedValue(d.feedPeriod)}/><p className="text-xs text-slate-500">Based on recorded feed issued, not purchases.</p></Panel>
+    </div></>}
+    {(finance || operations) && <form className="flex flex-wrap gap-2 items-center rounded-xl border border-slate-200 bg-white p-3"><span className="text-xs font-semibold text-slate-500">PERIOD</span>{periods.map(([key, label]) => <Link key={key} href={`?day=${d.day}&period=${key}`} className={`rounded-full border px-3 py-2 text-xs ${(params.period ?? "month") === key ? "bg-teal-600 text-white border-teal-600" : "border-slate-200"}`}>{label}</Link>)}<input type="hidden" name="day" value={d.day}/><input type="hidden" name="period" value="custom"/><label className="sr-only" htmlFor="from-date">Period from</label><input className="border rounded-lg p-2 text-xs" id="from-date" type="date" name="from" required defaultValue={params.from}/><label className="sr-only" htmlFor="to-date">Period to</label><input className="border rounded-lg p-2 text-xs" id="to-date" type="date" name="to" required defaultValue={params.to}/><button className="border rounded-lg p-2 text-sm">Apply period</button></form>}
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    {finance && <Panel title={`Finances · ${d.range.start.toISOString().slice(0, 10)} to ${new Date(d.range.end.getTime() - 86400000).toISOString().slice(0, 10)}`} href="/admin/reports/pl" className="xl:col-span-2"><div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5"><Metric label="Recorded income" value={formatRs(income)} detail="Sales plus other recorded income"/><Metric label="Recorded outgoings" value={formatRs(expense)} detail="Includes capital spending if entered here"/><Metric label="Recorded net" value={formatRs(net)} detail={income > 0 ? `${(net / income * 100).toFixed(1)}% of recorded income` : "No income recorded"}/></div><div className="grid grid-cols-1 md:grid-cols-2 gap-5"><Breakdown title="Income by category" values={d.income}/><Breakdown title="Outgoings by category" values={d.expenses}/></div><p className="text-xs text-slate-500 mt-4">Recorded summary, not a complete accrual P&L. Loan, capital and asset classifications require review. Customer receipts are excluded from income already recognised at sale.</p><div className="border-t mt-4 pt-3"><Row label="Cash net recorded · all dates to today" value={formatRs(d.cash.cash)}/><Row label="Bank net recorded · all dates to today" value={formatRs(d.cash.bank)}/><p className="text-xs text-slate-500">Receipts less payments across recorded accounts. Opening balances and reconciliation must be confirmed; these are not verified available balances.</p><Link className="text-sm text-teal-700 underline" href="/admin/capital">Partner capital by venture →</Link></div></Panel>}
+    {operations && <div className="flex flex-col gap-4"><Panel title="Receivables · current app sales" href="/admin/reports/milk-sales"><p className="text-3xl font-bold text-orange-700">{formatRs(d.receivables.reduce((n, r) => n + Math.max(0, r.balance), 0))}</p><p className="text-xs text-slate-500">Across {d.receivables.filter(r => r.balance > 0).length} buyers · reconcile payment records</p><Row label="Billed" value={formatRs(d.receivables.reduce((n, r) => n + r.billed, 0))}/><Row label="Received for these buyers" value={formatRs(d.receivables.reduce((n, r) => n + r.received, 0))}/><p className="text-xs text-slate-500">Historical cash-ledger backfills excluded. Due dates and invoice allocations are not recorded, so overdue ageing is unavailable.</p></Panel><Panel title="Top producers" href="/admin/reports/herd"><p className="text-xs text-slate-500 mb-3">{d.lastDate ? `Recorded milk on ${d.lastDate}${d.lastDate !== d.day ? " · latest available before selected day" : ""}` : "No records yet"}</p>{d.top.map((c, i) => <Link key={c.id} href={`/admin/cows/${c.id}`} className="flex justify-between border-b border-slate-100 py-3 text-sm"><span>{i + 1}. Animal {c.tag}</span><strong>{c.litres.toFixed(1)} L</strong></Link>)}</Panel></div>}
+    </div>
+    {operations && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><Panel title="Age profile · active herd">{d.ages.map(a => <Row key={a.label} label={a.label} value={<>{a.count}<small className="block text-slate-400">{d.active.length ? (a.count / d.active.length * 100).toFixed(1) : 0}%</small></>}/>)}</Panel><Panel title="By category"><Row label="Active animals" value={d.active.length}/><Row label="Business category classification" value="Not configured"/><p className="text-xs text-slate-500">Dairy, beef and breeder categories are not stored separately. Herd status and breed remain available in Animals.</p></Panel><Panel title="Jump to"><div className="grid grid-cols-2 gap-2">{[["Animals", "/admin/cows"], ["Milk", "/entry/milking"], ["Sales", "/admin/reports/milk-sales"], ["Breeding", "/admin/reports/breeding"], ["Vaccinations", "/entry/health/vaccination"], ["Feeds / stock", "/admin/reports/feed"], ...(finance ? [["Income", "/admin/reports/pl"], ["Capital", "/admin/capital"]] : [])].map(([label, href]) => <Link key={href} href={href} className="rounded-lg border border-slate-200 p-3 text-sm hover:bg-teal-50">{label}</Link>)}</div></Panel></div>}
+    {!finance && !operations && <Panel title="Dashboard access"><p>Your account has no Operations or Financial access. Use your permitted sections from the menu.</p></Panel>}
+  </div>;
 }
