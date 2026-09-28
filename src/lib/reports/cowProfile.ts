@@ -16,6 +16,8 @@ export async function getCowProfile(id: string) {
       pregnancyChecks: { orderBy: { date: "desc" }, take: 10 },
       weightRecords: { orderBy: { date: "asc" } },
       movements: { orderBy: { date: "desc" } },
+      vaccinations: { orderBy: { date: "desc" }, take: 10 },
+      treatments: { orderBy: { date: "desc" }, take: 10 },
     },
   });
   if (!cow) return null;

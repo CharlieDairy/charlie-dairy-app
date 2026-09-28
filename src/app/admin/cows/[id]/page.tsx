@@ -174,6 +174,54 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-neutral-900">Health</h2>
+          <div className="flex items-center gap-3">
+            <Link href="/entry/health/vaccination" className="text-xs text-primary underline">+ Vaccination</Link>
+            <Link href="/entry/health/treatment" className="text-xs text-primary underline">+ Treatment</Link>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase mb-2">Vaccinations</p>
+            {cow.vaccinations.length === 0 ? (
+              <p className="text-sm text-neutral-400">None recorded.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <tbody>
+                  {cow.vaccinations.map((v) => (
+                    <tr key={v.id} className="border-t border-neutral-100">
+                      <td className="py-1">{fmtDate(v.date)}</td>
+                      <td className="py-1">{v.vaccineName}</td>
+                      <td className="py-1 text-neutral-500">{v.nextDueDate ? `Next: ${fmtDate(v.nextDueDate)}` : ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase mb-2">Treatments</p>
+            {cow.treatments.length === 0 ? (
+              <p className="text-sm text-neutral-400">None recorded.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <tbody>
+                  {cow.treatments.map((t) => (
+                    <tr key={t.id} className="border-t border-neutral-100">
+                      <td className="py-1">{fmtDate(t.date)}</td>
+                      <td className="py-1">{t.medicineName}</td>
+                      <td className="py-1 text-neutral-500">{t.reason ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-neutral-200 rounded-lg p-4">
         <h2 className="font-semibold text-neutral-900 mb-1">Milking Summary</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mt-2">
           <div><span className="text-neutral-500">Total Litres:</span> {milking.totalLitres.toLocaleString()} L</div>

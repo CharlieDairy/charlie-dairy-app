@@ -90,6 +90,8 @@ model Cow {
   weightRecords     WeightRecord[]
   movements         CowMovement[]
   customFieldValues CowCustomFieldValue[]
+  vaccinations      VaccinationRecord[]
+  treatments        TreatmentRecord[]
 }
 
 enum CustomFieldType {
@@ -126,6 +128,70 @@ model CowCustomFieldValue {
   @@unique([cowId, fieldDefId])
   @@index([cowId])
   @@index([fieldDefId])
+}
+
+// Health module. VaccineDef/MedicineDef are small admin-managed catalogs
+// (name + a default repeat interval so "next due" can be computed
+// automatically) rather than free-text categories -- a vaccine's schedule is
+// real structured data a farm relies on, not just a label.
+model VaccineDef {
+  id                 String   @id @default(cuid())
+  name               String   @unique
+  repeatIntervalDays Int?
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+
+  records            VaccinationRecord[]
+}
+
+model VaccinationRecord {
+  id          String      @id @default(cuid())
+  cowId       String
+  cow         Cow         @relation(fields: [cowId], references: [id])
+  vaccineDefId String?
+  vaccineDef  VaccineDef? @relation(fields: [vaccineDefId], references: [id])
+  vaccineName String
+  date        DateTime
+  nextDueDate DateTime?
+  cost        Float?
+  administeredBy String?
+  notes       String?
+  enteredBy   String?
+  createdAt   DateTime    @default(now())
+
+  @@index([cowId])
+  @@index([date])
+  @@index([nextDueDate])
+}
+
+model MedicineDef {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  unit      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  records   TreatmentRecord[]
+}
+
+model TreatmentRecord {
+  id            String       @id @default(cuid())
+  cowId         String
+  cow           Cow          @relation(fields: [cowId], references: [id])
+  medicineDefId String?
+  medicineDef   MedicineDef? @relation(fields: [medicineDefId], references: [id])
+  medicineName  String
+  date          DateTime
+  dosage        String?
+  reason        String?
+  cost          Float?
+  administeredBy String?
+  notes         String?
+  enteredBy     String?
+  createdAt     DateTime     @default(now())
+
+  @@index([cowId])
+  @@index([date])
 }
 
 // Herd Management: per-animal weight over time, shown as a trend on the cow

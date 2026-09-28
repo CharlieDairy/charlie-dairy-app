@@ -35,6 +35,18 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    key: "health",
+    label: "Health",
+    module: "OPERATIONS",
+    items: [
+      { href: "/admin/reports/health", label: "Health Dashboard" },
+      { href: "/entry/health/vaccination", label: "Vaccination Entry" },
+      { href: "/entry/health/treatment", label: "Treatment Entry" },
+      { href: "/admin/health/vaccines", label: "Vaccines" },
+      { href: "/admin/health/medicines", label: "Medicines" },
+    ],
+  },
+  {
     key: "milk",
     label: "Milk",
     module: "OPERATIONS",
