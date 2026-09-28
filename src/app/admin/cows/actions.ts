@@ -15,10 +15,13 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
   const gender = formData.get("gender") as string | null;
   const status = formData.get("status") as string | null;
   const dateOfBirthRaw = formData.get("dateOfBirth") as string | null;
+  const purchaseDateRaw = formData.get("purchaseDate") as string | null;
   const purchasePriceRaw = formData.get("purchasePrice") as string | null;
   const location = (formData.get("location") as string | null)?.trim() || null;
   const notes = (formData.get("notes") as string | null)?.trim() || null;
   const photo = formData.get("photo") as File | null;
+  const damTag = (formData.get("damTag") as string | null)?.trim() || null;
+  const sireTag = (formData.get("sireTag") as string | null)?.trim() || null;
 
   if (!tag || !gender || !status) {
     return { success: false, message: "Tag, gender and status are required." };
@@ -29,7 +32,20 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
     return { success: false, message: `Cow tag "${tag}" already exists.` };
   }
 
+  // Linking a newborn to its mother reuses the same Calving/Calf records the
+  // Calving entry flow creates, so lineage shows up consistently on both
+  // profiles ("Born ... to dam ...", "Linked Children") regardless of which
+  // form the birth was entered through.
+  let dam: { id: string; tag: string } | null = null;
+  if (damTag) {
+    const found = await prisma.cow.findUnique({ where: { tag: damTag }, select: { id: true, tag: true, gender: true } });
+    if (!found) return { success: false, message: `Mother tag "${damTag}" was not found.` };
+    if (found.gender !== "FEMALE") return { success: false, message: `"${damTag}" is not recorded as female, so it can't be a mother.` };
+    dam = found;
+  }
+
   const purchasePrice = purchasePriceRaw ? parseFloat(purchasePriceRaw) : null;
+  const dateOfBirth = dateOfBirthRaw ? new Date(dateOfBirthRaw) : null;
 
   let photoUrl: string | null = null;
   if (photo && photo.size > 0) {
@@ -38,17 +54,48 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
     photoUrl = uploaded.url;
   }
 
-  const cow = await prisma.cow.create({
-    data: {
-      tag,
-      breed,
-      gender: gender as "FEMALE" | "MALE" | "UNKNOWN",
-      status: status as never,
-      dateOfBirth: dateOfBirthRaw ? new Date(dateOfBirthRaw) : null,
-      purchasePrice: purchasePrice !== null && !Number.isNaN(purchasePrice) ? purchasePrice : null,
-      notes,
-      photoUrl,
-    },
+  const cow = await prisma.$transaction(async (tx) => {
+    const newCow = await tx.cow.create({
+      data: {
+        tag,
+        breed,
+        gender: gender as "FEMALE" | "MALE" | "UNKNOWN",
+        status: status as never,
+        dateOfBirth,
+        purchaseDate: purchaseDateRaw ? new Date(purchaseDateRaw) : null,
+        purchasePrice: purchasePrice !== null && !Number.isNaN(purchasePrice) ? purchasePrice : null,
+        notes,
+        photoUrl,
+      },
+    });
+
+    if (dam) {
+      // Backfilling a past birth here is deliberately not treated as "the dam
+      // just calved" -- it doesn't touch the dam's lastCalvingDate, status or
+      // lactationNumber, since those should only reflect her most recent
+      // calving as recorded through the actual Calving entry flow.
+      const calving = await tx.calving.create({
+        data: {
+          damId: dam.id,
+          sireTag,
+          date: dateOfBirth ?? new Date(),
+          calfCount: 1,
+          notes: "Backfilled via Add Animal.",
+          enteredBy: session?.user?.name ?? null,
+        },
+      });
+      await tx.calf.create({
+        data: {
+          calvingId: calving.id,
+          cowId: newCow.id,
+          sex: gender as "FEMALE" | "MALE" | "UNKNOWN",
+          outcome: "ALIVE",
+          tag,
+        },
+      });
+    }
+
+    return newCow;
   });
 
   if (location) {
@@ -68,6 +115,7 @@ export async function updateCowDetails(_prev: FormState, formData: FormData): Pr
   const breed = (formData.get("breed") as string | null)?.trim() || null;
   const condition = (formData.get("condition") as string | null)?.trim() || null;
   const purchasePriceRaw = formData.get("purchasePrice") as string | null;
+  const purchaseDateRaw = formData.get("purchaseDate") as string | null;
   const source = (formData.get("source") as string | null)?.trim() || null;
   const notes = (formData.get("notes") as string | null)?.trim() || null;
   const photo = formData.get("photo") as File | null;
@@ -98,6 +146,7 @@ export async function updateCowDetails(_prev: FormState, formData: FormData): Pr
       breed,
       condition,
       purchasePrice: purchasePrice !== null && !Number.isNaN(purchasePrice) ? purchasePrice : null,
+      purchaseDate: purchaseDateRaw ? new Date(purchaseDateRaw) : null,
       source,
       notes,
       photoUrl,

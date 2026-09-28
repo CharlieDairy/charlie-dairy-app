@@ -68,6 +68,7 @@ model Cow {
   status            CowStatus @default(DORMANT)
   condition         String?
   dateOfBirth       DateTime?
+  purchaseDate      DateTime?
   lastCalvingDate   DateTime?
   nextAiDate        DateTime?
   dryDate           DateTime?

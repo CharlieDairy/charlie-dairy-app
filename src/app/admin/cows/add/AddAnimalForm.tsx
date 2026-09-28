@@ -7,9 +7,11 @@ import { addCow, type FormState } from "../actions";
 export default function AddAnimalForm({
   statusOptions,
   locations,
+  damTags,
 }: {
   statusOptions: { code: string; label: string }[];
   locations: string[];
+  damTags: string[];
 }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(addCow, undefined);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -87,6 +89,23 @@ export default function AddAnimalForm({
           <div className="flex flex-col gap-1">
             <label htmlFor="purchasePrice" className="text-sm font-medium text-neutral-700">Purchase Price (Rs, optional)</label>
             <input id="purchasePrice" name="purchasePrice" type="number" step="0.01" min="0" placeholder="0.00" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="purchaseDate" className="text-sm font-medium text-neutral-700">Purchase Date (optional)</label>
+            <input id="purchaseDate" name="purchaseDate" type="date" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="damTag" className="text-sm font-medium text-neutral-700">Mother Tag (optional, if born on farm)</label>
+            <input id="damTag" name="damTag" list="dam-options" placeholder="e.g. 108" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+            <datalist id="dam-options">
+              {damTags.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="sireTag" className="text-sm font-medium text-neutral-700">Sire Tag (optional)</label>
+            <input id="sireTag" name="sireTag" placeholder="e.g. bull tag or name" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="location" className="text-sm font-medium text-neutral-700">Section (optional)</label>

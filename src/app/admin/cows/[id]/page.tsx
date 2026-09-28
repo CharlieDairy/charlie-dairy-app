@@ -87,6 +87,8 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
           <Link href={`/admin/cows/${cow.calfRecord.calving.dam.id}`} className="text-green-700 hover:underline font-medium">
             {cow.calfRecord.calving.dam.tag}
           </Link>
+          {cow.calfRecord.calving.sireTag && <span className="text-neutral-500"> · sire </span>}
+          {cow.calfRecord.calving.sireTag && <span className="font-medium">{cow.calfRecord.calving.sireTag}</span>}
           {cow.calfRecord.birthWeight && <span className="text-neutral-500"> · birth weight {cow.calfRecord.birthWeight} kg</span>}
         </div>
       )}
@@ -99,6 +101,7 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
             breed={cow.breed}
             condition={cow.condition}
             purchasePrice={cow.purchasePrice}
+            purchaseDate={cow.purchaseDate ? cow.purchaseDate.toISOString().slice(0, 10) : null}
             source={cow.source}
             notes={cow.notes}
             photoUrl={cow.photoUrl}
@@ -113,6 +116,7 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
           <div><span className="text-neutral-500">Next AI Due:</span> {fmtDate(cow.nextAiDate)}</div>
           <div><span className="text-neutral-500">Target Sell Date:</span> {fmtDate(cow.targetSellDate)}</div>
           <div><span className="text-neutral-500">Purchase Price:</span> {cow.purchasePrice ? `Rs ${cow.purchasePrice.toLocaleString()}` : "—"}</div>
+          <div><span className="text-neutral-500">Purchase Date:</span> {fmtDate(cow.purchaseDate)}</div>
           <div><span className="text-neutral-500">Source:</span> {cow.source ?? "—"}</div>
         </div>
         {cow.notes && <p className="text-sm text-neutral-600 mt-3 border-t border-neutral-100 pt-3">{cow.notes}</p>}

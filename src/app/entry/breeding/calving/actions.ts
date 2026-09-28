@@ -72,6 +72,7 @@ export async function recordCalving(_prev: FormState, formData: FormData): Promi
           tag: calfTag,
           gender: calfSex as "FEMALE" | "MALE" | "UNKNOWN",
           status: "CALF",
+          dateOfBirth: date,
           notes: `Born ${date.toISOString().slice(0, 10)} to dam ${dam.tag}.`,
         },
       });

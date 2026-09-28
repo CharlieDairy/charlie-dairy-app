@@ -8,6 +8,7 @@ export default function CowEditForm({
   breed,
   condition,
   purchasePrice,
+  purchaseDate,
   source,
   notes,
   photoUrl,
@@ -16,6 +17,7 @@ export default function CowEditForm({
   breed: string | null;
   condition: string | null;
   purchasePrice: number | null;
+  purchaseDate: string | null;
   source: string | null;
   notes: string | null;
   photoUrl: string | null;
@@ -73,6 +75,10 @@ export default function CowEditForm({
         <div className="flex flex-col gap-1">
           <label htmlFor="purchasePrice" className="text-sm font-medium text-neutral-700">Purchase Price (Rs, optional)</label>
           <input id="purchasePrice" name="purchasePrice" type="number" step="0.01" min="0" defaultValue={purchasePrice ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="purchaseDate" className="text-sm font-medium text-neutral-700">Purchase Date (optional)</label>
+          <input id="purchaseDate" name="purchaseDate" type="date" defaultValue={purchaseDate ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="source" className="text-sm font-medium text-neutral-700">Source (optional)</label>
