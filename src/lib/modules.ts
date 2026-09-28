@@ -48,6 +48,7 @@ const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
   // counterpart above, so a Financial-only user genuinely can't submit
   // Milking/Breeding/Feed entries and vice versa.
   { prefix: "/entry/milking", module: "OPERATIONS" },
+  { prefix: "/entry/milk-usage", module: "OPERATIONS" },
   { prefix: "/entry/feed", module: "OPERATIONS" },
   { prefix: "/entry/milk-sale", module: "OPERATIONS" },
   { prefix: "/entry/breeding", module: "OPERATIONS" },

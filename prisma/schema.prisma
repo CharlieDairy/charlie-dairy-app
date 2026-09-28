@@ -401,6 +401,30 @@ model MilkingRecord {
   @@index([cowId])
 }
 
+enum MilkUsageType {
+  FARM_USE
+  EMPLOYEE_USE
+}
+
+// Daily production isn't all sellable -- some is consumed on-farm (calves,
+// household) or given to staff. Recording that explicitly, instead of
+// letting it disappear into the unexplained "produced minus sold" variance
+// on Production Reconciliation, is what makes that gap a real reconciled
+// number: Produced - FarmUse - EmployeeUse - Sold should trend to zero.
+// Valued at the farm's average sale rate for a notional (non-cash) cost
+// line -- no CashTransaction is created since no money actually moves.
+model MilkUsageRecord {
+  id        String        @id @default(cuid())
+  date      DateTime
+  type      MilkUsageType
+  litres    Float
+  notes     String?
+  enteredBy String?
+  createdAt DateTime      @default(now())
+
+  @@index([date])
+}
+
 model MilkSale {
   id        String   @id @default(cuid())
   date      DateTime
