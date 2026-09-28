@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { periodRange, type PeriodKey } from "./herd";
 
 export type CustomerSalesSummary = {
   buyer: string;
@@ -11,10 +12,14 @@ export type CustomerSalesSummary = {
   avgRate: number | null;
 };
 
-export async function getCustomerSalesSummary(): Promise<CustomerSalesSummary[]> {
-  const [sales, pricedSales, payments] = await Promise.all([
+export async function getCustomerSalesSummary(period: PeriodKey = "all"): Promise<CustomerSalesSummary[]> {
+  const range = periodRange(period);
+  const dateFilter = range ? { gte: range.start, lt: range.end } : undefined;
+
+  const [sales, pricedSales, lifetimeSales, payments] = await Promise.all([
     prisma.milkSale.groupBy({
       by: ["buyer"],
+      where: dateFilter ? { date: dateFilter } : undefined,
       _sum: { litres: true, amount: true },
       _count: { _all: true },
       _max: { date: true },
@@ -28,9 +33,14 @@ export async function getCustomerSalesSummary(): Promise<CustomerSalesSummary[]>
     // this shipped (an "Avg Rate: Rs 2816/L" for milk is obviously wrong).
     prisma.milkSale.groupBy({
       by: ["buyer"],
-      where: { litres: { gt: 0 } },
+      where: { litres: { gt: 0 }, ...(dateFilter ? { date: dateFilter } : {}) },
       _sum: { litres: true, amount: true },
     }),
+    // Outstanding balance is a lifetime debt figure, not "owed for this
+    // period" -- it needs lifetime sales regardless of which period the
+    // Sales/Revenue columns are currently scoped to (matches Channab: its
+    // Balance column doesn't move when you switch the period filter).
+    dateFilter ? prisma.milkSale.groupBy({ by: ["buyer"], _sum: { amount: true } }) : null,
     prisma.customerPayment.groupBy({
       by: ["buyer"],
       _sum: { amount: true },
@@ -39,6 +49,9 @@ export async function getCustomerSalesSummary(): Promise<CustomerSalesSummary[]>
 
   const paidMap = new Map(payments.map((p) => [p.buyer, p._sum.amount ?? 0]));
   const pricedMap = new Map(pricedSales.map((p) => [p.buyer, { litres: p._sum.litres ?? 0, amount: p._sum.amount ?? 0 }]));
+  const lifetimeAmountMap = lifetimeSales
+    ? new Map(lifetimeSales.map((s) => [s.buyer, s._sum.amount ?? 0]))
+    : null;
 
   return sales
     .map((s) => {
@@ -46,12 +59,13 @@ export async function getCustomerSalesSummary(): Promise<CustomerSalesSummary[]>
       const totalSaleAmount = s._sum.amount ?? 0;
       const totalPaid = paidMap.get(s.buyer) ?? 0;
       const priced = pricedMap.get(s.buyer);
+      const lifetimeAmount = lifetimeAmountMap ? lifetimeAmountMap.get(s.buyer) ?? 0 : totalSaleAmount;
       return {
         buyer: s.buyer,
         totalLitres,
         totalSaleAmount,
         totalPaid,
-        outstandingBalance: totalSaleAmount - totalPaid,
+        outstandingBalance: lifetimeAmount - totalPaid,
         saleCount: s._count._all,
         lastSaleDate: s._max.date,
         avgRate: priced && priced.litres > 0 ? priced.amount / priced.litres : null,

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import Card from "@/components/Card";
+import StatCard from "@/components/StatCard";
 import { formatRs } from "@/lib/format";
 import { auth } from "@/auth";
 import { getCustomerSalesSummary, getCustomerDetail, getDistinctBuyers } from "@/lib/reports/milkSalesByCustomer";
+import type { PeriodKey } from "@/lib/reports/herd";
 import CustomerSalesTable from "./CustomerSalesTable";
 import RecordPaymentForm from "./RecordPaymentForm";
 
@@ -11,16 +13,29 @@ function fmtDate(d: Date): string {
   return new Date(d).toISOString().slice(0, 10);
 }
 
+const PERIODS: { key: PeriodKey; label: string }[] = [
+  { key: "day", label: "Today" },
+  { key: "week", label: "This Week" },
+  { key: "month", label: "This Month" },
+  { key: "year", label: "This Year" },
+  { key: "all", label: "All Time" },
+];
+
 export default async function MilkSalesByCustomerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ buyer?: string }>;
+  searchParams: Promise<{ buyer?: string; period?: string }>;
 }) {
   const params = await searchParams;
+  const period: PeriodKey = PERIODS.some((p) => p.key === params.period) ? (params.period as PeriodKey) : "month";
   const session = await auth();
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
-  const [summary, buyers] = await Promise.all([getCustomerSalesSummary(), getDistinctBuyers()]);
+  const [summary, buyers] = await Promise.all([getCustomerSalesSummary(period), getDistinctBuyers()]);
   const detail = params.buyer ? await getCustomerDetail(params.buyer) : null;
+
+  const totalLitres = summary.reduce((n, s) => n + s.totalLitres, 0);
+  const totalRevenue = summary.reduce((n, s) => n + s.totalSaleAmount, 0);
+  const totalOutstanding = summary.reduce((n, s) => n + s.outstandingBalance, 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -28,7 +43,28 @@ export default async function MilkSalesByCustomerPage({
       <p className="text-sm text-neutral-500 max-w-2xl">
         Every customer&apos;s sales, rate, and running balance. Recording a payment here also creates a real entry in
         the Cash ledger — it shows up in Cash Flow and P&amp;L immediately, not as a separate untracked number.
+        Outstanding balance is always lifetime; Sales/Revenue reflect the selected period.
       </p>
+
+      <div className="flex gap-1.5 flex-wrap">
+        {PERIODS.map((p) => (
+          <Link
+            key={p.key}
+            href={`?period=${p.key}`}
+            className={`text-xs rounded-full px-3 py-1.5 border ${
+              period === p.key ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-neutral-100"
+            }`}
+          >
+            {p.label}
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+        <StatCard label="Customers" value={summary.length.toString()} />
+        <StatCard label="Total Sales" value={`${totalLitres.toLocaleString()} L · ${formatRs(totalRevenue)}`} />
+        <StatCard label="Outstanding" value={formatRs(totalOutstanding)} tone={totalOutstanding > 0 ? "negative" : "positive"} />
+      </div>
 
       <CustomerSalesTable rows={summary} isAdmin={isAdmin} />
 

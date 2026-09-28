@@ -1,9 +1,29 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getTodaysSellableBalance } from "@/lib/reports/reconciliation";
+import { periodRange, type PeriodKey } from "@/lib/reports/herd";
+import StatCard from "@/components/StatCard";
 import MilkSaleForm from "./MilkSaleForm";
+import MilkSalesLedger, { type LedgerSaleRow } from "./MilkSalesLedger";
 
-export default async function MilkSaleEntryPage() {
-  const [rows, customers, balance] = await Promise.all([
+const PERIODS: { key: PeriodKey; label: string }[] = [
+  { key: "day", label: "Today" },
+  { key: "week", label: "This Week" },
+  { key: "month", label: "This Month" },
+  { key: "year", label: "This Year" },
+  { key: "all", label: "All Time" },
+];
+
+export default async function MilkSaleEntryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const params = await searchParams;
+  const period: PeriodKey = PERIODS.some((p) => p.key === params.period) ? (params.period as PeriodKey) : "week";
+  const range = periodRange(period);
+
+  const [rows, customers, balance, sales] = await Promise.all([
     prisma.milkSale.findMany({
       select: { buyer: true },
       distinct: ["buyer"],
@@ -11,8 +31,24 @@ export default async function MilkSaleEntryPage() {
     }),
     prisma.customer.findMany({ where: { active: true }, select: { name: true, agreedRate: true } }),
     getTodaysSellableBalance(),
+    prisma.milkSale.findMany({
+      where: range ? { date: { gte: range.start, lt: range.end } } : undefined,
+      orderBy: { date: "desc" },
+      select: { id: true, date: true, buyer: true, litres: true, rate: true, amount: true },
+    }),
   ]);
   const buyers = Array.from(new Set([...customers.map((c) => c.name), ...rows.map((r) => r.buyer)])).sort();
+
+  const ledgerRows: LedgerSaleRow[] = sales.map((s) => ({
+    id: s.id,
+    date: s.date.toISOString().slice(0, 10),
+    buyer: s.buyer,
+    litres: s.litres,
+    rate: s.rate,
+    amount: s.amount,
+  }));
+  const totalLitres = sales.reduce((n, s) => n + s.litres, 0);
+  const totalRevenue = sales.reduce((n, s) => n + s.amount, 0);
 
   return (
     <div className="flex flex-col gap-4">
@@ -26,6 +62,28 @@ export default async function MilkSaleEntryPage() {
         </p>
       </div>
       <MilkSaleForm buyers={buyers} customerRates={customers.filter((c) => c.agreedRate !== null).map((c) => ({ name: c.name, agreedRate: c.agreedRate as number }))} />
+
+      <div className="flex items-center justify-between flex-wrap gap-3 mt-4">
+        <h2 className="text-sm font-semibold text-neutral-700">Recent Sales</h2>
+        <div className="flex gap-1.5 flex-wrap">
+          {PERIODS.map((p) => (
+            <Link
+              key={p.key}
+              href={`?period=${p.key}`}
+              className={`text-xs rounded-full px-3 py-1.5 border ${
+                period === p.key ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-neutral-100"
+              }`}
+            >
+              {p.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 max-w-md">
+        <StatCard label="Litres Sold" value={totalLitres.toLocaleString()} />
+        <StatCard label="Revenue" value={`Rs ${totalRevenue.toLocaleString()}`} />
+      </div>
+      <MilkSalesLedger sales={ledgerRows} />
     </div>
   );
 }
