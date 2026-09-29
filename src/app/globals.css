@@ -1,27 +1,29 @@
 @import "tailwindcss";
 
 /* Charlie Dairy design tokens — see docs/CHARLIE_V2_ARCHITECTURE.md §2.3.
-   Warm cream background, gold/brown brand color matching the Charlie Dairy
-   logo. Existing pages using raw Tailwind utilities (bg-green-700 etc.)
-   still render correctly -- in fact they now render in the brand gold,
-   because the `green` scale itself is redefined below to the logo's
-   palette. That single override is what recolors the whole app (sidebar,
-   buttons, links, success badges) without having to touch the ~40 files
-   that reference bg-green- and text-green- utilities directly. --color-danger (red)
-   and --color-warning (amber) are untouched, so negative financial values
-   and warnings stay visually distinct from the new brand gold. */
+   Farm palette (adopted from a reference "Farm Illustration" swatch: Industrial
+   Green #1B4A05, Lush Canopy #406D09, Spritzig #6BC1E9, Mustard On Toast
+   #E1CE38, Rhubarb Leaf Green #B9A570 as a warm tan), replacing the earlier
+   gold/brown logo-derived ramp. Existing pages using raw Tailwind utilities
+   (bg-green-700 etc.) still render correctly -- in fact they now render in
+   real green, because the `green` scale itself is redefined below. That
+   single override is what recolors the whole app (sidebar, buttons, links,
+   success badges) without having to touch the ~40 files that reference
+   bg-green- and text-green- utilities directly. --color-danger (red) and
+   --color-warning (amber) are untouched, so negative financial values and
+   warnings stay visually distinct from the brand green. */
 :root {
-  --background: #f7f1e1;
-  --foreground: #171717;
+  --background: #f4efe6;
+  --foreground: #1c1c1a;
 
-  --color-primary: #a97c1a;
-  --color-primary-dark: #7a590f;
-  --color-primary-light: #f5e6c0;
+  --color-primary: #406d09;
+  --color-primary-dark: #1b4a05;
+  --color-primary-light: #eef3e2;
   --color-surface: #ffffff;
-  --color-border: #e8dfc8;
-  --color-text: #171717;
+  --color-border: #e4dac0;
+  --color-text: #1c1c1a;
   --color-text-muted: #78716c;
-  --color-success: #a97c1a;
+  --color-success: #406d09;
   --color-warning: #b45309;
   --color-warning-light: #fef3c7;
   --color-danger: #dc2626;
@@ -53,24 +55,37 @@
   --color-info: var(--color-info);
   --color-info-light: var(--color-info-light);
 
-  /* Logo-derived gold ramp, replacing Tailwind's built-in green scale --
+  /* Farm-palette green ramp, replacing Tailwind's built-in green scale --
      every existing bg-green-900/text-green-100/etc. utility across the app
-     now resolves to these values instead. */
-  --color-green-50: #fdf9ef;
-  --color-green-100: #f5e6c0;
-  --color-green-200: #ecd699;
-  --color-green-300: #e0c06a;
-  --color-green-400: #d3a942;
-  --color-green-500: #c2952f;
-  --color-green-600: #a97c1a;
-  --color-green-700: #8c6415;
-  --color-green-800: #6e4e12;
-  --color-green-900: #4f380e;
-  --color-green-950: #33240a;
+     now resolves to these values instead. 700 lands on Lush Canopy (the
+     primary button/link green already used everywhere as bg-green-700);
+     900 lands on Industrial Green (the sidebar background). */
+  --color-green-50: #eef3e2;
+  --color-green-100: #dde8c5;
+  --color-green-200: #c3d99f;
+  --color-green-300: #a3c771;
+  --color-green-400: #7fae4a;
+  --color-green-500: #5e9128;
+  --color-green-600: #497712;
+  --color-green-700: #406d09;
+  --color-green-800: #2e5407;
+  --color-green-900: #1b4a05;
+  --color-green-950: #0f2e03;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image: radial-gradient(circle, rgba(27, 74, 5, 0.11) 1px, transparent 1.6px);
+  background-size: 20px 20px;
   color: var(--foreground);
   font-family: var(--font-open-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Same dotted cream background as body, for the layout wrapper divs in
+   admin/layout.tsx and entry/layout.tsx -- those cover the full viewport
+   (min-h-screen) and would otherwise hide body's background entirely. */
+.farm-bg {
+  background-color: var(--background);
+  background-image: radial-gradient(circle, rgba(27, 74, 5, 0.11) 1px, transparent 1.6px);
+  background-size: 20px 20px;
 }

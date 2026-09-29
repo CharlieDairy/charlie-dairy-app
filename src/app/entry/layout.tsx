@@ -10,7 +10,7 @@ export default async function EntryLayout({ children }: { children: React.ReactN
   if (!user) return <AccountBlocked />;
 
   return (
-    <div className="flex flex-col min-h-screen bg-neutral-50 md:flex-row">
+    <div className="flex flex-col min-h-screen farm-bg md:flex-row">
       <AppSidebar role={user.role} modules={user.modules} />
       <main className="flex-1 p-4 md:p-8 max-w-2xl w-full mx-auto">{children}</main>
     </div>
