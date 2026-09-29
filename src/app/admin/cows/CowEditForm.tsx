@@ -24,10 +24,14 @@ export default function CowEditForm({
 }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(updateCowDetails, undefined);
   const [open, setOpen] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state?.success) setOpen(false);
+    if (state?.success) {
+      setOpen(false);
+      setPhotoPreview(null);
+    }
   }, [state]);
 
   if (!open) {
@@ -48,20 +52,36 @@ export default function CowEditForm({
       className="flex flex-col gap-3 bg-white border border-neutral-200 rounded-lg p-4"
     >
       <input type="hidden" name="id" value={cowId} />
-      <div className="flex items-center gap-4">
-        {photoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt="Cow" className="w-20 h-20 object-cover rounded-md border border-neutral-200" />
-        )}
-        <div className="flex flex-col gap-1 flex-1">
-          <label htmlFor="photo" className="text-sm font-medium text-neutral-700">Photo</label>
-          <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" className="text-sm" />
-          {photoUrl && (
-            <label className="flex items-center gap-2 text-xs text-neutral-500 mt-1">
-              <input type="checkbox" name="removePhoto" /> Remove current photo
-            </label>
-          )}
+      <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-2 w-28 shrink-0">
+          <div className="w-28 h-28 rounded-md border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden">
+            {photoPreview || photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photoPreview ?? photoUrl ?? undefined} alt="Cow" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-neutral-300 text-xs">No photo</span>
+            )}
+          </div>
+          <label className="bg-green-700 text-white rounded-md px-2 py-1.5 text-xs font-medium text-center cursor-pointer">
+            {photoUrl ? "Change photo" : "Upload photo"}
+            <input
+              id="photo"
+              name="photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                setPhotoPreview(file ? URL.createObjectURL(file) : null);
+              }}
+            />
+          </label>
         </div>
+        {photoUrl && !photoPreview && (
+          <label className="flex items-center gap-2 text-xs text-neutral-500 mt-1">
+            <input type="checkbox" name="removePhoto" /> Remove current photo
+          </label>
+        )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="flex flex-col gap-1">
@@ -98,7 +118,7 @@ export default function CowEditForm({
         <button type="submit" disabled={isPending} className="bg-green-700 text-white rounded-md px-4 py-2 text-sm font-medium disabled:opacity-60">
           {isPending ? "Saving…" : "Save"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="text-sm text-neutral-500 px-2">
+        <button type="button" onClick={() => { setOpen(false); setPhotoPreview(null); }} className="text-sm text-neutral-500 px-2">
           Cancel
         </button>
       </div>
