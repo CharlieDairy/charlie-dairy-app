@@ -4,7 +4,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { useActionState } from "react";
 import { formatRs } from "@/lib/format";
 import DeleteRowButton from "@/components/DeleteRowButton";
-import { updateCapitalEntry, deleteCapitalEntry, type FormState } from "./actions";
+import { updateCapitalEntry, deleteCapitalEntry, deleteCapitalEntries, type FormState, type BulkDeleteState } from "./actions";
 
 export type LedgerEntry = {
   id: string;
@@ -26,7 +26,7 @@ function Ic({ children }: { children: ReactNode }) {
 const IconEdit = <Ic><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z" /></Ic>;
 const IconTrash = <Ic><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></Ic>;
 
-function EditRow({ entry, partners, ventures, onDone }: { entry: LedgerEntry; partners: string[]; ventures: string[]; onDone: () => void }) {
+function EditRow({ entry, colSpan, onDone }: { entry: LedgerEntry; colSpan: number; onDone: () => void }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(updateCapitalEntry, undefined);
   const direction = entry.credit > 0 ? "CONTRIBUTION" : "WITHDRAWAL";
   const amount = entry.credit > 0 ? entry.credit : entry.debit;
@@ -38,7 +38,7 @@ function EditRow({ entry, partners, ventures, onDone }: { entry: LedgerEntry; pa
 
   return (
     <tr className="border-t border-neutral-100 bg-amber-50/50">
-      <td colSpan={7} className="px-3 py-2">
+      <td colSpan={colSpan} className="px-3 py-2">
         <form action={formAction} className="flex flex-wrap items-end gap-2">
           <input type="hidden" name="id" value={entry.id} />
           <div className="flex flex-col gap-0.5">
@@ -81,69 +81,142 @@ function EditRow({ entry, partners, ventures, onDone }: { entry: LedgerEntry; pa
   );
 }
 
-export default function CapitalLedgerTable({ entries, partners, ventures }: { entries: LedgerEntry[]; partners: string[]; ventures: string[] }) {
+export default function CapitalLedgerTable({
+  entries,
+  partners,
+  ventures,
+  isAdmin = false,
+}: {
+  entries: LedgerEntry[];
+  partners: string[];
+  ventures: string[];
+  isAdmin?: boolean;
+}) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkState, bulkAction, isBulkPending] = useActionState<BulkDeleteState, FormData>(deleteCapitalEntries, undefined);
+
+  useEffect(() => {
+    if (bulkState?.success) setSelected(new Set());
+  }, [bulkState]);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const allSelected = entries.length > 0 && entries.every((e) => selected.has(e.id));
+  const colSpan = isAdmin ? 8 : 7;
 
   return (
-    <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
-      <datalist id="capital-edit-partners">
-        {partners.map((p) => <option key={p} value={p} />)}
-      </datalist>
-      <datalist id="capital-edit-ventures">
-        {ventures.map((v) => <option key={v} value={v} />)}
-      </datalist>
-      <table className="min-w-full text-sm">
-        <thead className="bg-neutral-100">
-          <tr>
-            <th className="text-left px-3 py-2">Date</th>
-            <th className="text-left px-3 py-2">Partner</th>
-            <th className="text-left px-3 py-2">Description</th>
-            <th className="text-left px-3 py-2">Venture</th>
-            <th className="text-right px-3 py-2">Credit</th>
-            <th className="text-right px-3 py-2">Debit</th>
-            <th className="text-left px-3 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((e) =>
-            editingId === e.id ? (
-              <EditRow key={e.id} entry={e} partners={partners} ventures={ventures} onDone={() => setEditingId(null)} />
-            ) : (
-              <tr key={e.id} className="border-t border-neutral-100">
-                <td className="px-3 py-2">{e.date}</td>
-                <td className="px-3 py-2">{e.partner}</td>
-                <td className="px-3 py-2">{e.description}</td>
-                <td className="px-3 py-2">{e.venture ?? "—"}</td>
-                <td className="px-3 py-2 text-right">{e.credit ? formatRs(e.credit) : "—"}</td>
-                <td className="px-3 py-2 text-right">{e.debit ? formatRs(e.debit) : "—"}</td>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(e.id)}
-                      title="Edit"
-                      className="p-1.5 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100"
-                    >
-                      {IconEdit}
-                    </button>
-                    <DeleteRowButton
-                      action={deleteCapitalEntry}
-                      hiddenFields={{ id: e.id }}
-                      confirmMessage={`Delete this capital entry (${e.partner} — ${e.description})? This can't be undone.`}
-                      icon={IconTrash}
-                    />
-                  </div>
-                </td>
-              </tr>
-            )
-          )}
-          {entries.length === 0 && (
+    <div className="flex flex-col gap-3">
+      {isAdmin && (
+        <form
+          action={bulkAction}
+          onSubmit={(e) => {
+            if (!confirm(`Delete ${selected.size} selected entr${selected.size === 1 ? "y" : "ies"}? This can't be undone.`)) e.preventDefault();
+          }}
+          className="flex items-center gap-3 flex-wrap"
+        >
+          {Array.from(selected).map((id) => (
+            <input key={id} type="hidden" name="entryIds" value={id} />
+          ))}
+          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={() => {
+                setSelected((prev) => {
+                  const next = new Set(prev);
+                  for (const e of entries) {
+                    if (allSelected) next.delete(e.id); else next.add(e.id);
+                  }
+                  return next;
+                });
+              }}
+            />
+            Select All ({entries.length})
+          </label>
+          <button
+            type="submit"
+            disabled={selected.size === 0 || isBulkPending}
+            className="text-xs rounded px-3 py-1.5 border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isBulkPending ? "Deleting…" : `Delete selected (${selected.size})`}
+          </button>
+          {bulkState && <p className={`text-xs ${bulkState.success ? "text-green-700" : "text-red-600"}`}>{bulkState.message}</p>}
+        </form>
+      )}
+
+      <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
+        <datalist id="capital-edit-partners">
+          {partners.map((p) => <option key={p} value={p} />)}
+        </datalist>
+        <datalist id="capital-edit-ventures">
+          {ventures.map((v) => <option key={v} value={v} />)}
+        </datalist>
+        <table className="min-w-full text-sm">
+          <thead className="bg-neutral-100">
             <tr>
-              <td colSpan={7} className="px-3 py-6 text-center text-neutral-400">No entries for this filter.</td>
+              {isAdmin && <th className="text-left px-3 py-2 w-8"></th>}
+              <th className="text-left px-3 py-2">Date</th>
+              <th className="text-left px-3 py-2">Partner</th>
+              <th className="text-left px-3 py-2">Description</th>
+              <th className="text-left px-3 py-2">Venture</th>
+              <th className="text-right px-3 py-2">Credit</th>
+              <th className="text-right px-3 py-2">Debit</th>
+              <th className="text-left px-3 py-2">Actions</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {entries.map((e) =>
+              editingId === e.id ? (
+                <EditRow key={e.id} entry={e} colSpan={colSpan} onDone={() => setEditingId(null)} />
+              ) : (
+                <tr key={e.id} className="border-t border-neutral-100">
+                  {isAdmin && (
+                    <td className="px-3 py-2">
+                      <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggleSelect(e.id)} aria-label={`Select entry for ${e.partner}`} />
+                    </td>
+                  )}
+                  <td className="px-3 py-2">{e.date}</td>
+                  <td className="px-3 py-2">{e.partner}</td>
+                  <td className="px-3 py-2">{e.description}</td>
+                  <td className="px-3 py-2">{e.venture ?? "—"}</td>
+                  <td className="px-3 py-2 text-right">{e.credit ? formatRs(e.credit) : "—"}</td>
+                  <td className="px-3 py-2 text-right">{e.debit ? formatRs(e.debit) : "—"}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(e.id)}
+                        title="Edit"
+                        className="p-1.5 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100"
+                      >
+                        {IconEdit}
+                      </button>
+                      <DeleteRowButton
+                        action={deleteCapitalEntry}
+                        hiddenFields={{ id: e.id }}
+                        confirmMessage={`Delete this capital entry (${e.partner} — ${e.description})? This can't be undone.`}
+                        icon={IconTrash}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              )
+            )}
+            {entries.length === 0 && (
+              <tr>
+                <td colSpan={colSpan} className="px-3 py-6 text-center text-neutral-400">No entries for this filter.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

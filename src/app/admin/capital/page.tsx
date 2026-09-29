@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { formatRs } from "@/lib/format";
 import AddCapitalForm from "./AddCapitalForm";
 import CapitalLedgerTable from "./CapitalLedgerTable";
@@ -10,6 +11,8 @@ export default async function CapitalAdminPage({
   searchParams: Promise<{ venture?: string }>;
 }) {
   const { venture: ventureFilter } = await searchParams;
+  const session = await auth();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
 
   const [entries, ventureRows, partnerRows] = await Promise.all([
     prisma.capitalEntry.findMany({
@@ -70,6 +73,7 @@ export default async function CapitalAdminPage({
         }))}
         partners={partners}
         ventures={ventures}
+        isAdmin={isAdmin}
       />
     </div>
   );

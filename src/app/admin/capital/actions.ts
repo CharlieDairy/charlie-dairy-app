@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requirePermission, runAction } from "@/lib/access";
+import { requireAccess, requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optText } from "@/lib/validate";
 
@@ -86,4 +86,29 @@ async function deleteCapitalEntryImpl(formData: FormData): Promise<FormState> {
   await prisma.capitalEntry.delete({ where: { id } });
   revalidatePath("/admin/capital");
   return { success: true, message: "Capital entry deleted." };
+}
+
+export type BulkDeleteState = { success: boolean; message: string } | undefined;
+
+// Bulk delete is Admin-only -- checked here server-side (not just hidden in
+// the UI), same conservative pattern as the Animal List / Assets bulk
+// deletes: this ledger has no dependent-record guard to fall back on (an
+// entry stands alone, nothing else references it), so the stricter role
+// check is the only thing preventing a Financial-only user from wiping many
+// rows in one click.
+export async function deleteCapitalEntries(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
+  return runAction(() => deleteCapitalEntriesImpl(formData));
+}
+
+async function deleteCapitalEntriesImpl(formData: FormData): Promise<BulkDeleteState> {
+  await requirePermission("financial", "DELETE");
+  await requireAccess({ admin: true });
+
+  const ids = formData.getAll("entryIds") as string[];
+  if (ids.length === 0) return { success: false, message: "No entries selected." };
+
+  const { count } = await prisma.capitalEntry.deleteMany({ where: { id: { in: ids } } });
+
+  revalidatePath("/admin/capital");
+  return { success: true, message: `Deleted ${count} entr${count === 1 ? "y" : "ies"}.` };
 }
