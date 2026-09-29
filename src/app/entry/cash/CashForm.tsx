@@ -7,7 +7,15 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function CashForm({ categories, vendorNames }: { categories: string[]; vendorNames: string[] }) {
+export default function CashForm({
+  categories,
+  vendorNames,
+  direction,
+}: {
+  categories: string[];
+  vendorNames: string[];
+  direction?: "IN" | "OUT";
+}) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(submitCash, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -23,20 +31,35 @@ export default function CashForm({ categories, vendorNames }: { categories: stri
         <label htmlFor="date" className="text-sm font-medium text-neutral-700">Date</label>
         <input id="date" name="date" type="date" required defaultValue={todayIso()} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
       </div>
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-neutral-700">Direction</span>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2">
-            <input type="radio" name="direction" value="IN" defaultChecked /> Cash In
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="radio" name="direction" value="OUT" /> Cash Out
-          </label>
+      {direction ? (
+        <input type="hidden" name="direction" value={direction} />
+      ) : (
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-neutral-700">Direction</span>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2">
+              <input type="radio" name="direction" value="IN" defaultChecked /> Cash In
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" name="direction" value="OUT" /> Cash Out
+            </label>
+          </div>
         </div>
-      </div>
+      )}
       <div className="flex flex-col gap-1">
         <label htmlFor="amount" className="text-sm font-medium text-neutral-700">Amount (Rs)</label>
         <input id="amount" name="amount" type="number" step="1" min="0" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+      </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-neutral-700">Mode</span>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2">
+            <input type="radio" name="mode" value="CASH" defaultChecked /> Cash
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="radio" name="mode" value="BANK" /> Bank
+          </label>
+        </div>
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="category" className="text-sm font-medium text-neutral-700">Category</label>
@@ -65,8 +88,12 @@ export default function CashForm({ categories, vendorNames }: { categories: stri
           {state.message}
         </p>
       )}
-      <button type="submit" disabled={isPending} className="bg-green-700 text-white rounded-md py-2 font-medium disabled:opacity-60">
-        {isPending ? "Saving…" : "Save Entry"}
+      <button
+        type="submit"
+        disabled={isPending}
+        className={`text-white rounded-md py-2 font-medium disabled:opacity-60 ${direction === "OUT" ? "bg-red-600 hover:bg-red-700" : "bg-green-700 hover:bg-green-800"}`}
+      >
+        {isPending ? "Saving…" : direction === "OUT" ? "Save Cash Out" : direction === "IN" ? "Save Cash In" : "Save Entry"}
       </button>
     </form>
   );

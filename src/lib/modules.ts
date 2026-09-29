@@ -42,6 +42,7 @@ const PATH_MODULES: { prefix: string; module: PermissionModuleKey }[] = [
   { prefix: "/admin/reports/expense-breakdown", module: "financial" },
   { prefix: "/admin/reports/ar-aging", module: "financial" },
   { prefix: "/entry/cash", module: "financial" },
+  { prefix: "/admin/reports/cash-register", module: "financial" },
   { prefix: "/admin/team", module: "team" },
   { prefix: "/entry/team", module: "team" },
   { prefix: "/admin/users", module: "admin" },

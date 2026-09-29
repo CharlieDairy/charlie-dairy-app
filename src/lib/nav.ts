@@ -78,7 +78,7 @@ export const NAV_SECTIONS: NavSection[] = [
     key: "financial",
     label: "Financial",
     items: [
-      { href: "/entry/cash", label: "Cash Entry" },
+      { href: "/admin/reports/cash-register", label: "Cash Register" },
       { href: "/admin/reports/cashflow", label: "Cash Flow" },
       { href: "/admin/reports/pl", label: "P&L Statement" },
       { href: "/admin/reports/balance-sheet", label: "Balance Sheet" },
