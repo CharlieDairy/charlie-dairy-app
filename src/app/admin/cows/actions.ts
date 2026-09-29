@@ -144,31 +144,48 @@ async function updateCowDetailsImpl(_prev: FormState, formData: FormData): Promi
   const existing = await prisma.cow.findUnique({ where: { id } });
   if (!existing) return { success: false, message: "Cow not found." };
 
+  // Upload the new photo (if any) first, but don't delete the old blob yet --
+  // if prisma.cow.update below fails, the database must still point at a
+  // blob that actually exists. The old photo is only deleted once the new
+  // URL (or null, for a removal) is confirmed committed.
   let photoUrl = existing.photoUrl;
+  let newUploadUrl: string | null = null;
+  let shouldRemovePhoto = false;
   if (photo && photo.size > 0) {
     const uploaded = await saveUploadedImage(photo, "cows");
     if (uploaded.error) return { success: false, message: uploaded.error };
     if (uploaded.url) {
-      await deleteUploadedImage(existing.photoUrl);
+      newUploadUrl = uploaded.url;
       photoUrl = uploaded.url;
     }
   } else if (removePhoto) {
-    await deleteUploadedImage(existing.photoUrl);
+    shouldRemovePhoto = true;
     photoUrl = null;
   }
 
-  await prisma.cow.update({
-    where: { id },
-    data: {
-      breed,
-      condition,
-      purchasePrice,
-      purchaseDate,
-      source,
-      notes,
-      photoUrl,
-    },
-  });
+  try {
+    await prisma.cow.update({
+      where: { id },
+      data: {
+        breed,
+        condition,
+        purchasePrice,
+        purchaseDate,
+        source,
+        notes,
+        photoUrl,
+      },
+    });
+  } catch (e) {
+    // The DB write didn't land -- clean up the newly uploaded blob (if any)
+    // rather than the old one, so the cow's existing photo stays intact.
+    if (newUploadUrl) await deleteUploadedImage(newUploadUrl);
+    throw e;
+  }
+
+  if (newUploadUrl || shouldRemovePhoto) {
+    await deleteUploadedImage(existing.photoUrl);
+  }
 
   revalidatePath(`/admin/cows/${id}`);
   revalidatePath("/admin/cows");
@@ -224,12 +241,28 @@ async function addCowMovementImpl(_prev: FormState, formData: FormData): Promise
   return { success: true, message: `Moved to ${location}.` };
 }
 
-export async function updateCowStatus(formData: FormData): Promise<void> {
+export async function updateCowStatus(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => updateCowStatusImpl(formData));
+}
+
+async function updateCowStatusImpl(formData: FormData): Promise<FormState> {
   await requireAccess({ module: "OPERATIONS" });
   const cowId = reqId(formData, "cowId", "Cow");
   const status = reqEnum(formData, "status", "Status", STATUSES);
-  await prisma.cow.updateMany({ where: { id: cowId }, data: { status } });
+
+  // Sold/Dead animals aren't tracked for breeding anymore -- without this,
+  // a cow marked pregnant (expectedCalving set) keeps showing a "Pregnant"
+  // badge and matching the Pregnant quick-filter on the Animal List forever,
+  // even though the herd-overview stat card already excludes Sold/Dead from
+  // its own Pregnant count.
+  const clearBreedingState = status === "SOLD" || status === "DEAD";
+
+  await prisma.cow.updateMany({
+    where: { id: cowId },
+    data: clearBreedingState ? { status, expectedCalving: null, dryDate: null } : { status },
+  });
   revalidatePath("/admin/cows");
+  return { success: true, message: "Status updated." };
 }
 
 export type DeleteState = { success: boolean; message: string } | undefined;
