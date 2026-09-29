@@ -12,7 +12,7 @@ export default function AddUserForm() {
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col sm:flex-row gap-3 bg-white border border-neutral-200 rounded-lg p-4 items-end flex-wrap">
+    <form ref={formRef} action={formAction} className="flex flex-col sm:flex-row gap-3 items-end flex-wrap">
       <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-sm font-medium text-neutral-700">Name</label>
         <input id="name" name="name" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
