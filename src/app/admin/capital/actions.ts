@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
-import { reqDate, reqEnum, reqNum, reqText, optText } from "@/lib/validate";
+import { reqDate, reqEnum, reqId, reqNum, reqText, optText } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -41,4 +41,49 @@ async function addCapitalEntryImpl(formData: FormData): Promise<FormState> {
 
   revalidatePath("/admin/capital");
   return { success: true, message: "Capital entry saved." };
+}
+
+export async function updateCapitalEntry(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => updateCapitalEntryImpl(formData));
+}
+
+async function updateCapitalEntryImpl(formData: FormData): Promise<FormState> {
+  await requirePermission("financial", "EDIT");
+  const id = reqId(formData, "id", "Entry");
+  const date = reqDate(formData, "date", "Date");
+  const partner = reqText(formData, "partner", "Partner", { max: 100 });
+  const description = reqText(formData, "description", "Description", { max: 300 });
+  const direction = reqEnum(formData, "direction", "Direction", DIRECTIONS);
+  const amount = reqNum(formData, "amount", "Amount", { positive: true });
+  const venture = optText(formData, "venture", "Venture", { max: 100 });
+
+  const existing = await prisma.capitalEntry.findUnique({ where: { id } });
+  if (!existing) return { success: false, message: "Entry not found." };
+
+  const credit = direction === "CONTRIBUTION" ? amount : 0;
+  const debit = direction === "WITHDRAWAL" ? amount : 0;
+
+  await prisma.capitalEntry.update({
+    where: { id },
+    data: { date, partner, description, type: direction, credit, debit, venture },
+  });
+
+  revalidatePath("/admin/capital");
+  return { success: true, message: "Capital entry updated." };
+}
+
+export async function deleteCapitalEntry(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => deleteCapitalEntryImpl(formData));
+}
+
+async function deleteCapitalEntryImpl(formData: FormData): Promise<FormState> {
+  await requirePermission("financial", "DELETE");
+  const id = reqId(formData, "id", "Entry");
+
+  const existing = await prisma.capitalEntry.findUnique({ where: { id } });
+  if (!existing) return { success: false, message: "Entry not found." };
+
+  await prisma.capitalEntry.delete({ where: { id } });
+  revalidatePath("/admin/capital");
+  return { success: true, message: "Capital entry deleted." };
 }

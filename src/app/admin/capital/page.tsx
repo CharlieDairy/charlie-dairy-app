@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatRs } from "@/lib/format";
 import AddCapitalForm from "./AddCapitalForm";
+import CapitalLedgerTable from "./CapitalLedgerTable";
 
 export default async function CapitalAdminPage({
   searchParams,
@@ -57,32 +58,19 @@ export default async function CapitalAdminPage({
         ))}
       </div>
 
-      <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
-        <table className="min-w-full text-sm">
-          <thead className="bg-neutral-100">
-            <tr>
-              <th className="text-left px-3 py-2">Date</th>
-              <th className="text-left px-3 py-2">Partner</th>
-              <th className="text-left px-3 py-2">Description</th>
-              <th className="text-left px-3 py-2">Venture</th>
-              <th className="text-right px-3 py-2">Credit</th>
-              <th className="text-right px-3 py-2">Debit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e) => (
-              <tr key={e.id} className="border-t border-neutral-100">
-                <td className="px-3 py-2">{e.date.toISOString().slice(0, 10)}</td>
-                <td className="px-3 py-2">{e.partner}</td>
-                <td className="px-3 py-2">{e.description}</td>
-                <td className="px-3 py-2">{e.venture ?? "—"}</td>
-                <td className="px-3 py-2 text-right">{e.credit ? formatRs(e.credit) : "—"}</td>
-                <td className="px-3 py-2 text-right">{e.debit ? formatRs(e.debit) : "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <CapitalLedgerTable
+        entries={entries.map((e) => ({
+          id: e.id,
+          date: e.date.toISOString().slice(0, 10),
+          partner: e.partner,
+          description: e.description,
+          venture: e.venture,
+          credit: e.credit,
+          debit: e.debit,
+        }))}
+        partners={partners}
+        ventures={ventures}
+      />
     </div>
   );
 }
