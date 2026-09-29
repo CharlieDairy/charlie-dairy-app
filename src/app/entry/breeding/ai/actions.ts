@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, optId, optEnum, optNum, optText } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -15,7 +15,7 @@ export async function recordInsemination(_prev: FormState, formData: FormData): 
 }
 
 async function recordInseminationImpl(formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "OPERATIONS" });
+  const user = await requirePermission("breeding", "CREATE");
 
   const cowId = reqId(formData, "cowId", "Cow");
   const date = reqDate(formData, "date", "Date");

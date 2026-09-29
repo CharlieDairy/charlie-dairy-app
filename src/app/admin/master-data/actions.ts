@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCategoryDef } from "@/lib/masterData";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -13,7 +13,7 @@ export async function updateLabel(_prev: FormState, formData: FormData): Promise
 }
 
 async function updateLabelImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "ADMIN" });
+  await requirePermission("admin", "EDIT");
   const id = formData.get("id") as string | null;
   const label = (formData.get("label") as string | null)?.trim();
 
@@ -28,7 +28,7 @@ async function updateLabelImpl(_prev: FormState, formData: FormData): Promise<Fo
 }
 
 export async function toggleActive(formData: FormData): Promise<void> {
-  await requireAccess({ module: "ADMIN" });
+  await requirePermission("admin", "EDIT");
   const id = formData.get("id") as string;
   const active = formData.get("active") === "true";
   await prisma.masterDataItem.updateMany({ where: { id }, data: { active } });
@@ -40,7 +40,7 @@ export async function addItem(_prev: FormState, formData: FormData): Promise<For
 }
 
 async function addItemImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "ADMIN" });
+  await requirePermission("admin", "CREATE");
   const category = formData.get("category") as string | null;
   const code = (formData.get("code") as string | null)?.trim();
   const label = (formData.get("label") as string | null)?.trim();
@@ -77,7 +77,7 @@ export async function deleteItem(_prev: FormState, formData: FormData): Promise<
 }
 
 async function deleteItemImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "ADMIN" });
+  await requirePermission("admin", "DELETE");
   const id = formData.get("id") as string | null;
   if (!id) return { success: false, message: "Missing item id." };
 

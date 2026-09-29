@@ -3,7 +3,7 @@
 import { useActionState, useRef, useEffect } from "react";
 import { createUser, type FormState } from "./actions";
 
-export default function AddUserForm() {
+export default function AddUserForm({ roles }: { roles: { id: string; name: string }[] }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(createUser, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -30,6 +30,15 @@ export default function AddUserForm() {
         <select id="role" name="role" required defaultValue="ENTRY" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
           <option value="ENTRY">ENTRY — data entry only</option>
           <option value="ADMIN">ADMIN — full access</option>
+        </select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="accessRoleId" className="text-sm font-medium text-neutral-700">Access Role</label>
+        <select id="accessRoleId" name="accessRoleId" defaultValue="" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
+          <option value="">No role (no access)</option>
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>{r.name}</option>
+          ))}
         </select>
       </div>
       <button type="submit" disabled={isPending} className="bg-green-700 text-white rounded-md px-4 py-2 font-medium disabled:opacity-60">

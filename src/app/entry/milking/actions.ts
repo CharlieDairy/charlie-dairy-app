@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, optNum, SHIFTS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -20,7 +20,7 @@ export async function submitMilking(_prev: FormState, formData: FormData): Promi
 }
 
 async function submitMilkingImpl(formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "OPERATIONS" });
+  const user = await requirePermission("milk", "CREATE");
 
   const cowId = reqId(formData, "cowId", "Cow");
   const shift = reqEnum(formData, "shift", "Shift", SHIFTS);
@@ -66,7 +66,7 @@ export async function submitGroupMilking(_prev: FormState, formData: FormData): 
 }
 
 async function submitGroupMilkingImpl(formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "OPERATIONS" });
+  const user = await requirePermission("milk", "CREATE");
 
   const shift = reqEnum(formData, "shift", "Shift", SHIFTS);
   const date = reqDate(formData, "date", "Date");

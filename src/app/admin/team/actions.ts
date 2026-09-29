@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, reqNum, reqText, optDate, optEnum, optNum, optText, CASH_MODES } from "@/lib/validate";
 
@@ -25,7 +25,7 @@ export async function addEmployee(_prev: FormState, formData: FormData): Promise
 }
 
 async function addEmployeeImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "PEOPLE" });
+  await requirePermission("team", "CREATE");
   const name = reqText(formData, "name", "Name", { max: 100 });
   const position = optText(formData, "position", "Position", { max: 100 });
   const phone = optText(formData, "phone", "Phone", { max: 30 });
@@ -57,7 +57,7 @@ async function addEmployeeImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function updateEmployeeActive(formData: FormData): Promise<void> {
-  await requireAccess({ module: "PEOPLE" });
+  await requirePermission("team", "EDIT");
   const id = reqId(formData, "id", "Employee");
   const active = formData.get("active") === "true";
   await prisma.employee.updateMany({ where: { id }, data: { active } });
@@ -74,7 +74,7 @@ export async function recordSalaryPayment(_prev: FormState, formData: FormData):
 }
 
 async function recordSalaryPaymentImpl(formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "PEOPLE" });
+  const user = await requirePermission("team", "CREATE");
   const employeeId = reqId(formData, "employeeId", "Employee");
   const date = reqDate(formData, "date", "Date");
   const amount = reqNum(formData, "amount", "Amount", { positive: true, max: 100_000_000 });
@@ -124,7 +124,7 @@ export async function markAttendance(_prev: FormState, formData: FormData): Prom
 }
 
 async function markAttendanceImpl(formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "PEOPLE" });
+  const user = await requirePermission("team", "CREATE");
   const date = reqDate(formData, "date", "Date");
   const employeeIds = formData.getAll("employeeId").filter((v): v is string => typeof v === "string");
   if (employeeIds.length === 0) {
@@ -165,7 +165,7 @@ export async function markAbsence(_prev: FormState, formData: FormData): Promise
 }
 
 async function markAbsenceImpl(formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "PEOPLE" });
+  const user = await requirePermission("team", "CREATE");
   const employeeId = reqId(formData, "employeeId", "Employee");
   const date = reqDate(formData, "date", "Date");
 

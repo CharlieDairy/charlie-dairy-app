@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqId, reqText, optText, optNum } from "@/lib/validate";
 
@@ -24,7 +24,7 @@ export async function addCustomer(_prev: FormState, formData: FormData): Promise
 }
 
 async function addCustomerImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("milk", "CREATE");
   const data = readCustomer(formData);
 
   const existing = await prisma.customer.findFirst({ where: { name: { equals: data.name, mode: "insensitive" } } });
@@ -42,7 +42,7 @@ export async function updateCustomer(_prev: FormState, formData: FormData): Prom
 }
 
 async function updateCustomerImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("milk", "EDIT");
   const id = reqId(formData, "id", "Customer");
   const data = readCustomer(formData);
 
@@ -89,7 +89,7 @@ async function updateCustomerImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleCustomerActive(formData: FormData): Promise<void> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("milk", "EDIT");
   const id = reqId(formData, "id", "Customer");
   const active = formData.get("active") === "true";
   await prisma.customer.updateMany({ where: { id }, data: { active } });
@@ -105,7 +105,7 @@ export async function deleteCustomer(_prev: FormState, formData: FormData): Prom
 }
 
 async function deleteCustomerImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("milk", "DELETE");
   const id = reqId(formData, "id", "Customer");
 
   const customer = await prisma.customer.findUnique({ where: { id } });

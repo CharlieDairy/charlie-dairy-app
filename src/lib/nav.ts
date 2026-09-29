@@ -1,7 +1,8 @@
-import type { ModuleName } from "@/lib/modules";
-
 export type NavItem = { href: string; label: string };
-export type NavSection = { key: string; label: string; module: ModuleName; items: NavItem[] };
+// `key` doubles as the granular permission module (see src/lib/permissions.ts
+// PERMISSION_MODULES) -- a section is visible iff the signed-in user holds
+// VIEW on that key, so there's exactly one list to keep in sync, not two.
+export type NavSection = { key: string; label: string; items: NavItem[] };
 
 // Single source of truth for the app's navigation, grouped by subject (not
 // by who-can-see-it) so the journey reads the way Channab's does: Herd first
@@ -14,7 +15,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "herd",
     label: "Herd",
-    module: "OPERATIONS",
     items: [
       { href: "/admin/cows", label: "Animals" },
       { href: "/admin/cows/add", label: "Add Animal" },
@@ -25,7 +25,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "breeding",
     label: "Breeding",
-    module: "OPERATIONS",
     items: [
       { href: "/entry/breeding/heat", label: "Heat Detection" },
       { href: "/entry/breeding/ai", label: "Insemination / Service" },
@@ -37,7 +36,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "health",
     label: "Health",
-    module: "OPERATIONS",
     items: [
       { href: "/admin/reports/health", label: "Health Dashboard" },
       { href: "/entry/health/vaccination", label: "Vaccination Entry" },
@@ -49,7 +47,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "milk",
     label: "Milk Production and Sale",
-    module: "OPERATIONS",
     items: [
       { href: "/entry/milking", label: "Milking Entry" },
       { href: "/admin/reports/herd", label: "Milk Production by Cow" },
@@ -62,7 +59,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "weight",
     label: "Weight",
-    module: "OPERATIONS",
     items: [
       { href: "/admin/reports/weight", label: "Weight Dashboard" },
       { href: "/entry/weight", label: "Weight Entry" },
@@ -72,7 +68,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "feed",
     label: "Feed & Inventory",
-    module: "OPERATIONS",
     items: [
       { href: "/entry/feed", label: "Feed Entry" },
       { href: "/admin/reports/feed", label: "Feed Overview" },
@@ -82,7 +77,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "financial",
     label: "Financial",
-    module: "FINANCIAL",
     items: [
       { href: "/entry/cash", label: "Cash Entry" },
       { href: "/admin/reports/cashflow", label: "Cash Flow" },
@@ -98,7 +92,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "team",
     label: "Team",
-    module: "PEOPLE",
     items: [
       { href: "/admin/team", label: "Employees" },
       { href: "/admin/team/add", label: "Add Employee" },
@@ -112,7 +105,6 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "admin",
     label: "Admin",
-    module: "ADMIN",
     items: [
       { href: "/admin/users", label: "Users & Access" },
       { href: "/admin/master-data", label: "Master Data" },
@@ -122,6 +114,6 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-export function visibleSections(isFullAdmin: boolean, modules: ModuleName[]): NavSection[] {
-  return NAV_SECTIONS.filter((s) => isFullAdmin || modules.includes(s.module));
+export function visibleSections(isFullAdmin: boolean, permissions: Set<string>): NavSection[] {
+  return NAV_SECTIONS.filter((s) => isFullAdmin || permissions.has(`${s.key}:VIEW`));
 }

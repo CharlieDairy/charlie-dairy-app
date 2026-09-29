@@ -1,73 +1,57 @@
-// Single source of truth for the app's 4 access modules — used by the JWT
-// (auth.ts), route gating (middleware.ts), nav filtering (admin/layout.tsx),
-// and the grant UI (admin/users).
-export const MODULES = ["OPERATIONS", "FINANCIAL", "PEOPLE", "ADMIN"] as const;
-export type ModuleName = (typeof MODULES)[number];
+// Maps a path to the granular permission module (a NAV_SECTIONS key, see
+// src/lib/nav.ts and src/lib/permissions.ts) it requires VIEW on. Used by:
+// middleware.ts (coarse, JWT-based first-pass gate) and entry/page.tsx
+// (tile filtering). The authoritative, live per-action check for writes
+// happens in each server action via requirePermission() (src/lib/access.ts)
+// -- this file only decides "is this path even reachable at all".
+//
+// Longest-prefix match wins, so list more specific paths before their
+// parents isn't required here since none of these overlap as prefixes of
+// each other.
+import type { PermissionModuleKey } from "@/lib/permissions";
 
-export const MODULE_LABELS: Record<ModuleName, string> = {
-  OPERATIONS: "Operations",
-  FINANCIAL: "Financial",
-  PEOPLE: "People",
-  ADMIN: "Admin",
-};
+export type { PermissionModuleKey as ModuleName };
 
-export const MODULE_DESCRIPTIONS: Record<ModuleName, string> = {
-  OPERATIONS: "Herd, Breeding, Health, Milk, Weight and Feed & Inventory sections — animal records, all entry forms for these subjects, and their reports",
-  FINANCIAL: "Financial section — Cash Entry, Cash Flow, P&L Statement, Balance Sheet, Expense Breakdown, AR Aging, Vendor Ledger, Capital Ledger, Assets",
-  PEOPLE: "Users & Access, and the Team section — employees, salary payments, attendance",
-  ADMIN: "Master Data, Bulk Data, Audit Log",
-};
-
-// Longest-prefix match wins, so list more specific paths before their parents
-// isn't required here since none of these overlap as prefixes of each other.
-const PATH_MODULES: { prefix: string; module: ModuleName }[] = [
-  { prefix: "/admin/cows", module: "OPERATIONS" },
-  { prefix: "/admin/reports/breeding", module: "OPERATIONS" },
-  { prefix: "/admin/reports/herd", module: "OPERATIONS" },
-  { prefix: "/admin/reports/milk-analytics", module: "OPERATIONS" },
-  { prefix: "/admin/reports/reconciliation", module: "OPERATIONS" },
-  { prefix: "/admin/reports/milk-sales", module: "OPERATIONS" },
-  { prefix: "/admin/reports/feed", module: "OPERATIONS" },
-  { prefix: "/admin/reports/health", module: "OPERATIONS" },
-  { prefix: "/admin/health", module: "OPERATIONS" },
-  { prefix: "/admin/reports/weight", module: "OPERATIONS" },
-  { prefix: "/admin/weight", module: "OPERATIONS" },
-  { prefix: "/admin/feed", module: "OPERATIONS" },
-  { prefix: "/admin/customers", module: "OPERATIONS" },
-  { prefix: "/admin/capital", module: "FINANCIAL" },
-  { prefix: "/admin/assets", module: "FINANCIAL" },
-  { prefix: "/admin/vendors", module: "FINANCIAL" },
-  { prefix: "/admin/reports/pl", module: "FINANCIAL" },
-  { prefix: "/admin/reports/cashflow", module: "FINANCIAL" },
-  { prefix: "/admin/reports/balance-sheet", module: "FINANCIAL" },
-  { prefix: "/admin/reports/expense-breakdown", module: "FINANCIAL" },
-  { prefix: "/admin/reports/ar-aging", module: "FINANCIAL" },
-  { prefix: "/admin/users", module: "PEOPLE" },
-  { prefix: "/admin/team", module: "PEOPLE" },
-  { prefix: "/admin/master-data", module: "ADMIN" },
-  { prefix: "/admin/bulk", module: "ADMIN" },
-  { prefix: "/admin/audit-log", module: "ADMIN" },
-  // Data Entry forms (/entry/*) -- previously ungated server-side (only
-  // hidden from nav), so a user could reach any form by URL regardless of
-  // their granted modules. Same module per subject as its admin/report
-  // counterpart above, so a Financial-only user genuinely can't submit
-  // Milking/Breeding/Feed entries and vice versa.
-  { prefix: "/entry/milking", module: "OPERATIONS" },
-  { prefix: "/entry/feed", module: "OPERATIONS" },
-  { prefix: "/entry/milk-sale", module: "OPERATIONS" },
-  { prefix: "/entry/breeding", module: "OPERATIONS" },
-  { prefix: "/entry/health", module: "OPERATIONS" },
-  { prefix: "/entry/weight", module: "OPERATIONS" },
-  { prefix: "/entry/cash", module: "FINANCIAL" },
-  { prefix: "/entry/team", module: "PEOPLE" },
+const PATH_MODULES: { prefix: string; module: PermissionModuleKey }[] = [
+  { prefix: "/admin/cows", module: "herd" },
+  { prefix: "/admin/reports/breeding", module: "breeding" },
+  { prefix: "/entry/breeding", module: "breeding" },
+  { prefix: "/admin/reports/health", module: "health" },
+  { prefix: "/admin/health", module: "health" },
+  { prefix: "/entry/health", module: "health" },
+  { prefix: "/admin/reports/herd", module: "milk" }, // "Milk Production by Cow" report
+  { prefix: "/admin/reports/milk-analytics", module: "milk" },
+  { prefix: "/admin/reports/reconciliation", module: "milk" },
+  { prefix: "/admin/reports/milk-sales", module: "milk" },
+  { prefix: "/admin/customers", module: "milk" },
+  { prefix: "/entry/milking", module: "milk" },
+  { prefix: "/entry/milk-sale", module: "milk" },
+  { prefix: "/entry/milk-usage", module: "milk" },
+  { prefix: "/admin/reports/weight", module: "weight" },
+  { prefix: "/admin/weight", module: "weight" },
+  { prefix: "/entry/weight", module: "weight" },
+  { prefix: "/admin/reports/feed", module: "feed" },
+  { prefix: "/admin/feed", module: "feed" },
+  { prefix: "/entry/feed", module: "feed" },
+  { prefix: "/admin/capital", module: "financial" },
+  { prefix: "/admin/assets", module: "financial" },
+  { prefix: "/admin/vendors", module: "financial" },
+  { prefix: "/admin/reports/pl", module: "financial" },
+  { prefix: "/admin/reports/cashflow", module: "financial" },
+  { prefix: "/admin/reports/balance-sheet", module: "financial" },
+  { prefix: "/admin/reports/expense-breakdown", module: "financial" },
+  { prefix: "/admin/reports/ar-aging", module: "financial" },
+  { prefix: "/entry/cash", module: "financial" },
+  { prefix: "/admin/team", module: "team" },
+  { prefix: "/entry/team", module: "team" },
+  { prefix: "/admin/users", module: "admin" },
+  { prefix: "/admin/master-data", module: "admin" },
+  { prefix: "/admin/bulk", module: "admin" },
+  { prefix: "/admin/audit-log", module: "admin" },
 ];
 
-/** Returns the module a given /admin path requires, or null if it needs no specific module (e.g. the dashboard itself). */
-export function moduleForPath(pathname: string): ModuleName | null {
+/** Returns the permission module a given path requires VIEW on, or null if it needs none (e.g. the dashboard itself). */
+export function moduleForPath(pathname: string): PermissionModuleKey | null {
   const match = PATH_MODULES.find((p) => pathname === p.prefix || pathname.startsWith(p.prefix + "/"));
   return match?.module ?? null;
-}
-
-export function isValidModule(value: string): value is ModuleName {
-  return (MODULES as readonly string[]).includes(value);
 }

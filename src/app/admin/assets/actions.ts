@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAccess, runAction } from "@/lib/access";
+import { requireAccess, requirePermission, runAction } from "@/lib/access";
 import { reqId, reqNum, reqText, optDate, optNum } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
@@ -14,7 +14,7 @@ export async function addAsset(_prev: FormState, formData: FormData): Promise<Fo
 }
 
 async function addAssetImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "CREATE");
   const assetClass = reqText(formData, "assetClass", "Asset class", { max: 100 });
   const details = reqText(formData, "details", "Details", { max: 200 });
   const qty = reqNum(formData, "qty", "Quantity", { positive: true, max: 1_000_000 });
@@ -50,7 +50,7 @@ export async function updateAsset(_prev: FormState, formData: FormData): Promise
 }
 
 async function updateAssetImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "EDIT");
   const id = reqId(formData, "id", "Asset");
   const assetClass = reqText(formData, "assetClass", "Asset class", { max: 100 });
   const details = reqText(formData, "details", "Details", { max: 200 });
@@ -101,7 +101,7 @@ async function updateAssetImpl(_prev: FormState, formData: FormData): Promise<Fo
 }
 
 export async function deleteAsset(formData: FormData): Promise<void> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "DELETE");
   const id = reqId(formData, "id", "Asset");
   const asset = await prisma.asset.findUnique({ where: { id } });
   if (asset) {
@@ -120,7 +120,7 @@ export async function deleteAssetInline(_prev: FormState, formData: FormData): P
 }
 
 async function deleteAssetInlineImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "DELETE");
   const id = reqId(formData, "id", "Asset");
 
   const asset = await prisma.asset.findUnique({ where: { id } });
@@ -144,7 +144,7 @@ export async function deleteAssets(_prev: BulkDeleteState, formData: FormData): 
 }
 
 async function deleteAssetsImpl(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "DELETE");
   await requireAccess({ admin: true });
 
   const ids = formData.getAll("assetIds") as string[];

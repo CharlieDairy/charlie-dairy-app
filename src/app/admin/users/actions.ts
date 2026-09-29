@@ -3,10 +3,11 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { isValidModule } from "@/lib/modules";
-import { requireAccess, runAction } from "@/lib/access";
-import { AccessError } from "@/lib/errors";
-import { reqText, reqEnum, reqId } from "@/lib/validate";
+import { redirect } from "next/navigation";
+import { requireAccess, requirePermission, runAction } from "@/lib/access";
+import { AccessError, ValidationError } from "@/lib/errors";
+import { reqText, reqEnum, reqId, optId, optText } from "@/lib/validate";
+import { PERMISSION_ACTIONS, PERMISSION_MODULES } from "@/lib/permissions";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -16,11 +17,10 @@ function isValidUsername(username: string): boolean {
   return /^[a-z0-9._-]{3,32}$/i.test(username);
 }
 
-
-// Anyone holding the People module may manage ENTRY accounts, but only an
-// Admin may create, modify, disable or reset an ADMIN account, change roles
-// or hand out modules they don't hold themselves -- otherwise "People"
-// would be a back door to full admin.
+// Anyone holding admin:CREATE/EDIT may manage ENTRY accounts and assign
+// existing AccessRoles, but only an Admin may create, modify, disable or
+// reset an ADMIN account, or change a user's ADMIN/ENTRY role -- otherwise
+// the admin module would be a back door to full admin.
 
 async function otherActiveAdminExists(excludeUserId: string): Promise<boolean> {
   const count = await prisma.user.count({ where: { role: "ADMIN", active: true, NOT: { id: excludeUserId } } });
@@ -32,12 +32,13 @@ export async function createUser(_prev: FormState, formData: FormData): Promise<
 }
 
 async function createUserImpl(formData: FormData): Promise<FormState> {
-  const caller = await requireAccess({ module: "PEOPLE" });
+  const caller = await requirePermission("admin", "CREATE");
 
   const name = reqText(formData, "name", "Name", { max: 100 });
   const username = reqText(formData, "username", "Username", { max: 32 });
   const role = reqEnum(formData, "role", "Role", ROLES);
   const password = formData.get("password");
+  const accessRoleId = optId(formData, "accessRoleId", "Role");
 
   if (role === "ADMIN" && caller.role !== "ADMIN") {
     throw new AccessError("Only an Admin can create another Admin account.");
@@ -55,8 +56,15 @@ async function createUserImpl(formData: FormData): Promise<FormState> {
     return { success: false, message: `Username "${username}" is already in use.` };
   }
 
+  if (accessRoleId) {
+    const role_ = await prisma.accessRole.findUnique({ where: { id: accessRoleId }, select: { id: true } });
+    if (!role_) return { success: false, message: "Role not found." };
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.create({ data: { name, username, passwordHash, role } });
+  await prisma.user.create({
+    data: { name, username, passwordHash, role, accessRoleId: role === "ADMIN" ? null : accessRoleId },
+  });
 
   revalidatePath("/admin/users");
   return { success: true, message: `User "${username}" created.` };
@@ -77,12 +85,12 @@ export async function setUserRole(formData: FormData): Promise<void> {
     throw new AccessError("You can't demote the last active Admin.");
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { role } });
+  await prisma.user.update({ where: { id: userId }, data: { role, accessRoleId: role === "ADMIN" ? null : undefined } });
   revalidatePath("/admin/users");
 }
 
 export async function setUserActive(formData: FormData): Promise<void> {
-  const caller = await requireAccess({ module: "PEOPLE" });
+  const caller = await requirePermission("admin", "EDIT");
   const userId = reqId(formData, "userId", "User");
   const active = formData.get("active") === "true";
 
@@ -101,31 +109,24 @@ export async function setUserActive(formData: FormData): Promise<void> {
   revalidatePath("/admin/users");
 }
 
-export async function toggleModule(formData: FormData): Promise<void> {
-  const caller = await requireAccess({ module: "PEOPLE" });
+// Assigns an existing AccessRole (or clears it) for an ENTRY-role user. The
+// role's own permissions were already vetted when it was created (gated by
+// admin:CREATE) -- assigning a pre-existing role to someone is an admin:EDIT
+// action, not a fresh grant of whatever the caller happens to hold.
+export async function setUserAccessRole(formData: FormData): Promise<void> {
+  await requirePermission("admin", "EDIT");
   const userId = reqId(formData, "userId", "User");
-  const moduleRaw = formData.get("module");
-  const grant = formData.get("grant") === "true";
-
-  if (typeof moduleRaw !== "string" || !isValidModule(moduleRaw)) return;
-  // You can only hand out access you hold yourself (Admins hold everything).
-  if (caller.role !== "ADMIN" && !caller.modules.includes(moduleRaw)) {
-    throw new AccessError("You can only grant modules you have access to yourself.");
-  }
+  const accessRoleId = optId(formData, "accessRoleId", "Role");
 
   const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-  if (!target || target.role === "ADMIN") return; // Admins implicitly hold every module.
+  if (!target || target.role === "ADMIN") return; // Admins implicitly hold every permission.
 
-  if (grant) {
-    await prisma.moduleAccess.upsert({
-      where: { userId_module: { userId, module: moduleRaw } },
-      update: {},
-      create: { userId, module: moduleRaw },
-    });
-  } else {
-    await prisma.moduleAccess.deleteMany({ where: { userId, module: moduleRaw } });
+  if (accessRoleId) {
+    const role = await prisma.accessRole.findUnique({ where: { id: accessRoleId }, select: { id: true } });
+    if (!role) return;
   }
 
+  await prisma.user.update({ where: { id: userId }, data: { accessRoleId } });
   revalidatePath("/admin/users");
 }
 
@@ -134,7 +135,7 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
 }
 
 async function resetPasswordImpl(formData: FormData): Promise<FormState> {
-  const caller = await requireAccess({ module: "PEOPLE" });
+  const caller = await requirePermission("admin", "EDIT");
   const userId = reqId(formData, "userId", "User");
   const newPassword = formData.get("newPassword");
 
@@ -154,4 +155,106 @@ async function resetPasswordImpl(formData: FormData): Promise<FormState> {
 
   revalidatePath("/admin/users");
   return { success: true, message: `Password reset for ${target.username}.` };
+}
+
+// ---------------------------------------------------------------------------
+// AccessRole CRUD -- the granular permission matrix.
+// ---------------------------------------------------------------------------
+
+export async function createAccessRole(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => createAccessRoleImpl(formData));
+}
+
+async function createAccessRoleImpl(formData: FormData): Promise<FormState> {
+  await requirePermission("admin", "CREATE");
+  const name = reqText(formData, "name", "Role name", { max: 60 });
+  const description = optText(formData, "description", "Description", { max: 300 });
+
+  const existing = await prisma.accessRole.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
+  if (existing) return { success: false, message: `A role named "${name}" already exists.` };
+
+  const grants = readGrantsFromForm(formData);
+  await prisma.$transaction(async (tx) => {
+    const created = await tx.accessRole.create({ data: { name, description } });
+    if (grants.length > 0) {
+      await tx.accessRolePermission.createMany({
+        data: grants.map((g) => ({ accessRoleId: created.id, module: g.module, action: g.action })),
+      });
+    }
+    return created;
+  });
+
+  revalidatePath("/admin/users/roles");
+  revalidatePath("/admin/users");
+  redirect("/admin/users/roles");
+}
+
+export async function updateAccessRole(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => updateAccessRoleImpl(formData));
+}
+
+async function updateAccessRoleImpl(formData: FormData): Promise<FormState> {
+  await requirePermission("admin", "EDIT");
+  const id = reqId(formData, "id", "Role");
+  const name = reqText(formData, "name", "Role name", { max: 60 });
+  const description = optText(formData, "description", "Description", { max: 300 });
+
+  const existing = await prisma.accessRole.findUnique({ where: { id } });
+  if (!existing) return { success: false, message: "Role not found." };
+
+  const clash = await prisma.accessRole.findFirst({
+    where: { name: { equals: name, mode: "insensitive" }, NOT: { id } },
+    select: { id: true },
+  });
+  if (clash) return { success: false, message: `Another role is already named "${name}".` };
+
+  const grants = readGrantsFromForm(formData);
+  await prisma.$transaction(async (tx) => {
+    await tx.accessRole.update({ where: { id }, data: { name, description } });
+    await tx.accessRolePermission.deleteMany({ where: { accessRoleId: id } });
+    if (grants.length > 0) {
+      await tx.accessRolePermission.createMany({
+        data: grants.map((g) => ({ accessRoleId: id, module: g.module, action: g.action })),
+      });
+    }
+  });
+
+  revalidatePath("/admin/users/roles");
+  revalidatePath(`/admin/users/roles/${id}`);
+  revalidatePath("/admin/users");
+  return { success: true, message: `Role "${name}" updated.` };
+}
+
+function readGrantsFromForm(formData: FormData): { module: string; action: "VIEW" | "CREATE" | "EDIT" | "DELETE" | "EXPORT" }[] {
+  const grants: { module: string; action: "VIEW" | "CREATE" | "EDIT" | "DELETE" | "EXPORT" }[] = [];
+  for (const m of PERMISSION_MODULES) {
+    for (const a of PERMISSION_ACTIONS) {
+      if (formData.get(`perm_${m.key}_${a}`) === "on") grants.push({ module: m.key, action: a });
+    }
+  }
+  return grants;
+}
+
+export async function deleteAccessRole(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => deleteAccessRoleImpl(formData));
+}
+
+async function deleteAccessRoleImpl(formData: FormData): Promise<FormState> {
+  await requireAccess({ admin: true });
+  const id = reqId(formData, "id", "Role");
+
+  const role = await prisma.accessRole.findUnique({ where: { id } });
+  if (!role) return { success: false, message: "Role not found." };
+
+  const assignedCount = await prisma.user.count({ where: { accessRoleId: id } });
+  if (assignedCount > 0) {
+    throw new ValidationError(
+      `"${role.name}" is assigned to ${assignedCount} user${assignedCount === 1 ? "" : "s"} and can't be deleted. Reassign them first.`
+    );
+  }
+
+  await prisma.accessRole.delete({ where: { id } });
+  revalidatePath("/admin/users/roles");
+  revalidatePath("/admin/users");
+  return { success: true, message: `Role "${role.name}" deleted.` };
 }

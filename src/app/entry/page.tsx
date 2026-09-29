@@ -1,24 +1,23 @@
 import Link from "next/link";
-import { auth } from "@/auth";
-import type { ModuleName } from "@/lib/modules";
+import { getLiveUser, hasPermission } from "@/lib/access";
+import type { PermissionModuleKey } from "@/lib/permissions";
 
-const tiles: { href: string; label: string; desc: string; module: ModuleName }[] = [
-  { href: "/entry/milking", label: "Milking Entry", desc: "Record litres per cow, per shift", module: "OPERATIONS" },
-  { href: "/entry/feed", label: "Feed Entry", desc: "Record feed inward / outward", module: "OPERATIONS" },
-  { href: "/entry/milk-sale", label: "Milk Sale Entry", desc: "Record a milk sale", module: "OPERATIONS" },
-  { href: "/entry/breeding/heat", label: "Heat Detection", desc: "Record a heat event", module: "OPERATIONS" },
-  { href: "/entry/breeding/ai", label: "Insemination / Service", desc: "Record AI, natural service or embryo transfer", module: "OPERATIONS" },
-  { href: "/entry/breeding/pregnancy-check", label: "Pregnancy Check", desc: "Record a pregnancy diagnosis", module: "OPERATIONS" },
-  { href: "/entry/breeding/calving", label: "Calving", desc: "Record a calving and its calf", module: "OPERATIONS" },
-  { href: "/entry/cash", label: "Cash Entry", desc: "Record cash in / cash out", module: "FINANCIAL" },
+const tiles: { href: string; label: string; desc: string; module: PermissionModuleKey }[] = [
+  { href: "/entry/milking", label: "Milking Entry", desc: "Record litres per cow, per shift", module: "milk" },
+  { href: "/entry/feed", label: "Feed Entry", desc: "Record feed inward / outward", module: "feed" },
+  { href: "/entry/milk-sale", label: "Milk Sale Entry", desc: "Record a milk sale", module: "milk" },
+  { href: "/entry/breeding/heat", label: "Heat Detection", desc: "Record a heat event", module: "breeding" },
+  { href: "/entry/breeding/ai", label: "Insemination / Service", desc: "Record AI, natural service or embryo transfer", module: "breeding" },
+  { href: "/entry/breeding/pregnancy-check", label: "Pregnancy Check", desc: "Record a pregnancy diagnosis", module: "breeding" },
+  { href: "/entry/breeding/calving", label: "Calving", desc: "Record a calving and its calf", module: "breeding" },
+  { href: "/entry/cash", label: "Cash Entry", desc: "Record cash in / cash out", module: "financial" },
 ];
 
 export default async function EntryHome() {
-  const session = await auth();
-  const role = (session?.user as { role?: string } | undefined)?.role;
-  const modules = ((session?.user as { modules?: string[] } | undefined)?.modules ?? []) as ModuleName[];
-  const isFullAdmin = role === "ADMIN";
-  const visible = tiles.filter((t) => isFullAdmin || modules.includes(t.module));
+  const user = await getLiveUser();
+  if (!user) return null; // the layout already renders AccountBlocked in this case
+  const isFullAdmin = user.role === "ADMIN";
+  const visible = tiles.filter((t) => isFullAdmin || hasPermission(user, t.module, "VIEW"));
 
   return (
     <div className="flex flex-col gap-4">

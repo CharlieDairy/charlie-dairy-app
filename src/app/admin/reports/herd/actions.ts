@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requireAccess, runAction } from "@/lib/access";
+import { requireAccess, requirePermission, runAction } from "@/lib/access";
 
 export type BulkDeleteState = { success: boolean; message: string } | undefined;
 
@@ -16,7 +16,7 @@ export async function deleteMilkProductionForCows(_prev: BulkDeleteState, formDa
 }
 
 async function deleteMilkProductionForCowsImpl(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("milk", "DELETE");
   await requireAccess({ admin: true });
 
   const cowIds = formData.getAll("cowIds") as string[];

@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqId, reqText, optText } from "@/lib/validate";
 
@@ -24,7 +24,7 @@ export async function addVendor(_prev: FormState, formData: FormData): Promise<F
 }
 
 async function addVendorImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "CREATE");
   const data = readVendor(formData);
 
   const existing = await prisma.vendor.findFirst({ where: { name: { equals: data.name, mode: "insensitive" } } });
@@ -41,7 +41,7 @@ export async function updateVendor(_prev: FormState, formData: FormData): Promis
 }
 
 async function updateVendorImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "EDIT");
   const id = reqId(formData, "id", "Vendor");
   const data = readVendor(formData);
 
@@ -77,7 +77,7 @@ async function updateVendorImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleVendorActive(formData: FormData): Promise<void> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "EDIT");
   const id = reqId(formData, "id", "Vendor");
   const active = formData.get("active") === "true";
   await prisma.vendor.updateMany({ where: { id }, data: { active } });
@@ -90,7 +90,7 @@ export async function deleteVendor(_prev: FormState, formData: FormData): Promis
 }
 
 async function deleteVendorImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "DELETE");
   const id = reqId(formData, "id", "Vendor");
 
   const vendor = await prisma.vendor.findUnique({ where: { id } });

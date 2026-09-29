@@ -1,17 +1,17 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { isValidModule, type ModuleName } from "@/lib/modules";
 import { AccessError, ValidationError } from "@/lib/errors";
+import { permKey, type PermissionActionKey, type PermissionModuleKey } from "@/lib/permissions";
 
 // ---------------------------------------------------------------------------
 // Live authorization for server actions.
 //
 // middleware.ts only gates page navigations, and only from the JWT issued at
-// sign-in -- so a deactivated user, or one whose modules were revoked, kept
+// sign-in -- so a deactivated user, or one whose access role changed, kept
 // full access until their token expired, and a server action reachable by
 // URL was only as protected as the route it was posted from. Every action
-// now calls requireAccess() itself, which re-reads the user, their active
-// flag, role and module grants from the database on every call.
+// now calls requirePermission() itself, which re-reads the user, their
+// active flag, role and AccessRole grants from the database on every call.
 // ---------------------------------------------------------------------------
 
 export type LiveUser = {
@@ -19,10 +19,12 @@ export type LiveUser = {
   name: string;
   username: string;
   role: "ADMIN" | "ENTRY";
-  modules: ModuleName[];
+  /** "module:ACTION" keys this user's AccessRole grants. Always empty for
+   *  ADMIN, who bypasses every check below regardless of this set. */
+  permissions: Set<string>;
 };
 
-export type AccessRule = { admin?: boolean; module?: ModuleName };
+export type AccessRule = { admin?: boolean };
 
 /** The signed-in user as they are in the database right now, or null if signed out / disabled / deleted. */
 export async function getLiveUser(): Promise<LiveUser | null> {
@@ -32,35 +34,53 @@ export async function getLiveUser(): Promise<LiveUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, username: true, role: true, active: true },
+    select: { id: true, name: true, username: true, role: true, active: true, accessRoleId: true },
   });
   if (!user || !user.active) return null;
 
-  const grants =
-    user.role === "ADMIN"
-      ? []
-      : await prisma.moduleAccess.findMany({ where: { userId: id }, select: { module: true } });
+  const permissions = new Set<string>();
+  if (user.role !== "ADMIN" && user.accessRoleId) {
+    const grants = await prisma.accessRolePermission.findMany({
+      where: { accessRoleId: user.accessRoleId },
+      select: { module: true, action: true },
+    });
+    for (const g of grants) permissions.add(permKey(g.module, g.action as PermissionActionKey));
+  }
 
   return {
     id: user.id,
     name: user.name,
     username: user.username,
     role: user.role as "ADMIN" | "ENTRY",
-    modules: grants.map((g) => g.module as string).filter(isValidModule),
+    permissions,
   };
 }
 
+/** True if this live user (ADMIN always, else via their AccessRole) holds `module:action`. */
+export function hasPermission(user: LiveUser, module: PermissionModuleKey | string, action: PermissionActionKey): boolean {
+  return user.role === "ADMIN" || user.permissions.has(permKey(module, action));
+}
+
 /**
- * Throws AccessError unless the caller is an active user meeting `rule`.
- * ADMIN role satisfies every module. Call this first in every server action.
+ * Throws AccessError unless the caller is an active user holding
+ * `module:action` through their AccessRole (or is ADMIN, who bypasses every
+ * check). Call this first in every server action that creates, edits,
+ * deletes or exports something.
  */
+export async function requirePermission(module: PermissionModuleKey, action: PermissionActionKey): Promise<LiveUser> {
+  const user = await getLiveUser();
+  if (!user) throw new AccessError("Your session has expired or your account is disabled. Please sign in again.");
+  if (!hasPermission(user, module, action)) {
+    throw new AccessError("You don't have permission to do that.");
+  }
+  return user;
+}
+
+/** For the handful of actions that are ADMIN-role-only regardless of any AccessRole (e.g. bulk deletes, role changes). */
 export async function requireAccess(rule: AccessRule = {}): Promise<LiveUser> {
   const user = await getLiveUser();
   if (!user) throw new AccessError("Your session has expired or your account is disabled. Please sign in again.");
   if (rule.admin && user.role !== "ADMIN") throw new AccessError("Only an Admin can do that.");
-  if (rule.module && user.role !== "ADMIN" && !user.modules.includes(rule.module)) {
-    throw new AccessError("You don't have access to this section.");
-  }
   return user;
 }
 

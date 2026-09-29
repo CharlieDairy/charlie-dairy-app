@@ -21,27 +21,44 @@ model User {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
-  moduleAccess ModuleAccess[]
+  accessRoleId String?
+  accessRole   AccessRole? @relation(fields: [accessRoleId], references: [id])
 }
 
-enum ModuleName {
-  OPERATIONS
-  FINANCIAL
-  PEOPLE
-  ADMIN
+enum PermissionAction {
+  VIEW
+  CREATE
+  EDIT
+  DELETE
+  EXPORT
 }
 
-// Grants a non-ADMIN-role user visibility into an /admin/* section without
-// making them a full admin. ADMIN role always has every module implicitly —
-// see src/lib/modules.ts and middleware.ts.
-model ModuleAccess {
-  id        String     @id @default(cuid())
-  userId    String
-  user      User       @relation(fields: [userId], references: [id])
-  module    ModuleName
-  grantedAt DateTime   @default(now())
+// A named, reusable bundle of granular (module, action) grants, assigned to
+// non-ADMIN-role users in place of the old per-user coarse ModuleAccess
+// list. ADMIN role always bypasses this entirely (see src/lib/access.ts) --
+// this only governs ENTRY-role users. `module` is a nav section key (see
+// src/lib/nav.ts NAV_SECTIONS) rather than its own enum, so the permission
+// matrix and the sidebar/route-gating both stay driven by that one list.
+model AccessRole {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@unique([userId, module])
+  permissions AccessRolePermission[]
+  users       User[]
+}
+
+model AccessRolePermission {
+  id           String            @id @default(cuid())
+  accessRoleId String
+  accessRole   AccessRole        @relation(fields: [accessRoleId], references: [id], onDelete: Cascade)
+  module       String
+  action       PermissionAction
+
+  @@unique([accessRoleId, module, action])
+  @@index([accessRoleId])
 }
 
 enum CowGender {

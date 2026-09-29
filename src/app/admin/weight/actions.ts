@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, reqNum, optText } from "@/lib/validate";
 
@@ -13,7 +13,7 @@ export async function addWeightStandard(_prev: FormState, formData: FormData): P
 }
 
 async function addWeightStandardImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("weight", "CREATE");
   const breed = optText(formData, "breed", "Breed", { max: 100 });
   const ageMonths = reqNum(formData, "ageMonths", "Age (months)", { min: 0, max: 400, decimals: 0 });
   const minWeightKg = reqNum(formData, "minWeightKg", "Minimum weight", { positive: true, max: 2000 });
@@ -36,7 +36,7 @@ async function addWeightStandardImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function deleteWeightStandard(formData: FormData): Promise<void> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("weight", "DELETE");
   const id = reqId(formData, "id", "Standard");
   await prisma.weightStandard.deleteMany({ where: { id } });
   revalidatePath("/admin/weight/standards");
@@ -48,7 +48,7 @@ export async function addWeightEntry(_prev: FormState, formData: FormData): Prom
 }
 
 async function addWeightEntryImpl(formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "OPERATIONS" });
+  const user = await requirePermission("weight", "CREATE");
   const cowId = reqId(formData, "cowId", "Animal");
   const date = reqDate(formData, "date", "Date");
   const weightKg = reqNum(formData, "weightKg", "Weight", { positive: true, max: 2000, decimals: 1 });

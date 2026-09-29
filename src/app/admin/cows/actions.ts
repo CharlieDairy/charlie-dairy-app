@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAccess, runAction } from "@/lib/access";
+import { requireAccess, requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optDate, optNum, optText } from "@/lib/validate";
 
@@ -18,7 +18,7 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
 }
 
 async function addCowImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "OPERATIONS" });
+  const user = await requirePermission("herd", "CREATE");
   const tag = reqText(formData, "tag", "Tag", { max: 40 });
   const breed = optText(formData, "breed", "Breed", { max: 100 });
   const gender = reqEnum(formData, "gender", "Gender", GENDERS);
@@ -129,7 +129,7 @@ export async function updateCowDetails(_prev: FormState, formData: FormData): Pr
 }
 
 async function updateCowDetailsImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("herd", "EDIT");
   const id = reqId(formData, "id", "Cow");
   const breed = optText(formData, "breed", "Breed", { max: 100 });
   const condition = optText(formData, "condition", "Condition", { max: 100 });
@@ -197,7 +197,7 @@ export async function addWeightRecord(_prev: FormState, formData: FormData): Pro
 }
 
 async function addWeightRecordImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "OPERATIONS" });
+  const user = await requirePermission("weight", "CREATE");
   const cowId = reqId(formData, "cowId", "Animal");
   const date = reqDate(formData, "date", "Date");
   const weightKg = reqNum(formData, "weightKg", "Weight", { positive: true, max: 2000, decimals: 1 });
@@ -224,7 +224,7 @@ export async function addCowMovement(_prev: FormState, formData: FormData): Prom
 }
 
 async function addCowMovementImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ module: "OPERATIONS" });
+  const user = await requirePermission("herd", "CREATE");
   const cowId = reqId(formData, "cowId", "Animal");
   const date = reqDate(formData, "date", "Date");
   const location = reqText(formData, "location", "Location", { max: 100 });
@@ -246,7 +246,7 @@ export async function updateCowStatus(_prev: FormState, formData: FormData): Pro
 }
 
 async function updateCowStatusImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("herd", "EDIT");
   const cowId = reqId(formData, "cowId", "Cow");
   const status = reqEnum(formData, "status", "Status", STATUSES);
 
@@ -277,7 +277,7 @@ export async function deleteCow(_prev: DeleteState, formData: FormData): Promise
 }
 
 async function deleteCowImpl(_prev: DeleteState, formData: FormData): Promise<DeleteState> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("herd", "DELETE");
   const cowId = formData.get("cowId") as string | null;
   if (!cowId) return { success: false, message: "Missing cow id." };
 
@@ -318,7 +318,7 @@ export async function deleteCows(_prev: BulkDeleteState, formData: FormData): Pr
 }
 
 async function deleteCowsImpl(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
-  await requireAccess({ module: "OPERATIONS" });
+  await requirePermission("herd", "DELETE");
   await requireAccess({ admin: true });
 
   const cowIds = formData.getAll("cowIds") as string[];

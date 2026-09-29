@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqNum, reqText, optText } from "@/lib/validate";
 
@@ -15,7 +15,7 @@ export async function addCapitalEntry(_prev: FormState, formData: FormData): Pro
 }
 
 async function addCapitalEntryImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ module: "FINANCIAL" });
+  await requirePermission("financial", "CREATE");
 
   const date = reqDate(formData, "date", "Date");
   const partner = reqText(formData, "partner", "Partner", { max: 100 });

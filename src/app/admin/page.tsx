@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { getLiveUser, hasPermission } from "@/lib/access";
 import { getFarmDashboard } from "@/lib/reports/farmDashboard";
 import { getFeedOverview } from "@/lib/reports/feed";
 import { formatRs } from "@/lib/format";
@@ -124,10 +124,15 @@ const JUMP_LINKS: [string, string][] = [
 
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ day?: string; period?: string; from?: string; to?: string }> }) {
   const params = await searchParams;
-  const session = await auth();
-  const user = session?.user as { role?: string; modules?: string[] } | undefined;
-  const finance = user?.role === "ADMIN" || !!user?.modules?.includes("FINANCIAL");
-  const operations = user?.role === "ADMIN" || !!user?.modules?.includes("OPERATIONS");
+  const user = await getLiveUser();
+  const isAdmin = user?.role === "ADMIN";
+  // "Operations" here bundles the same subjects the old coarse OPERATIONS
+  // module used to (herd, breeding, health, milk, weight, feed) -- the
+  // dashboard shows that whole summary block if the live user can view any
+  // one of them, not literally every one.
+  const operations =
+    isAdmin || (user !== null && (["herd", "breeding", "health", "milk", "weight", "feed"] as const).some((m) => hasPermission(user, m, "VIEW")));
+  const finance = isAdmin || (user !== null && hasPermission(user, "financial", "VIEW"));
   const [d, feed] = await Promise.all([getFarmDashboard(params), getFeedOverview()]);
   const sum = (v: Record<string, number>) => Object.values(v).reduce((n, a) => n + a, 0);
   const income = sum(d.income), expense = sum(d.expenses), net = income - expense;

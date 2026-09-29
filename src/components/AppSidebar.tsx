@@ -6,7 +6,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { doSignOut } from "@/app/actions/sign-out";
 import { visibleSections } from "@/lib/nav";
-import type { ModuleName } from "@/lib/modules";
 
 const STORAGE_KEY = "charlie-sidebar-collapsed";
 
@@ -33,9 +32,9 @@ function Chevron({ open }: { open: boolean }) {
 // sidebar vs. a bare top bar with a tile grid), which is what made the app
 // feel like two disconnected halves. Same shell everywhere now, whichever
 // URL you're actually on.
-export default function AppSidebar({ role, modules }: { role: string | undefined; modules: ModuleName[] }) {
+export default function AppSidebar({ role, permissions }: { role: string | undefined; permissions: Set<string> }) {
   const isFullAdmin = role === "ADMIN";
-  const sections = visibleSections(isFullAdmin, modules);
+  const sections = visibleSections(isFullAdmin, permissions);
   const pathname = usePathname();
 
   const activeSectionKey = sections.find((s) => s.items.some((item) => pathname === item.href || pathname.startsWith(item.href + "/")))?.key ?? null;
