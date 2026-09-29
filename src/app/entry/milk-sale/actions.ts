@@ -1,40 +1,85 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAccess, runAction } from "@/lib/access";
+import { ValidationError } from "@/lib/errors";
+import { reqDate, reqId, reqNum, reqText, optEnum, optNum, SHIFTS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
-export async function submitMilkSale(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const dateRaw = formData.get("date") as string | null;
-  const buyer = (formData.get("buyer") as string | null)?.trim();
-  const shiftRaw = (formData.get("shift") as string | null) || null;
-  const litresRaw = formData.get("litres") as string | null;
-  const rateRaw = formData.get("rate") as string | null;
-  const amountRaw = formData.get("amount") as string | null;
+type SaleFields = {
+  date: Date;
+  buyer: string;
+  shift: (typeof SHIFTS)[number] | null;
+  litres: number;
+  rate: number | null;
+  amount: number;
+};
 
-  const litres = litresRaw ? parseFloat(litresRaw) : NaN;
-  const rate = rateRaw ? parseFloat(rateRaw) : null;
-  let amount = amountRaw ? parseFloat(amountRaw) : NaN;
-  if (Number.isNaN(amount) && rate && !Number.isNaN(litres)) {
-    amount = rate * litres;
+// Shared by create and update so both apply the exact same rules.
+async function readSale(formData: FormData): Promise<SaleFields> {
+  const date = reqDate(formData, "date", "Date");
+  const typedBuyer = reqText(formData, "buyer", "Buyer", { max: 100 });
+  const shift = optEnum(formData, "shift", "Shift", SHIFTS);
+  const litres = reqNum(formData, "litres", "Litres", { positive: true, max: 100_000 });
+  const rate = optNum(formData, "rate", "Rate", { positive: true, max: 10_000 });
+  let amount = optNum(formData, "amount", "Amount", { max: 1_000_000_000 });
+
+  if (amount === null) {
+    if (rate === null) throw new ValidationError("Enter either a rate or an amount.");
+    amount = Math.round(rate * litres * 100) / 100;
+  } else if (rate !== null) {
+    // Catches the classic extra-zero typo without blocking small negotiated rounding.
+    const expected = rate * litres;
+    if (Math.abs(amount - expected) > Math.max(5, expected * 0.05)) {
+      throw new ValidationError(
+        `Amount (Rs ${amount.toLocaleString("en-PK")}) doesn't match litres × rate (Rs ${Math.round(expected).toLocaleString("en-PK")}). Please check.`
+      );
+    }
   }
 
-  if (!dateRaw || !buyer || Number.isNaN(litres) || litres <= 0 || Number.isNaN(amount)) {
-    return { success: false, message: "Please fill in date, buyer, litres and either rate or amount." };
+  // Use the customer's canonical spelling so reports don't split one buyer into two.
+  const customer = await prisma.customer.findFirst({
+    where: { name: { equals: typedBuyer, mode: "insensitive" } },
+    select: { name: true },
+  });
+
+  return { date, buyer: customer?.name ?? typedBuyer, shift, litres, rate, amount };
+}
+
+export async function submitMilkSale(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => submitMilkSaleImpl(formData));
+}
+
+async function submitMilkSaleImpl(formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "OPERATIONS" });
+  const sale = await readSale(formData);
+
+  const duplicate = await prisma.milkSale.findFirst({
+    where: {
+      date: sale.date,
+      buyer: sale.buyer,
+      shift: sale.shift,
+      litres: sale.litres,
+      amount: sale.amount,
+      createdAt: { gte: new Date(Date.now() - 120_000) },
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    throw new ValidationError("This looks identical to a sale saved moments ago, so it wasn't saved twice.");
   }
 
   await prisma.milkSale.create({
     data: {
-      date: new Date(dateRaw),
-      buyer,
-      shift: shiftRaw ? (shiftRaw as "MORNING" | "AFTERNOON" | "EVENING") : null,
-      litres,
-      rate: rate ?? undefined,
-      amount,
-      enteredBy: session?.user?.name ?? null,
+      date: sale.date,
+      buyer: sale.buyer,
+      shift: sale.shift,
+      litres: sale.litres,
+      rate: sale.rate ?? undefined,
+      amount: sale.amount,
+      enteredBy: user.name,
     },
   });
 
@@ -44,28 +89,27 @@ export async function submitMilkSale(_prev: FormState, formData: FormData): Prom
 }
 
 export async function updateMilkSale(_prev: FormState, formData: FormData): Promise<FormState> {
-  const id = formData.get("id") as string | null;
-  const dateRaw = formData.get("date") as string | null;
-  const buyer = (formData.get("buyer") as string | null)?.trim();
-  const shiftRaw = (formData.get("shift") as string | null) || null;
-  const litresRaw = formData.get("litres") as string | null;
-  const rateRaw = formData.get("rate") as string | null;
-  const amountRaw = formData.get("amount") as string | null;
+  return runAction(() => updateMilkSaleImpl(formData));
+}
 
-  const litres = litresRaw ? parseFloat(litresRaw) : NaN;
-  const rate = rateRaw ? parseFloat(rateRaw) : null;
-  let amount = amountRaw ? parseFloat(amountRaw) : NaN;
-  if (Number.isNaN(amount) && rate && !Number.isNaN(litres)) {
-    amount = rate * litres;
-  }
+async function updateMilkSaleImpl(formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "OPERATIONS" });
+  const id = reqId(formData, "id", "Sale");
+  const sale = await readSale(formData);
 
-  if (!id || !dateRaw || !buyer || Number.isNaN(litres) || litres <= 0 || Number.isNaN(amount)) {
-    return { success: false, message: "Please fill in date, buyer, litres and either rate or amount." };
-  }
+  const existing = await prisma.milkSale.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) return { success: false, message: "That sale no longer exists. Refresh the page." };
 
   await prisma.milkSale.update({
     where: { id },
-    data: { date: new Date(dateRaw), buyer, shift: shiftRaw ? (shiftRaw as "MORNING" | "AFTERNOON" | "EVENING") : null, litres, rate: rate ?? undefined, amount },
+    data: {
+      date: sale.date,
+      buyer: sale.buyer,
+      shift: sale.shift,
+      litres: sale.litres,
+      rate: sale.rate ?? undefined,
+      amount: sale.amount,
+    },
   });
 
   revalidatePath("/entry/milk-sale");
@@ -74,8 +118,11 @@ export async function updateMilkSale(_prev: FormState, formData: FormData): Prom
 }
 
 export async function deleteMilkSale(formData: FormData): Promise<void> {
-  const id = formData.get("id") as string;
-  await prisma.milkSale.delete({ where: { id } });
+  await requireAccess({ module: "OPERATIONS" });
+  const id = reqId(formData, "id", "Sale");
+  // deleteMany: deleting a sale someone else already removed is a no-op, not a crash.
+  await prisma.milkSale.deleteMany({ where: { id } });
   revalidatePath("/entry/milk-sale");
   revalidatePath("/admin/reports/milk-sales");
 }
+

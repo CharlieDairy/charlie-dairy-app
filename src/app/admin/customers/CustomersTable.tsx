@@ -3,6 +3,7 @@
 import Link from "next/link";
 import DataTable, { type DataTableColumn } from "@/components/DataTable";
 import Badge from "@/components/Badge";
+import DeleteRowButton from "@/components/DeleteRowButton";
 import { formatRs } from "@/lib/format";
 import { toggleCustomerActive, deleteCustomer } from "./actions";
 import type { CustomerWithSales } from "@/lib/reports/milkSalesByCustomer";
@@ -76,17 +77,12 @@ export default function CustomersTable({ rows }: { rows: CustomerWithSales[] }) 
               {IconBan}
             </button>
           </form>
-          <form
+          <DeleteRowButton
             action={deleteCustomer}
-            onSubmit={(e) => {
-              if (!confirm(`Delete customer "${r.name}"? This can't be undone.`)) e.preventDefault();
-            }}
-          >
-            <input type="hidden" name="id" value={r.id} />
-            <button type="submit" title="Delete" className="p-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50">
-              {IconTrash}
-            </button>
-          </form>
+            hiddenFields={{ id: r.id }}
+            confirmMessage={`Delete customer "${r.name}"? This can't be undone.`}
+            icon={IconTrash}
+          />
         </div>
       ),
     },

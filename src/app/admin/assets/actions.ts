@@ -1,23 +1,26 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAccess, runAction } from "@/lib/access";
+import { reqId, reqNum, reqText, optDate, optNum } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 export async function addAsset(_prev: FormState, formData: FormData): Promise<FormState> {
-  const assetClass = (formData.get("assetClass") as string | null)?.trim();
-  const details = (formData.get("details") as string | null)?.trim();
-  const qty = parseFloat((formData.get("qty") as string | null) ?? "");
-  const currentValue = parseFloat((formData.get("currentValue") as string | null) ?? "");
-  const photo = formData.get("photo") as File | null;
+  return runAction(() => addAssetImpl(_prev, formData));
+}
 
-  if (!assetClass || !details || Number.isNaN(qty) || Number.isNaN(currentValue)) {
-    return { success: false, message: "Asset class, details, quantity and current value are required." };
-  }
+async function addAssetImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "FINANCIAL" });
+  const assetClass = reqText(formData, "assetClass", "Asset class", { max: 100 });
+  const details = reqText(formData, "details", "Details", { max: 200 });
+  const qty = reqNum(formData, "qty", "Quantity", { positive: true, max: 1_000_000 });
+  const currentValue = reqNum(formData, "currentValue", "Current value", { max: 10_000_000_000 });
+  const photoField = formData.get("photo");
+  const photo = photoField instanceof File ? photoField : null;
 
   let photoUrl: string | null = null;
   if (photo && photo.size > 0) {
@@ -43,21 +46,23 @@ export async function addAsset(_prev: FormState, formData: FormData): Promise<Fo
 }
 
 export async function updateAsset(_prev: FormState, formData: FormData): Promise<FormState> {
-  const id = formData.get("id") as string | null;
-  const assetClass = (formData.get("assetClass") as string | null)?.trim();
-  const details = (formData.get("details") as string | null)?.trim();
-  const qty = parseFloat((formData.get("qty") as string | null) ?? "");
-  const value = parseFloat((formData.get("value") as string | null) ?? "");
-  const currentValue = parseFloat((formData.get("currentValue") as string | null) ?? "");
-  const depreciationPct = parseFloat((formData.get("depreciationPct") as string | null) ?? "0");
-  const yearLived = parseInt((formData.get("yearLived") as string | null) ?? "0", 10);
-  const valuationDateRaw = formData.get("valuationDate") as string | null;
-  const photo = formData.get("photo") as File | null;
-  const removePhoto = formData.get("removePhoto") === "on";
+  return runAction(() => updateAssetImpl(_prev, formData));
+}
 
-  if (!id || !assetClass || !details || Number.isNaN(qty) || Number.isNaN(value) || Number.isNaN(currentValue)) {
-    return { success: false, message: "Asset class, details, value and current value are required." };
-  }
+async function updateAssetImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "FINANCIAL" });
+  const id = reqId(formData, "id", "Asset");
+  const assetClass = reqText(formData, "assetClass", "Asset class", { max: 100 });
+  const details = reqText(formData, "details", "Details", { max: 200 });
+  const qty = reqNum(formData, "qty", "Quantity", { positive: true, max: 1_000_000 });
+  const value = reqNum(formData, "value", "Value", { max: 10_000_000_000 });
+  const currentValue = reqNum(formData, "currentValue", "Current value", { max: 10_000_000_000 });
+  const depreciationPct = optNum(formData, "depreciationPct", "Depreciation %", { max: 100 }) ?? 0;
+  const yearLived = optNum(formData, "yearLived", "Years lived", { max: 200, decimals: 0 }) ?? 0;
+  const valuationDate = optDate(formData, "valuationDate", "Valuation date");
+  const photoField = formData.get("photo");
+  const photo = photoField instanceof File ? photoField : null;
+  const removePhoto = formData.get("removePhoto") === "on";
 
   const existing = await prisma.asset.findUnique({ where: { id } });
   if (!existing) return { success: false, message: "Asset not found." };
@@ -83,9 +88,9 @@ export async function updateAsset(_prev: FormState, formData: FormData): Promise
       qty,
       value,
       currentValue,
-      depreciationPct: Number.isNaN(depreciationPct) ? 0 : depreciationPct,
-      yearLived: Number.isNaN(yearLived) ? 0 : yearLived,
-      valuationDate: valuationDateRaw ? new Date(valuationDateRaw) : null,
+      depreciationPct,
+      yearLived,
+      valuationDate,
       photoUrl,
     },
   });
@@ -96,7 +101,8 @@ export async function updateAsset(_prev: FormState, formData: FormData): Promise
 }
 
 export async function deleteAsset(formData: FormData): Promise<void> {
-  const id = formData.get("id") as string;
+  await requireAccess({ module: "FINANCIAL" });
+  const id = reqId(formData, "id", "Asset");
   const asset = await prisma.asset.findUnique({ where: { id } });
   if (asset) {
     await deleteUploadedImage(asset.photoUrl);
@@ -110,8 +116,12 @@ export async function deleteAsset(formData: FormData): Promise<void> {
 // redirecting -- used from the Assets list row itself, which is already on
 // /admin/assets, so a redirect there would just be a no-op reload.
 export async function deleteAssetInline(_prev: FormState, formData: FormData): Promise<FormState> {
-  const id = formData.get("id") as string | null;
-  if (!id) return { success: false, message: "Missing asset id." };
+  return runAction(() => deleteAssetInlineImpl(_prev, formData));
+}
+
+async function deleteAssetInlineImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "FINANCIAL" });
+  const id = reqId(formData, "id", "Asset");
 
   const asset = await prisma.asset.findUnique({ where: { id } });
   if (!asset) return { success: false, message: "Asset not found." };
@@ -130,10 +140,12 @@ export type BulkDeleteState = { success: boolean; message: string } | undefined;
 // dependent transactional history elsewhere in the schema, so there's
 // nothing to protect against.
 export async function deleteAssets(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
-  const session = await auth();
-  if ((session?.user as { role?: string } | undefined)?.role !== "ADMIN") {
-    return { success: false, message: "Only Admin can bulk-delete assets." };
-  }
+  return runAction(() => deleteAssetsImpl(_prev, formData));
+}
+
+async function deleteAssetsImpl(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
+  await requireAccess({ module: "FINANCIAL" });
+  await requireAccess({ admin: true });
 
   const ids = formData.getAll("assetIds") as string[];
   if (ids.length === 0) return { success: false, message: "No assets selected." };

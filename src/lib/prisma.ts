@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { after } from "next/server";
 
 // Every write (create/update/upsert/delete, single or bulk) on every model
 // except AuditLog itself is recorded automatically here, so no individual
@@ -31,32 +32,41 @@ function getDelegate(client: PrismaClient, model: string): FindUniqueDelegate | 
   return null;
 }
 
-// SQLite has exactly one writer for the whole database file. `base` here is
-// a second connection from the audited write's — when that write happens
-// inside an interactive prisma.$transaction(), the transaction's connection
-// holds SQLite's write lock until its callback returns, but the callback
-// can't return until this second-connection query finishes: a genuine
-// deadlock, not just slowness. Discovered in practice (not just reasoned
-// about) when recording a milk sale payment hung and then failed. Racing
-// against a short timeout bounds the wait instead of blocking on SQLite's
-// own multi-second busy_timeout, which was long enough to blow through the
-// transaction's own timeout and cascade into a second failure.
+// Bounds how long a best-effort side query (the "before" snapshot, the audit
+// write) may delay the real operation. On timeout or failure the fallback is
+// used instead -- an audit hiccup must never fail or hang the write it's
+// describing.
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   // Swallow a late rejection from the original promise once the timeout has
-  // already won the race — otherwise it surfaces as an unhandled rejection
+  // already won the race -- otherwise it surfaces as an unhandled rejection
   // when it eventually settles after we've moved on.
   const safe = promise.catch(() => fallback);
-  return Promise.race([safe, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), ms);
+  });
+  return Promise.race([safe, timeout]).finally(() => clearTimeout(timer));
 }
 
-async function recordAuditEntry(
-  base: PrismaClient,
+type AuditEntry = {
+  userId: string | null;
+  userName: string | null;
+  action: string;
+  entity: string;
+  entityId: string | null;
+  oldValue: string | null;
+  newValue: string | null;
+};
+
+// Works out *what* to log (who, what changed) without touching the database,
+// so it is cheap and can't contend with an open transaction.
+async function buildAuditEntry(
   model: string,
   operation: string,
   args: unknown,
   result: unknown,
   before: unknown
-) {
+): Promise<AuditEntry | null> {
   try {
     // Dynamic import (not a top-level one) so this module never statically
     // depends on auth.ts, which itself imports { prisma } from here — a
@@ -78,19 +88,41 @@ async function recordAuditEntry(
       newValue = JSON.stringify(redact(typedArgs.data));
     }
 
-    await base.auditLog.create({
-      data: {
-        userId,
-        userName,
-        action: operation,
-        entity: model,
-        entityId,
-        oldValue: before ? JSON.stringify(redact(before)) : null,
-        newValue,
-      },
-    });
+    return {
+      userId,
+      userName,
+      action: operation,
+      entity: model,
+      entityId,
+      oldValue: before ? JSON.stringify(redact(before)) : null,
+      newValue,
+    };
+  } catch (e) {
+    console.error("[audit] failed to build log entry", e);
+    return null;
+  }
+}
+
+async function writeAuditEntry(base: PrismaClient, entry: AuditEntry) {
+  try {
+    await base.auditLog.create({ data: entry });
   } catch (e) {
     console.error("[audit] failed to record log entry", e);
+  }
+}
+
+// The insert runs via after(): it executes once the response has been sent
+// but the serverless function is kept alive until it finishes. A plain
+// un-awaited promise (what this used to be) can be frozen and lost the moment
+// the response goes out on Vercel, while awaiting it inline can starve a
+// small connection pool while a transaction holds the only connection.
+// Outside a request (scripts, tests) after() throws, so fall back to a
+// normal fire-and-forget write there.
+function scheduleAuditWrite(base: PrismaClient, entry: AuditEntry) {
+  try {
+    after(() => writeAuditEntry(base, entry));
+  } catch {
+    void writeAuditEntry(base, entry);
   }
 }
 
@@ -112,24 +144,14 @@ function buildClient() {
           if ((operation === "update" || operation === "delete") && whereId) {
             const delegate = getDelegate(base, model);
             if (delegate) {
-              // 300ms budget: comfortably covers a normal read, but bails
-              // out fast if `base`'s connection is contended (see
-              // withTimeout's comment) rather than risking a multi-second
-              // SQLite busy_timeout wait that could cascade into the
-              // enclosing transaction timing out too.
-              before = await withTimeout(delegate.findUnique({ where: { id: whereId } }).catch(() => null), 300, null);
+              before = await withTimeout(delegate.findUnique({ where: { id: whereId } }).catch(() => null), 1500, null);
             }
           }
 
           const result = await query(args);
 
-          // Not awaited: this write must never block the operation it's
-          // logging from returning. If it's competing with an open
-          // transaction's connection, it'll simply complete a moment later
-          // once that transaction commits and releases SQLite's write lock
-          // — see the withTimeout comment above for why awaiting it here
-          // caused a real deadlock.
-          void recordAuditEntry(base, model, operation, args, result, before);
+          const entry = await withTimeout(buildAuditEntry(model, operation, args, result, before), 1500, null);
+          if (entry) scheduleAuditWrite(base, entry);
 
           return result;
         },

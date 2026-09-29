@@ -3,6 +3,7 @@
 import Link from "next/link";
 import DataTable, { type DataTableColumn } from "@/components/DataTable";
 import Badge from "@/components/Badge";
+import DeleteRowButton from "@/components/DeleteRowButton";
 import { formatRs } from "@/lib/format";
 import { toggleVendorActive, deleteVendor } from "./actions";
 import type { VendorWithSpend } from "@/lib/reports/vendorLedger";
@@ -73,17 +74,12 @@ export default function VendorsTable({ rows }: { rows: VendorWithSpend[] }) {
               {IconBan}
             </button>
           </form>
-          <form
+          <DeleteRowButton
             action={deleteVendor}
-            onSubmit={(e) => {
-              if (!confirm(`Delete vendor "${r.name}"? This can't be undone.`)) e.preventDefault();
-            }}
-          >
-            <input type="hidden" name="id" value={r.id} />
-            <button type="submit" title="Delete" className="p-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50">
-              {IconTrash}
-            </button>
-          </form>
+            hiddenFields={{ id: r.id }}
+            confirmMessage={`Delete vendor "${r.name}"? This can't be undone.`}
+            icon={IconTrash}
+          />
         </div>
       ),
     },

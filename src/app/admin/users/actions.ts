@@ -1,57 +1,80 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { isValidModule } from "@/lib/modules";
+import { requireAccess, runAction } from "@/lib/access";
+import { AccessError } from "@/lib/errors";
+import { reqText, reqEnum, reqId } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
+
+const ROLES = ["ADMIN", "ENTRY"] as const;
 
 function isValidUsername(username: string): boolean {
   return /^[a-z0-9._-]{3,32}$/i.test(username);
 }
 
-export async function createUser(_prev: FormState, formData: FormData): Promise<FormState> {
-  const name = (formData.get("name") as string | null)?.trim();
-  const username = (formData.get("username") as string | null)?.trim();
-  const password = formData.get("password") as string | null;
-  const role = formData.get("role") as string | null;
 
-  if (!name || !username || !password || !role) {
-    return { success: false, message: "Name, username, password and role are required." };
+// Anyone holding the People module may manage ENTRY accounts, but only an
+// Admin may create, modify, disable or reset an ADMIN account, change roles
+// or hand out modules they don't hold themselves -- otherwise "People"
+// would be a back door to full admin.
+
+async function otherActiveAdminExists(excludeUserId: string): Promise<boolean> {
+  const count = await prisma.user.count({ where: { role: "ADMIN", active: true, NOT: { id: excludeUserId } } });
+  return count > 0;
+}
+
+export async function createUser(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => createUserImpl(formData));
+}
+
+async function createUserImpl(formData: FormData): Promise<FormState> {
+  const caller = await requireAccess({ module: "PEOPLE" });
+
+  const name = reqText(formData, "name", "Name", { max: 100 });
+  const username = reqText(formData, "username", "Username", { max: 32 });
+  const role = reqEnum(formData, "role", "Role", ROLES);
+  const password = formData.get("password");
+
+  if (role === "ADMIN" && caller.role !== "ADMIN") {
+    throw new AccessError("Only an Admin can create another Admin account.");
   }
   if (!isValidUsername(username)) {
     return { success: false, message: "Username must be 3-32 characters: letters, numbers, dots, dashes or underscores." };
   }
-  if (password.length < 8) {
+  if (typeof password !== "string" || password.length < 8) {
     return { success: false, message: "Password must be at least 8 characters." };
   }
+  if (password.length > 128) return { success: false, message: "Password must be 128 characters or fewer." };
 
-  const existing = await prisma.user.findUnique({ where: { username } });
+  const existing = await prisma.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } } });
   if (existing) {
     return { success: false, message: `Username "${username}" is already in use.` };
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.create({
-    data: { name, username, passwordHash, role: role as "ADMIN" | "ENTRY" },
-  });
+  await prisma.user.create({ data: { name, username, passwordHash, role } });
 
   revalidatePath("/admin/users");
   return { success: true, message: `User "${username}" created.` };
 }
 
 export async function setUserRole(formData: FormData): Promise<void> {
-  const session = await auth();
-  const userId = formData.get("userId") as string;
-  const role = formData.get("role") as "ADMIN" | "ENTRY";
+  const caller = await requireAccess({ admin: true });
+  const userId = reqId(formData, "userId", "User");
+  const role = reqEnum(formData, "role", "Role", ROLES);
 
-  const currentUserId = (session?.user as { id?: string } | undefined)?.id;
-  if (userId === currentUserId) {
-    // Refuse silently-in-place changes to your own role to avoid self-lockout;
-    // the UI already disables this control for the signed-in user.
-    return;
+  // Refuse changes to your own role to avoid self-lockout; the UI already
+  // disables this control for the signed-in user.
+  if (userId === caller.id) return;
+
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, active: true } });
+  if (!target) return;
+  if (target.role === "ADMIN" && role !== "ADMIN" && target.active && !(await otherActiveAdminExists(userId))) {
+    throw new AccessError("You can't demote the last active Admin.");
   }
 
   await prisma.user.update({ where: { id: userId }, data: { role } });
@@ -59,13 +82,19 @@ export async function setUserRole(formData: FormData): Promise<void> {
 }
 
 export async function setUserActive(formData: FormData): Promise<void> {
-  const session = await auth();
-  const userId = formData.get("userId") as string;
+  const caller = await requireAccess({ module: "PEOPLE" });
+  const userId = reqId(formData, "userId", "User");
   const active = formData.get("active") === "true";
 
-  const currentUserId = (session?.user as { id?: string } | undefined)?.id;
-  if (userId === currentUserId) {
-    return;
+  if (userId === caller.id) return;
+
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, active: true } });
+  if (!target) return;
+  if (target.role === "ADMIN") {
+    if (caller.role !== "ADMIN") throw new AccessError("Only an Admin can change an Admin account.");
+    if (!active && target.active && !(await otherActiveAdminExists(userId))) {
+      throw new AccessError("You can't deactivate the last active Admin.");
+    }
   }
 
   await prisma.user.update({ where: { id: userId }, data: { active } });
@@ -73,11 +102,19 @@ export async function setUserActive(formData: FormData): Promise<void> {
 }
 
 export async function toggleModule(formData: FormData): Promise<void> {
-  const userId = formData.get("userId") as string;
-  const moduleRaw = formData.get("module") as string;
+  const caller = await requireAccess({ module: "PEOPLE" });
+  const userId = reqId(formData, "userId", "User");
+  const moduleRaw = formData.get("module");
   const grant = formData.get("grant") === "true";
 
-  if (!isValidModule(moduleRaw)) return;
+  if (typeof moduleRaw !== "string" || !isValidModule(moduleRaw)) return;
+  // You can only hand out access you hold yourself (Admins hold everything).
+  if (caller.role !== "ADMIN" && !caller.modules.includes(moduleRaw)) {
+    throw new AccessError("You can only grant modules you have access to yourself.");
+  }
+
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (!target || target.role === "ADMIN") return; // Admins implicitly hold every module.
 
   if (grant) {
     await prisma.moduleAccess.upsert({
@@ -93,19 +130,28 @@ export async function toggleModule(formData: FormData): Promise<void> {
 }
 
 export async function resetPassword(_prev: FormState, formData: FormData): Promise<FormState> {
-  const userId = formData.get("userId") as string | null;
-  const newPassword = formData.get("newPassword") as string | null;
+  return runAction(() => resetPasswordImpl(formData));
+}
 
-  if (!userId || !newPassword) {
-    return { success: false, message: "Missing user or password." };
-  }
-  if (newPassword.length < 8) {
+async function resetPasswordImpl(formData: FormData): Promise<FormState> {
+  const caller = await requireAccess({ module: "PEOPLE" });
+  const userId = reqId(formData, "userId", "User");
+  const newPassword = formData.get("newPassword");
+
+  if (typeof newPassword !== "string" || newPassword.length < 8) {
     return { success: false, message: "Password must be at least 8 characters." };
+  }
+  if (newPassword.length > 128) return { success: false, message: "Password must be 128 characters or fewer." };
+
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, username: true } });
+  if (!target) return { success: false, message: "User not found." };
+  if (target.role === "ADMIN" && caller.role !== "ADMIN") {
+    throw new AccessError("Only an Admin can reset an Admin's password.");
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
-  const user = await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
 
   revalidatePath("/admin/users");
-  return { success: true, message: `Password reset for ${user.username}.` };
+  return { success: true, message: `Password reset for ${target.username}.` };
 }

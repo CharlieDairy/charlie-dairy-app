@@ -1,8 +1,10 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { requireAccess, runAction } from "@/lib/access";
+import { ValidationError } from "@/lib/errors";
+import { reqDate, reqNum, reqText, optEnum, optText, CASH_MODES } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -11,20 +13,32 @@ export type FormState = { success: boolean; message: string } | undefined;
 // shows up in the real Cash Flow / P&L immediately, exactly as the user
 // asked ("linked to accounts").
 export async function recordCustomerPayment(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const buyer = (formData.get("buyer") as string | null)?.trim();
-  const dateRaw = formData.get("date") as string | null;
-  const amountRaw = formData.get("amount") as string | null;
-  const mode = (formData.get("mode") as string | null) || "CASH";
-  const notes = (formData.get("notes") as string | null)?.trim() || null;
+  return runAction(() => recordCustomerPaymentImpl(formData));
+}
 
-  const amount = amountRaw ? parseFloat(amountRaw) : NaN;
-  if (!buyer || !dateRaw || Number.isNaN(amount) || amount <= 0) {
-    return { success: false, message: "Buyer, date and a positive amount are required." };
-  }
+async function recordCustomerPaymentImpl(formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "OPERATIONS" });
+  const typedBuyer = reqText(formData, "buyer", "Buyer", { max: 100 });
+  const date = reqDate(formData, "date", "Date");
+  const amount = reqNum(formData, "amount", "Amount", { positive: true, max: 1_000_000_000 });
+  const mode = optEnum(formData, "mode", "Payment mode", CASH_MODES) ?? "CASH";
+  const notes = optText(formData, "notes", "Notes", { max: 500 });
 
-  const date = new Date(dateRaw);
-  const enteredBy = session?.user?.name ?? null;
+  // Same canonical-spelling rule as recording a sale, so payments always
+  // land on the same customer their sales are under.
+  const customer = await prisma.customer.findFirst({
+    where: { name: { equals: typedBuyer, mode: "insensitive" } },
+    select: { name: true },
+  });
+  const buyer = customer?.name ?? typedBuyer;
+
+  const duplicate = await prisma.customerPayment.findFirst({
+    where: { buyer, date, amount, createdAt: { gte: new Date(Date.now() - 120_000) } },
+    select: { id: true },
+  });
+  if (duplicate) throw new ValidationError("This payment was just recorded, so it wasn't saved twice.");
+
+  const enteredBy = user.name;
 
   await prisma.$transaction(async (tx) => {
     const cashTx = await tx.cashTransaction.create({
@@ -32,7 +46,7 @@ export async function recordCustomerPayment(_prev: FormState, formData: FormData
         date,
         party: buyer,
         category: "Milk Sale Payment",
-        mode: mode as "CASH" | "BANK",
+        mode,
         amountIn: amount,
         enteredBy,
         remark: notes ? `Milk sale payment from ${buyer}: ${notes}` : `Milk sale payment from ${buyer}`,
@@ -40,15 +54,7 @@ export async function recordCustomerPayment(_prev: FormState, formData: FormData
     });
 
     await tx.customerPayment.create({
-      data: {
-        buyer,
-        date,
-        amount,
-        mode: mode as "CASH" | "BANK",
-        notes,
-        cashTransactionId: cashTx.id,
-        enteredBy,
-      },
+      data: { buyer, date, amount, mode, notes, cashTransactionId: cashTx.id, enteredBy },
     });
   });
 

@@ -1,39 +1,43 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAccess, runAction } from "@/lib/access";
+import { ValidationError } from "@/lib/errors";
+import { reqDate, reqEnum, reqId, optText } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
-export async function recordHeat(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const cowId = formData.get("cowId") as string | null;
-  const detectedAtRaw = formData.get("detectedAt") as string | null;
-  const detectionMethod = formData.get("detectionMethod") as string | null;
-  const intensity = (formData.get("intensity") as string | null)?.trim() || null;
-  const notes = (formData.get("notes") as string | null)?.trim() || null;
+const DETECTION_METHODS = ["VISUAL", "ACTIVITY_MONITOR", "TAIL_PAINT", "OTHER"] as const;
 
-  if (!cowId || !detectedAtRaw || !detectionMethod) {
-    return { success: false, message: "Cow, date/time and detection method are required." };
-  }
+export async function recordHeat(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => recordHeatImpl(formData));
+}
+
+async function recordHeatImpl(formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "OPERATIONS" });
+
+  const cowId = reqId(formData, "cowId", "Cow");
+  const detectedAt = reqDate(formData, "detectedAt", "Date/time");
+  const detectionMethod = reqEnum(formData, "detectionMethod", "Detection method", DETECTION_METHODS);
+  const intensity = optText(formData, "intensity", "Intensity", { max: 50 });
+  const notes = optText(formData, "notes", "Notes", { max: 1000 });
 
   const cow = await prisma.cow.findUnique({ where: { id: cowId } });
-  if (!cow) return { success: false, message: "Cow not found." };
-  if (cow.gender !== "FEMALE") return { success: false, message: "Only female animals can have a heat event recorded." };
+  if (!cow) throw new ValidationError("Cow not found.");
+  if (cow.gender !== "FEMALE") throw new ValidationError("Only female animals can have a heat event recorded.");
   if (cow.status === "SOLD" || cow.status === "DEAD") {
-    return { success: false, message: `Cow ${cow.tag} is marked ${cow.status} and cannot receive new breeding events.` };
+    throw new ValidationError(`Cow ${cow.tag} is marked ${cow.status} and cannot receive new breeding events.`);
   }
 
+  const duplicate = await prisma.heatEvent.findFirst({
+    where: { cowId, detectedAt, createdAt: { gte: new Date(Date.now() - 120_000) } },
+    select: { id: true },
+  });
+  if (duplicate) throw new ValidationError("This heat event was just recorded, so it wasn't saved twice.");
+
   await prisma.heatEvent.create({
-    data: {
-      cowId,
-      detectedAt: new Date(detectedAtRaw),
-      detectionMethod: detectionMethod as "VISUAL" | "ACTIVITY_MONITOR" | "TAIL_PAINT" | "OTHER",
-      intensity,
-      notes,
-      enteredBy: session?.user?.name ?? null,
-    },
+    data: { cowId, detectedAt, detectionMethod, intensity, notes, enteredBy: user.name },
   });
 
   revalidatePath("/entry/breeding/heat");

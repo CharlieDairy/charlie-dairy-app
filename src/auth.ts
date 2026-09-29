@@ -4,6 +4,10 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/auth.config";
 
+const LOCKOUT_WINDOW_MS = 15 * 60_000;
+const MAX_FAILED_PER_ACCOUNT = 5;
+const MAX_FAILED_PER_MINUTE = 60;
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   session: { strategy: "jwt" },
@@ -17,8 +21,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const username = credentials?.username as string | undefined;
         const password = credentials?.password as string | undefined;
         if (!username || !password) return null;
+        if (username.length > 64 || password.length > 128) return null;
 
         const user = await prisma.user.findUnique({ where: { username } });
+
+        // Brute-force protection: after MAX_FAILED wrong attempts in the
+        // window, further attempts are refused outright (and, deliberately,
+        // not logged -- otherwise a guessing script could also flood the
+        // audit table). A separate global ceiling covers username spraying.
+        const since = new Date(Date.now() - LOCKOUT_WINDOW_MS);
+        const [recentForAccount, recentGlobal] = await Promise.all([
+          prisma.auditLog.count({
+            where: {
+              action: "login_failed",
+              createdAt: { gte: since },
+              ...(user ? { userId: user.id } : { userName: username, userId: null }),
+            },
+          }),
+          prisma.auditLog.count({ where: { action: "login_failed", createdAt: { gte: new Date(Date.now() - 60_000) } } }),
+        ]);
+        if (recentForAccount >= MAX_FAILED_PER_ACCOUNT || recentGlobal >= MAX_FAILED_PER_MINUTE) {
+          console.warn("[auth] login refused: too many recent failed attempts");
+          return null;
+        }
+
         const valid = user ? await bcrypt.compare(password, user.passwordHash) : false;
         const success = !!user && valid && user.active;
 

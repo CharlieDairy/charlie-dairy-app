@@ -1,27 +1,39 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
-import { saveUploadedImage } from "@/lib/uploadImage";
+import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAccess, runAction } from "@/lib/access";
+import { ValidationError } from "@/lib/errors";
+import { reqDate, reqId, reqNum, reqText, optDate, optEnum, optNum, optText, CASH_MODES } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 const SALARY_CATEGORY = "Opex Salaries"; // matches this farm's existing real cash-ledger category
+const ATTENDANCE = ["PRESENT", "ABSENT", "HALF_DAY", "LEAVE"] as const;
+
+function refreshAttendance() {
+  revalidatePath("/admin/team");
+  revalidatePath("/entry/team/attendance");
+  revalidatePath("/admin/team/attendance-calendar");
+  revalidatePath("/admin/team/attendance-reports");
+}
 
 export async function addEmployee(_prev: FormState, formData: FormData): Promise<FormState> {
-  const name = (formData.get("name") as string | null)?.trim();
-  const position = (formData.get("position") as string | null)?.trim() || null;
-  const phone = (formData.get("phone") as string | null)?.trim() || null;
-  const salaryRaw = formData.get("monthlySalary") as string | null;
-  const joinDateRaw = formData.get("joinDate") as string | null;
-  const notes = (formData.get("notes") as string | null)?.trim() || null;
-  const photo = formData.get("photo") as File | null;
+  return runAction(() => addEmployeeImpl(formData));
+}
 
-  if (!name) return { success: false, message: "Name is required." };
-
-  const monthlySalary = salaryRaw ? parseFloat(salaryRaw) : null;
+async function addEmployeeImpl(formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "PEOPLE" });
+  const name = reqText(formData, "name", "Name", { max: 100 });
+  const position = optText(formData, "position", "Position", { max: 100 });
+  const phone = optText(formData, "phone", "Phone", { max: 30 });
+  const monthlySalary = optNum(formData, "monthlySalary", "Monthly salary", { max: 100_000_000 });
+  const joinDate = optDate(formData, "joinDate", "Join date");
+  const notes = optText(formData, "notes", "Notes", { max: 1000 });
+  const photoField = formData.get("photo");
+  const photo = photoField instanceof File ? photoField : null;
 
   let photoUrl: string | null = null;
   if (photo && photo.size > 0) {
@@ -30,26 +42,25 @@ export async function addEmployee(_prev: FormState, formData: FormData): Promise
     photoUrl = uploaded.url;
   }
 
-  const employee = await prisma.employee.create({
-    data: {
-      name,
-      position,
-      phone,
-      monthlySalary: monthlySalary !== null && !Number.isNaN(monthlySalary) ? monthlySalary : null,
-      joinDate: joinDateRaw ? new Date(joinDateRaw) : null,
-      notes,
-      photoUrl,
-    },
-  });
+  let employee;
+  try {
+    employee = await prisma.employee.create({
+      data: { name, position, phone, monthlySalary, joinDate, notes, photoUrl },
+    });
+  } catch (e) {
+    await deleteUploadedImage(photoUrl);
+    throw e;
+  }
 
   revalidatePath("/admin/team");
   redirect(`/admin/team/${employee.id}`);
 }
 
 export async function updateEmployeeActive(formData: FormData): Promise<void> {
-  const id = formData.get("id") as string;
+  await requireAccess({ module: "PEOPLE" });
+  const id = reqId(formData, "id", "Employee");
   const active = formData.get("active") === "true";
-  await prisma.employee.update({ where: { id }, data: { active } });
+  await prisma.employee.updateMany({ where: { id }, data: { active } });
   revalidatePath("/admin/team");
 }
 
@@ -59,24 +70,28 @@ export async function updateEmployeeActive(formData: FormData): Promise<void> {
 // and P&L immediately, filed under this farm's existing "Opex Salaries"
 // category.
 export async function recordSalaryPayment(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const employeeId = formData.get("employeeId") as string | null;
-  const dateRaw = formData.get("date") as string | null;
-  const amountRaw = formData.get("amount") as string | null;
-  const forMonth = (formData.get("forMonth") as string | null)?.trim() || null;
-  const mode = (formData.get("mode") as string | null) || "CASH";
-  const notes = (formData.get("notes") as string | null)?.trim() || null;
+  return runAction(() => recordSalaryPaymentImpl(formData));
+}
 
-  const amount = amountRaw ? parseFloat(amountRaw) : NaN;
-  if (!employeeId || !dateRaw || Number.isNaN(amount) || amount <= 0) {
-    return { success: false, message: "Employee, date and a positive amount are required." };
-  }
+async function recordSalaryPaymentImpl(formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "PEOPLE" });
+  const employeeId = reqId(formData, "employeeId", "Employee");
+  const date = reqDate(formData, "date", "Date");
+  const amount = reqNum(formData, "amount", "Amount", { positive: true, max: 100_000_000 });
+  const forMonth = optText(formData, "forMonth", "For month", { max: 30 });
+  const mode = optEnum(formData, "mode", "Payment mode", CASH_MODES) ?? "CASH";
+  const notes = optText(formData, "notes", "Notes", { max: 500 });
 
   const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
   if (!employee) return { success: false, message: "Employee not found." };
 
-  const date = new Date(dateRaw);
-  const enteredBy = session?.user?.name ?? null;
+  const duplicate = await prisma.salaryPayment.findFirst({
+    where: { employeeId, date, amount, createdAt: { gte: new Date(Date.now() - 120_000) } },
+    select: { id: true },
+  });
+  if (duplicate) throw new ValidationError("This salary payment was just recorded, so it wasn't saved twice.");
+
+  const enteredBy = user.name;
 
   await prisma.$transaction(async (tx) => {
     const cashTx = await tx.cashTransaction.create({
@@ -84,7 +99,7 @@ export async function recordSalaryPayment(_prev: FormState, formData: FormData):
         date,
         party: employee.name,
         category: SALARY_CATEGORY,
-        mode: mode as "CASH" | "BANK",
+        mode,
         amountOut: amount,
         enteredBy,
         remark: forMonth ? `Salary for ${employee.name} — ${forMonth}` : `Salary for ${employee.name}`,
@@ -92,16 +107,7 @@ export async function recordSalaryPayment(_prev: FormState, formData: FormData):
     });
 
     await tx.salaryPayment.create({
-      data: {
-        employeeId,
-        date,
-        amount,
-        forMonth,
-        mode: mode as "CASH" | "BANK",
-        notes,
-        cashTransactionId: cashTx.id,
-        enteredBy,
-      },
+      data: { employeeId, date, amount, forMonth, mode, notes, cashTransactionId: cashTx.id, enteredBy },
     });
   });
 
@@ -114,50 +120,59 @@ export async function recordSalaryPayment(_prev: FormState, formData: FormData):
 }
 
 export async function markAttendance(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const dateRaw = formData.get("date") as string | null;
-  const employeeIds = formData.getAll("employeeId") as string[];
-  if (!dateRaw || employeeIds.length === 0) {
-    return { success: false, message: "Date and at least one employee are required." };
-  }
+  return runAction(() => markAttendanceImpl(formData));
+}
 
-  const date = new Date(dateRaw);
-  const enteredBy = session?.user?.name ?? null;
+async function markAttendanceImpl(formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "PEOPLE" });
+  const date = reqDate(formData, "date", "Date");
+  const employeeIds = formData.getAll("employeeId").filter((v): v is string => typeof v === "string");
+  if (employeeIds.length === 0) {
+    return { success: false, message: "At least one employee is required." };
+  }
+  if (employeeIds.length > 300) throw new ValidationError("Too many employees in one submission.");
+
+  const enteredBy = user.name;
+  const rows = employeeIds.map((employeeId) => {
+    const status = optEnum(formData, `status_${employeeId}`, "Attendance status", ATTENDANCE) ?? "PRESENT";
+    return { employeeId: reqIdValue(employeeId), status };
+  });
 
   await prisma.$transaction(
-    employeeIds.map((employeeId) => {
-      const status = (formData.get(`status_${employeeId}`) as string | null) || "PRESENT";
-      return prisma.attendanceRecord.upsert({
+    rows.map(({ employeeId, status }) =>
+      prisma.attendanceRecord.upsert({
         where: { employeeId_date: { employeeId, date } },
-        update: { status: status as "PRESENT" | "ABSENT" | "HALF_DAY" | "LEAVE", enteredBy },
-        create: { employeeId, date, status: status as "PRESENT" | "ABSENT" | "HALF_DAY" | "LEAVE", enteredBy },
-      });
-    })
+        update: { status, enteredBy },
+        create: { employeeId, date, status, enteredBy },
+      })
+    )
   );
 
-  revalidatePath("/admin/team");
-  revalidatePath("/entry/team/attendance");
-  revalidatePath("/admin/team/attendance-calendar");
-  revalidatePath("/admin/team/attendance-reports");
+  refreshAttendance();
   return { success: true, message: "Attendance saved." };
+}
+
+function reqIdValue(v: string): string {
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(v)) throw new ValidationError("Employee is not valid.");
+  return v;
 }
 
 // A one-tap shortcut for the common case (someone didn't show up) so
 // marking it doesn't require opening the full team-wide daily form and
 // stepping through every other employee's dropdown just to flag one person.
 export async function markAbsence(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const employeeId = formData.get("employeeId") as string | null;
-  const dateRaw = formData.get("date") as string | null;
-  if (!employeeId || !dateRaw) {
-    return { success: false, message: "Employee and date are required." };
-  }
+  return runAction(() => markAbsenceImpl(formData));
+}
+
+async function markAbsenceImpl(formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "PEOPLE" });
+  const employeeId = reqId(formData, "employeeId", "Employee");
+  const date = reqDate(formData, "date", "Date");
 
   const employee = await prisma.employee.findUnique({ where: { id: employeeId }, select: { name: true } });
   if (!employee) return { success: false, message: "Employee not found." };
 
-  const date = new Date(dateRaw);
-  const enteredBy = session?.user?.name ?? null;
+  const enteredBy = user.name;
 
   await prisma.attendanceRecord.upsert({
     where: { employeeId_date: { employeeId, date } },
@@ -165,9 +180,7 @@ export async function markAbsence(_prev: FormState, formData: FormData): Promise
     create: { employeeId, date, status: "ABSENT", enteredBy },
   });
 
-  revalidatePath("/admin/team");
-  revalidatePath("/entry/team/attendance");
-  revalidatePath("/admin/team/attendance-calendar");
-  revalidatePath("/admin/team/attendance-reports");
-  return { success: true, message: `${employee.name} marked absent for ${dateRaw}.` };
+  refreshAttendance();
+  return { success: true, message: `${employee.name} marked absent for ${date.toISOString().slice(0, 10)}.` };
 }
+

@@ -1,32 +1,34 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAccess, runAction } from "@/lib/access";
+import { ValidationError } from "@/lib/errors";
+import { reqDate, reqEnum, reqNum, optText, MILK_USE_TYPES } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 export async function submitMilkUsage(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const dateRaw = formData.get("date") as string | null;
-  const type = formData.get("type") as string | null; // "CALF_USE" | "FARM_USE" | "EMPLOYEE_USE"
-  const litresRaw = formData.get("litres") as string | null;
-  const notes = (formData.get("notes") as string | null)?.trim() || null;
+  return runAction(() => submitMilkUsageImpl(formData));
+}
 
-  const litres = litresRaw ? parseFloat(litresRaw) : NaN;
-  if (!dateRaw || !type || Number.isNaN(litres) || litres <= 0) {
-    return { success: false, message: "Please fill in date, use type and a positive quantity." };
+async function submitMilkUsageImpl(formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "OPERATIONS" });
+
+  const date = reqDate(formData, "date", "Date");
+  const type = reqEnum(formData, "type", "Use type", MILK_USE_TYPES);
+  const litres = reqNum(formData, "litres", "Quantity", { positive: true, max: 100_000 });
+  const notes = optText(formData, "notes", "Notes", { max: 500 });
+
+  const duplicate = await prisma.milkUsageRecord.findFirst({
+    where: { date, type, litres, createdAt: { gte: new Date(Date.now() - 120_000) } },
+    select: { id: true },
+  });
+  if (duplicate) {
+    throw new ValidationError("This looks identical to an entry saved moments ago, so it wasn't saved twice.");
   }
 
-  await prisma.milkUsageRecord.create({
-    data: {
-      date: new Date(dateRaw),
-      type: type as "CALF_USE" | "FARM_USE" | "EMPLOYEE_USE",
-      litres,
-      notes,
-      enteredBy: session?.user?.name ?? null,
-    },
-  });
+  await prisma.milkUsageRecord.create({ data: { date, type, litres, notes, enteredBy: user.name } });
 
   revalidatePath("/admin/reports/reconciliation");
   revalidatePath("/entry/milk-sale");

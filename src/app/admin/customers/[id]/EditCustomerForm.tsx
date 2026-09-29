@@ -6,6 +6,7 @@ import type { Customer } from "@prisma/client";
 
 export default function EditCustomerForm({ customer }: { customer: Customer }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(updateCustomer, undefined);
+  const [deleteState, deleteAction, isDeleting] = useActionState<FormState, FormData>(deleteCustomer, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -61,17 +62,18 @@ export default function EditCustomerForm({ customer }: { customer: Customer }) {
         </form>
 
         <form
-          action={deleteCustomer}
+          action={deleteAction}
           onSubmit={(e) => {
             if (!confirm(`Delete customer "${customer.name}"? This can't be undone.`)) e.preventDefault();
           }}
         >
           <input type="hidden" name="id" value={customer.id} />
-          <button type="submit" className="text-sm rounded-md px-4 py-2 border border-red-200 text-red-700 hover:bg-red-50">
-            Delete Customer
+          <button type="submit" disabled={isDeleting} className="text-sm rounded-md px-4 py-2 border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-60">
+            {isDeleting ? "Deleting…" : "Delete Customer"}
           </button>
         </form>
       </div>
+      {deleteState && !deleteState.success && <p className="text-sm text-red-600">{deleteState.message}</p>}
     </div>
   );
 }

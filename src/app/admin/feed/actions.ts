@@ -2,24 +2,26 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAccess, runAction } from "@/lib/access";
+import { reqId, reqText, optText, optNum } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 export async function addFeedItem(_prev: FormState, formData: FormData): Promise<FormState> {
-  const name = (formData.get("name") as string | null)?.trim();
-  const unit = (formData.get("unit") as string | null)?.trim();
-  const category = (formData.get("category") as string | null)?.trim() || null;
-  const reorderLevelRaw = formData.get("reorderLevel") as string | null;
+  return runAction(() => addFeedItemImpl(formData));
+}
 
-  if (!name || !unit) return { success: false, message: "Feed name and unit are required." };
+async function addFeedItemImpl(formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "OPERATIONS" });
+  const name = reqText(formData, "name", "Feed name", { max: 100 });
+  const unit = reqText(formData, "unit", "Unit", { max: 20 });
+  const category = optText(formData, "category", "Category", { max: 100 });
+  const reorderLevel = optNum(formData, "reorderLevel", "Reorder level", { max: 10_000_000 });
 
   const existing = await prisma.feedItem.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
   if (existing) return { success: false, message: `A feed item named "${name}" already exists.` };
 
-  const reorderLevel = reorderLevelRaw ? parseFloat(reorderLevelRaw) : null;
-  await prisma.feedItem.create({
-    data: { name, unit, category, reorderLevel: reorderLevel !== null && !Number.isNaN(reorderLevel) ? reorderLevel : null },
-  });
+  await prisma.feedItem.create({ data: { name, unit, category, reorderLevel } });
 
   revalidatePath("/admin/feed/items");
   revalidatePath("/admin/reports/feed");
@@ -28,9 +30,10 @@ export async function addFeedItem(_prev: FormState, formData: FormData): Promise
 }
 
 export async function toggleFeedItemActive(formData: FormData): Promise<void> {
-  const id = formData.get("id") as string;
+  await requireAccess({ module: "OPERATIONS" });
+  const id = reqId(formData, "id", "Feed item");
   const active = formData.get("active") === "true";
-  await prisma.feedItem.update({ where: { id }, data: { active } });
+  await prisma.feedItem.updateMany({ where: { id }, data: { active } });
   revalidatePath("/admin/feed/items");
   revalidatePath("/admin/reports/feed");
   revalidatePath("/entry/feed");

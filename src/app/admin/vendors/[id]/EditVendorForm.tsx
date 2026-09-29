@@ -6,6 +6,7 @@ import type { Vendor } from "@prisma/client";
 
 export default function EditVendorForm({ vendor }: { vendor: Vendor }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(updateVendor, undefined);
+  const [deleteState, deleteAction, isDeleting] = useActionState<FormState, FormData>(deleteVendor, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -61,17 +62,18 @@ export default function EditVendorForm({ vendor }: { vendor: Vendor }) {
         </form>
 
         <form
-          action={deleteVendor}
+          action={deleteAction}
           onSubmit={(e) => {
             if (!confirm(`Delete vendor "${vendor.name}"? This can't be undone.`)) e.preventDefault();
           }}
         >
           <input type="hidden" name="id" value={vendor.id} />
-          <button type="submit" className="text-sm rounded-md px-4 py-2 border border-red-200 text-red-700 hover:bg-red-50">
-            Delete Vendor
+          <button type="submit" disabled={isDeleting} className="text-sm rounded-md px-4 py-2 border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-60">
+            {isDeleting ? "Deleting…" : "Delete Vendor"}
           </button>
         </form>
       </div>
+      {deleteState && !deleteState.success && <p className="text-sm text-red-600">{deleteState.message}</p>}
     </div>
   );
 }

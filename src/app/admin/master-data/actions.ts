@@ -4,34 +4,52 @@ import { prisma } from "@/lib/prisma";
 import { getCategoryDef } from "@/lib/masterData";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
+import { requireAccess, runAction } from "@/lib/access";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 export async function updateLabel(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => updateLabelImpl(_prev, formData));
+}
+
+async function updateLabelImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "ADMIN" });
   const id = formData.get("id") as string | null;
   const label = (formData.get("label") as string | null)?.trim();
 
   if (!id || !label) return { success: false, message: "Label can't be empty." };
+  if (label.length > 100) return { success: false, message: "Label is too long (max 100 characters)." };
 
+  const exists = await prisma.masterDataItem.findUnique({ where: { id }, select: { id: true } });
+  if (!exists) return { success: false, message: "That item no longer exists. Refresh the page." };
   await prisma.masterDataItem.update({ where: { id }, data: { label } });
   revalidatePath("/admin/master-data");
   return { success: true, message: "Saved." };
 }
 
 export async function toggleActive(formData: FormData): Promise<void> {
+  await requireAccess({ module: "ADMIN" });
   const id = formData.get("id") as string;
   const active = formData.get("active") === "true";
-  await prisma.masterDataItem.update({ where: { id }, data: { active } });
+  await prisma.masterDataItem.updateMany({ where: { id }, data: { active } });
   revalidatePath("/admin/master-data");
 }
 
 export async function addItem(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => addItemImpl(_prev, formData));
+}
+
+async function addItemImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "ADMIN" });
   const category = formData.get("category") as string | null;
   const code = (formData.get("code") as string | null)?.trim();
   const label = (formData.get("label") as string | null)?.trim();
 
   if (!category || !code || !label) {
     return { success: false, message: "Code and label are required." };
+  }
+  if (code.length > 50 || label.length > 100) {
+    return { success: false, message: "Code (max 50) or label (max 100) is too long." };
   }
   const def = getCategoryDef(category);
   if (!def) return { success: false, message: "Unknown category." };
@@ -55,6 +73,11 @@ export async function addItem(_prev: FormState, formData: FormData): Promise<For
 }
 
 export async function deleteItem(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => deleteItemImpl(_prev, formData));
+}
+
+async function deleteItemImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "ADMIN" });
   const id = formData.get("id") as string | null;
   if (!id) return { success: false, message: "Missing item id." };
 

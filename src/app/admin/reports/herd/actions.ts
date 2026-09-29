@@ -1,8 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { requireAccess, runAction } from "@/lib/access";
 
 export type BulkDeleteState = { success: boolean; message: string } | undefined;
 
@@ -12,10 +12,12 @@ export type BulkDeleteState = { success: boolean; message: string } | undefined;
 // MilkingRecord history. The cow itself is untouched; use the Animal List
 // to delete the animal record.
 export async function deleteMilkProductionForCows(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
-  const session = await auth();
-  if ((session?.user as { role?: string } | undefined)?.role !== "ADMIN") {
-    return { success: false, message: "Only Admin can bulk-delete milk production records." };
-  }
+  return runAction(() => deleteMilkProductionForCowsImpl(_prev, formData));
+}
+
+async function deleteMilkProductionForCowsImpl(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
+  await requireAccess({ module: "OPERATIONS" });
+  await requireAccess({ admin: true });
 
   const cowIds = formData.getAll("cowIds") as string[];
   if (cowIds.length === 0) return { success: false, message: "No rows selected." };

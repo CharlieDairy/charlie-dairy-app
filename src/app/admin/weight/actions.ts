@@ -1,24 +1,24 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { requireAccess, runAction } from "@/lib/access";
+import { ValidationError } from "@/lib/errors";
+import { reqDate, reqId, reqNum, optText } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 export async function addWeightStandard(_prev: FormState, formData: FormData): Promise<FormState> {
-  const breed = (formData.get("breed") as string | null)?.trim() || null;
-  const ageMonthsRaw = formData.get("ageMonths") as string | null;
-  const minRaw = formData.get("minWeightKg") as string | null;
-  const maxRaw = formData.get("maxWeightKg") as string | null;
+  return runAction(() => addWeightStandardImpl(formData));
+}
 
-  const ageMonths = ageMonthsRaw ? parseInt(ageMonthsRaw, 10) : NaN;
-  const minWeightKg = minRaw ? parseFloat(minRaw) : NaN;
-  const maxWeightKg = maxRaw ? parseFloat(maxRaw) : NaN;
+async function addWeightStandardImpl(formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "OPERATIONS" });
+  const breed = optText(formData, "breed", "Breed", { max: 100 });
+  const ageMonths = reqNum(formData, "ageMonths", "Age (months)", { min: 0, max: 400, decimals: 0 });
+  const minWeightKg = reqNum(formData, "minWeightKg", "Minimum weight", { positive: true, max: 2000 });
+  const maxWeightKg = reqNum(formData, "maxWeightKg", "Maximum weight", { positive: true, max: 2000 });
 
-  if (Number.isNaN(ageMonths) || Number.isNaN(minWeightKg) || Number.isNaN(maxWeightKg)) {
-    return { success: false, message: "Age (months), minimum and maximum weight are required." };
-  }
   if (minWeightKg >= maxWeightKg) {
     return { success: false, message: "Minimum weight must be less than maximum weight." };
   }
@@ -36,26 +36,33 @@ export async function addWeightStandard(_prev: FormState, formData: FormData): P
 }
 
 export async function deleteWeightStandard(formData: FormData): Promise<void> {
-  const id = formData.get("id") as string;
-  await prisma.weightStandard.delete({ where: { id } });
+  await requireAccess({ module: "OPERATIONS" });
+  const id = reqId(formData, "id", "Standard");
+  await prisma.weightStandard.deleteMany({ where: { id } });
   revalidatePath("/admin/weight/standards");
   revalidatePath("/admin/reports/weight");
 }
 
 export async function addWeightEntry(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const cowId = formData.get("cowId") as string | null;
-  const dateRaw = formData.get("date") as string | null;
-  const weightRaw = formData.get("weightKg") as string | null;
+  return runAction(() => addWeightEntryImpl(formData));
+}
 
-  const weightKg = weightRaw ? parseFloat(weightRaw) : NaN;
-  if (!cowId || !dateRaw || Number.isNaN(weightKg) || weightKg <= 0) {
-    return { success: false, message: "Animal, date and a positive weight are required." };
-  }
+async function addWeightEntryImpl(formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "OPERATIONS" });
+  const cowId = reqId(formData, "cowId", "Animal");
+  const date = reqDate(formData, "date", "Date");
+  const weightKg = reqNum(formData, "weightKg", "Weight", { positive: true, max: 2000, decimals: 1 });
 
-  await prisma.weightRecord.create({
-    data: { cowId, date: new Date(dateRaw), weightKg, enteredBy: session?.user?.name ?? null },
+  const cow = await prisma.cow.findUnique({ where: { id: cowId }, select: { id: true } });
+  if (!cow) throw new ValidationError("Animal not found.");
+
+  const duplicate = await prisma.weightRecord.findFirst({
+    where: { cowId, date, weightKg, createdAt: { gte: new Date(Date.now() - 120_000) } },
+    select: { id: true },
   });
+  if (duplicate) throw new ValidationError("This weight was just recorded, so it wasn't saved twice.");
+
+  await prisma.weightRecord.create({ data: { cowId, date, weightKg, enteredBy: user.name } });
 
   revalidatePath("/entry/weight");
   revalidatePath("/admin/reports/weight");

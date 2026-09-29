@@ -41,12 +41,25 @@ function parseDate(cells: string[], idx: number, name: string, rowNum: number, e
     if (required) errors.push(`Row ${rowNum}: "${name}" is required.`);
     return null;
   }
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) {
+  // Strict YYYY-MM-DD only: "3/4/2026" is 3 April in Pakistan but 4 March to
+  // JavaScript, and would be imported silently wrong.
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T00:00:00.000Z`) : new Date(NaN);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== raw) {
     errors.push(`Row ${rowNum}: "${name}" is not a valid date (expected YYYY-MM-DD, got "${raw}").`);
     return null;
   }
+  if (d.getUTCFullYear() < 2000 || d.getUTCFullYear() > 2100) {
+    errors.push(`Row ${rowNum}: "${name}" (${raw}) is outside the supported range 2000-2100.`);
+    return null;
+  }
   return d;
+}
+/** Records a row error unless `value` lies in [min, max]. */
+function range(errors: string[], rowNum: number, name: string, value: number | null, min: number, max: number, exclusiveMin = false) {
+  if (value === null) return;
+  if (!Number.isFinite(value) || value > max || value < min || (exclusiveMin && value === min)) {
+    errors.push(`Row ${rowNum}: "${name}" must be ${exclusiveMin ? "greater than" : "between"} ${min}${exclusiveMin ? "" : ` and ${max.toLocaleString("en-US")}`} (got ${value}).`);
+  }
 }
 function parseEnum<T extends string>(
   cells: string[], idx: number, name: string, rowNum: number, errors: string[],
@@ -108,6 +121,8 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         const targetSellDate = parseDate(cells, 10, "targetSellDate", rowNum, errors, false);
         const lactationNumber = parseNum(cells, 11, "lactationNumber", rowNum, errors, false, 0);
         const purchasePrice = parseOptNum(cells, 12, "purchasePrice", rowNum, errors);
+        range(errors, rowNum, "purchasePrice", purchasePrice, 0, 100_000_000);
+        range(errors, rowNum, "lactationNumber", lactationNumber, 0, 30);
         const source = cell(cells, 13) || null;
         const notes = cell(cells, 14) || null;
         parsed.push({
@@ -129,6 +144,7 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
       const cows = await prisma.cow.findMany({ select: { id: true, tag: true } });
       const tagToId = new Map(cows.map((c) => [c.tag, c.id]));
       const parsed: Prisma.MilkingRecordCreateManyInput[] = [];
+      const seenMilking = new Set<string>();
       dataRows.forEach((cells, i) => {
         const rowNum = i + 2;
         const date = parseDate(cells, 0, "date", rowNum, errors, true);
@@ -137,10 +153,36 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         if (tag && !cowId) errors.push(`Row ${rowNum}: cow tag "${tag}" not found.`);
         const shift = parseEnum(cells, 2, "shift", rowNum, errors, ["MORNING", "AFTERNOON", "EVENING"] as const, "MORNING", true);
         const litres = parseNum(cells, 3, "litres", rowNum, errors, true);
+        range(errors, rowNum, "litres", litres, 0, 200);
         const rowEnteredBy = cell(cells, 4) || enteredBy;
-        if (date && cowId) parsed.push({ date, cowId, shift, litres, enteredBy: rowEnteredBy });
+        if (date && cowId) {
+          const dupKey = `${cowId}|${date.toISOString().slice(0, 10)}|${shift}`;
+          if (seenMilking.has(dupKey)) errors.push(`Row ${rowNum}: cow "${tag}" already appears for ${shift.toLowerCase()} on ${date.toISOString().slice(0, 10)} earlier in this file.`);
+          seenMilking.add(dupKey);
+          parsed.push({ date, cowId, shift, litres, enteredBy: rowEnteredBy });
+        }
       });
       if (errors.length > 0) return FAIL("Fix the errors below and re-upload. Nothing was imported.", errors);
+
+      // Re-uploading the same file must not silently double production.
+      if (parsed.length > 0) {
+        const times = parsed.map((r) => (r.date as Date).getTime());
+        const existingRows = await prisma.milkingRecord.findMany({
+          where: {
+            cowId: { in: [...new Set(parsed.map((r) => r.cowId as string))] },
+            date: { gte: new Date(Math.min(...times)), lte: new Date(Math.max(...times)) },
+          },
+          select: { cowId: true, date: true, shift: true },
+        });
+        const existingKeys = new Set(existingRows.map((r) => `${r.cowId}|${r.date.toISOString().slice(0, 10)}|${r.shift}`));
+        const clashes = parsed.filter((r) => existingKeys.has(`${r.cowId}|${(r.date as Date).toISOString().slice(0, 10)}|${r.shift}`));
+        if (clashes.length > 0) {
+          return FAIL(
+            `${clashes.length} row${clashes.length === 1 ? "" : "s"} match milking records that already exist — nothing was imported (was this file uploaded before?).`,
+            clashes.slice(0, 20).map((r) => `${(r.date as Date).toISOString().slice(0, 10)} ${r.shift} for cow id ${r.cowId} already recorded.`)
+          );
+        }
+      }
       const result = await prisma.milkingRecord.createMany({ data: parsed });
       return { success: true, message: `Imported ${result.count} milking records.`, errors: [], insertedCount: result.count };
     }
@@ -156,6 +198,14 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         const fatPct = parseOptNum(cells, 4, "fatPct", rowNum, errors);
         const snf = parseOptNum(cells, 5, "snf", rowNum, errors);
         const amount = parseNum(cells, 6, "amount", rowNum, errors, true);
+        range(errors, rowNum, "litres", litres, 0, 100_000, true);
+        range(errors, rowNum, "rate", rate, 0, 10_000);
+        range(errors, rowNum, "fatPct", fatPct, 0, 20);
+        range(errors, rowNum, "snf", snf, 0, 20);
+        range(errors, rowNum, "amount", amount, 0, 1_000_000_000);
+        if (rate !== null && litres > 0 && Math.abs(amount - rate * litres) > Math.max(5, rate * litres * 0.05)) {
+          errors.push(`Row ${rowNum}: amount ${amount} doesn't match litres × rate (${Math.round(rate * litres)}).`);
+        }
         const rowEnteredBy = cell(cells, 7) || enteredBy;
         if (date && buyer) parsed.push({ date, buyer, litres, rate, fatPct, snf, amount, enteredBy: rowEnteredBy });
       });
@@ -174,6 +224,9 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         const quantity = parseNum(cells, 3, "quantity", rowNum, errors, true);
         const rate = parseOptNum(cells, 4, "rate", rowNum, errors);
         const cost = parseOptNum(cells, 5, "cost", rowNum, errors);
+        range(errors, rowNum, "quantity", quantity, 0, 10_000_000, true);
+        range(errors, rowNum, "rate", rate, 0, 1_000_000);
+        range(errors, rowNum, "cost", cost, 0, 10_000_000_000);
         const notes = cell(cells, 6) || null;
         const rowEnteredBy = cell(cells, 7) || enteredBy;
         if (date && feedType) parsed.push({ date, feedType, direction, quantity, rate, cost, notes, enteredBy: rowEnteredBy });
@@ -195,6 +248,10 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         const mode = parseEnum(cells, 5, "mode", rowNum, errors, ["CASH", "BANK"] as const, "CASH", true);
         const amountIn = parseNum(cells, 6, "amountIn", rowNum, errors, false, 0);
         const amountOut = parseNum(cells, 7, "amountOut", rowNum, errors, false, 0);
+        range(errors, rowNum, "amountIn", amountIn, 0, 1_000_000_000);
+        range(errors, rowNum, "amountOut", amountOut, 0, 1_000_000_000);
+        if (amountIn > 0 && amountOut > 0) errors.push(`Row ${rowNum}: only one of amountIn / amountOut may be filled.`);
+        if (amountIn === 0 && amountOut === 0) errors.push(`Row ${rowNum}: amountIn and amountOut are both empty or zero.`);
         const rowEnteredBy = cell(cells, 8) || enteredBy;
         const projectLand = cell(cells, 9) || null;
         const remark = cell(cells, 10) || null;
@@ -216,6 +273,9 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         const description = req(cells, 2, "description", rowNum, errors);
         const debit = parseNum(cells, 3, "debit", rowNum, errors, false, 0);
         const credit = parseNum(cells, 4, "credit", rowNum, errors, false, 0);
+        range(errors, rowNum, "debit", debit, 0, 10_000_000_000);
+        range(errors, rowNum, "credit", credit, 0, 10_000_000_000);
+        if (debit === 0 && credit === 0) errors.push(`Row ${rowNum}: debit and credit are both empty or zero.`);
         const bankAccount = cell(cells, 5) || null;
         const type = parseEnum(cells, 6, "type", rowNum, errors, ["CONTRIBUTION", "WITHDRAWAL", "LOAN", "REPAYMENT", "OTHER"] as const, "OTHER", false);
         const venture = cell(cells, 7) || null;
@@ -237,6 +297,10 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         const depreciationPct = parseNum(cells, 4, "depreciationPct", rowNum, errors, false, 0);
         const yearLived = parseNum(cells, 5, "yearLived", rowNum, errors, false, 0);
         const currentValue = parseNum(cells, 6, "currentValue", rowNum, errors, true);
+        range(errors, rowNum, "qty", qty, 0, 1_000_000, true);
+        range(errors, rowNum, "value", value, 0, 10_000_000_000);
+        range(errors, rowNum, "currentValue", currentValue, 0, 10_000_000_000);
+        range(errors, rowNum, "depreciationPct", depreciationPct, 0, 100);
         const valuationDate = parseDate(cells, 7, "valuationDate", rowNum, errors, false);
         if (assetClass && details) {
           parsed.push({ assetClass, details, qty, value, depreciationPct, yearLived: Math.trunc(yearLived), currentValue, valuationDate });

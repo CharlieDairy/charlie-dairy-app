@@ -1,34 +1,61 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireAccess, runAction } from "@/lib/access";
+import { ValidationError } from "@/lib/errors";
+import { reqDate, reqEnum, reqNum, reqText, optNum, DIRECTIONS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 export async function submitFeed(_prev: FormState, formData: FormData): Promise<FormState> {
-  const dateRaw = formData.get("date") as string | null;
-  const feedType = (formData.get("feedType") as string | null)?.trim();
-  const direction = formData.get("direction") as string | null; // "IN" | "OUT"
-  const quantityRaw = formData.get("quantity") as string | null;
-  const rateRaw = formData.get("rate") as string | null;
+  return runAction(() => submitFeedImpl(formData));
+}
 
-  const quantity = quantityRaw ? parseFloat(quantityRaw) : NaN;
-  if (!dateRaw || !feedType || !direction || Number.isNaN(quantity) || quantity <= 0) {
-    return { success: false, message: "Please fill in date, feed type, direction and a positive quantity." };
+async function submitFeedImpl(formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "OPERATIONS" });
+
+  const date = reqDate(formData, "date", "Date");
+  const feedType = reqText(formData, "feedType", "Feed type", { max: 100 });
+  const direction = reqEnum(formData, "direction", "Direction", DIRECTIONS); // "IN" | "OUT"
+  const quantity = reqNum(formData, "quantity", "Quantity", { positive: true, max: 10_000_000 });
+  const rate = optNum(formData, "rate", "Rate", { max: 1_000_000 });
+
+  const duplicate = await prisma.feedTransaction.findFirst({
+    where: { date, feedType, direction, quantity, createdAt: { gte: new Date(Date.now() - 120_000) } },
+    select: { id: true },
+  });
+  if (duplicate) {
+    throw new ValidationError("This looks identical to an entry saved moments ago, so it wasn't saved twice.");
   }
-  const rate = rateRaw ? parseFloat(rateRaw) : null;
+
+  // Recorded stock for this feed type before this entry, to warn (not block --
+  // older stock may simply never have been entered) when an OUT overdraws it.
+  let stockAfter: number | null = null;
+  if (direction === "OUT") {
+    const [inAgg, outAgg] = await Promise.all([
+      prisma.feedTransaction.aggregate({ _sum: { quantity: true }, where: { feedType, direction: "IN" } }),
+      prisma.feedTransaction.aggregate({ _sum: { quantity: true }, where: { feedType, direction: "OUT" } }),
+    ]);
+    stockAfter = (inAgg._sum.quantity ?? 0) - (outAgg._sum.quantity ?? 0) - quantity;
+  }
 
   await prisma.feedTransaction.create({
     data: {
-      date: new Date(dateRaw),
+      date,
       feedType,
-      direction: direction as "IN" | "OUT",
+      direction,
       quantity,
       rate: rate ?? undefined,
-      cost: rate && direction === "OUT" ? rate * quantity : undefined,
+      cost: rate && direction === "OUT" ? Math.round(rate * quantity * 100) / 100 : undefined,
     },
   });
 
   revalidatePath("/entry/feed");
-  return { success: true, message: "Feed entry saved." };
+  revalidatePath("/admin/reports/feed");
+  const warning =
+    stockAfter !== null && stockAfter < 0
+      ? ` Warning: recorded stock of ${feedType} is now ${stockAfter.toFixed(1)} — a purchase may be missing.`
+      : "";
+  return { success: true, message: `Feed entry saved.${warning}` };
 }

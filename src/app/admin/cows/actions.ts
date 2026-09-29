@@ -1,30 +1,40 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAccess, runAction } from "@/lib/access";
+import { ValidationError } from "@/lib/errors";
+import { reqDate, reqEnum, reqId, reqNum, reqText, optDate, optNum, optText } from "@/lib/validate";
+
+const GENDERS = ["FEMALE", "MALE", "UNKNOWN"] as const;
+const STATUSES = ["MILKING", "DRY", "HEIFER", "CALF", "DORMANT", "SOLD", "DEAD"] as const;
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 export async function addCow(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const tag = (formData.get("tag") as string | null)?.trim();
-  const breed = (formData.get("breed") as string | null)?.trim() || null;
-  const gender = formData.get("gender") as string | null;
-  const status = formData.get("status") as string | null;
-  const dateOfBirthRaw = formData.get("dateOfBirth") as string | null;
-  const purchaseDateRaw = formData.get("purchaseDate") as string | null;
-  const purchasePriceRaw = formData.get("purchasePrice") as string | null;
-  const location = (formData.get("location") as string | null)?.trim() || null;
-  const notes = (formData.get("notes") as string | null)?.trim() || null;
-  const photo = formData.get("photo") as File | null;
-  const damTag = (formData.get("damTag") as string | null)?.trim() || null;
-  const sireTag = (formData.get("sireTag") as string | null)?.trim() || null;
+  return runAction(() => addCowImpl(_prev, formData));
+}
 
-  if (!tag || !gender || !status) {
-    return { success: false, message: "Tag, gender and status are required." };
+async function addCowImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "OPERATIONS" });
+  const tag = reqText(formData, "tag", "Tag", { max: 40 });
+  const breed = optText(formData, "breed", "Breed", { max: 100 });
+  const gender = reqEnum(formData, "gender", "Gender", GENDERS);
+  const status = reqEnum(formData, "status", "Status", STATUSES);
+  const dateOfBirth = optDate(formData, "dateOfBirth", "Date of birth");
+  const purchaseDate = optDate(formData, "purchaseDate", "Purchase date");
+  const purchasePrice = optNum(formData, "purchasePrice", "Purchase price", { max: 100_000_000 });
+  const location = optText(formData, "location", "Location", { max: 100 });
+  const notes = optText(formData, "notes", "Notes", { max: 1000 });
+  const photoField = formData.get("photo");
+  const photo = photoField instanceof File ? photoField : null;
+  const damTag = optText(formData, "damTag", "Mother tag", { max: 40 });
+  const sireTag = optText(formData, "sireTag", "Sire tag", { max: 40 });
+
+  if (dateOfBirth && purchaseDate && purchaseDate < dateOfBirth) {
+    return { success: false, message: "Purchase date can't be before the date of birth." };
   }
 
   const existing = await prisma.cow.findUnique({ where: { tag } });
@@ -44,9 +54,6 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
     dam = found;
   }
 
-  const purchasePrice = purchasePriceRaw ? parseFloat(purchasePriceRaw) : null;
-  const dateOfBirth = dateOfBirthRaw ? new Date(dateOfBirthRaw) : null;
-
   let photoUrl: string | null = null;
   if (photo && photo.size > 0) {
     const uploaded = await saveUploadedImage(photo, "cows");
@@ -54,16 +61,18 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
     photoUrl = uploaded.url;
   }
 
-  const cow = await prisma.$transaction(async (tx) => {
+  let cow;
+  try {
+  cow = await prisma.$transaction(async (tx) => {
     const newCow = await tx.cow.create({
       data: {
         tag,
         breed,
-        gender: gender as "FEMALE" | "MALE" | "UNKNOWN",
-        status: status as never,
+        gender,
+        status,
         dateOfBirth,
-        purchaseDate: purchaseDateRaw ? new Date(purchaseDateRaw) : null,
-        purchasePrice: purchasePrice !== null && !Number.isNaN(purchasePrice) ? purchasePrice : null,
+        purchaseDate,
+        purchasePrice,
         notes,
         photoUrl,
       },
@@ -81,7 +90,7 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
           date: dateOfBirth ?? new Date(),
           calfCount: 1,
           notes: "Backfilled via Add Animal.",
-          enteredBy: session?.user?.name ?? null,
+          enteredBy: user.name,
         },
       });
       await tx.calf.create({
@@ -97,10 +106,15 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
 
     return newCow;
   });
+  } catch (e) {
+    // Don't leave an orphaned photo in storage if the animal wasn't created.
+    await deleteUploadedImage(photoUrl);
+    throw e;
+  }
 
   if (location) {
     await prisma.cowMovement.create({
-      data: { cowId: cow.id, date: new Date(), location, enteredBy: session?.user?.name ?? null },
+      data: { cowId: cow.id, date: new Date(), location, enteredBy: user.name },
     });
   }
 
@@ -111,21 +125,24 @@ export async function addCow(_prev: FormState, formData: FormData): Promise<Form
 // Herd Management: purchase price / source / photo, editable after creation
 // from the cow's profile page (mirrors the Assets edit pattern).
 export async function updateCowDetails(_prev: FormState, formData: FormData): Promise<FormState> {
-  const id = formData.get("id") as string | null;
-  const breed = (formData.get("breed") as string | null)?.trim() || null;
-  const condition = (formData.get("condition") as string | null)?.trim() || null;
-  const purchasePriceRaw = formData.get("purchasePrice") as string | null;
-  const purchaseDateRaw = formData.get("purchaseDate") as string | null;
-  const source = (formData.get("source") as string | null)?.trim() || null;
-  const notes = (formData.get("notes") as string | null)?.trim() || null;
-  const photo = formData.get("photo") as File | null;
+  return runAction(() => updateCowDetailsImpl(_prev, formData));
+}
+
+async function updateCowDetailsImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAccess({ module: "OPERATIONS" });
+  const id = reqId(formData, "id", "Cow");
+  const breed = optText(formData, "breed", "Breed", { max: 100 });
+  const condition = optText(formData, "condition", "Condition", { max: 100 });
+  const purchasePrice = optNum(formData, "purchasePrice", "Purchase price", { max: 100_000_000 });
+  const purchaseDate = optDate(formData, "purchaseDate", "Purchase date");
+  const source = optText(formData, "source", "Source", { max: 200 });
+  const notes = optText(formData, "notes", "Notes", { max: 1000 });
+  const photoField = formData.get("photo");
+  const photo = photoField instanceof File ? photoField : null;
   const removePhoto = formData.get("removePhoto") === "on";
 
-  if (!id) return { success: false, message: "Missing cow id." };
   const existing = await prisma.cow.findUnique({ where: { id } });
   if (!existing) return { success: false, message: "Cow not found." };
-
-  const purchasePrice = purchasePriceRaw ? parseFloat(purchasePriceRaw) : null;
 
   let photoUrl = existing.photoUrl;
   if (photo && photo.size > 0) {
@@ -145,8 +162,8 @@ export async function updateCowDetails(_prev: FormState, formData: FormData): Pr
     data: {
       breed,
       condition,
-      purchasePrice: purchasePrice !== null && !Number.isNaN(purchasePrice) ? purchasePrice : null,
-      purchaseDate: purchaseDateRaw ? new Date(purchaseDateRaw) : null,
+      purchasePrice,
+      purchaseDate,
       source,
       notes,
       photoUrl,
@@ -159,18 +176,26 @@ export async function updateCowDetails(_prev: FormState, formData: FormData): Pr
 }
 
 export async function addWeightRecord(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const cowId = formData.get("cowId") as string | null;
-  const dateRaw = formData.get("date") as string | null;
-  const weightRaw = formData.get("weightKg") as string | null;
+  return runAction(() => addWeightRecordImpl(_prev, formData));
+}
 
-  const weightKg = weightRaw ? parseFloat(weightRaw) : NaN;
-  if (!cowId || !dateRaw || Number.isNaN(weightKg) || weightKg <= 0) {
-    return { success: false, message: "Date and a positive weight are required." };
-  }
+async function addWeightRecordImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "OPERATIONS" });
+  const cowId = reqId(formData, "cowId", "Animal");
+  const date = reqDate(formData, "date", "Date");
+  const weightKg = reqNum(formData, "weightKg", "Weight", { positive: true, max: 2000, decimals: 1 });
+
+  const cow = await prisma.cow.findUnique({ where: { id: cowId }, select: { id: true } });
+  if (!cow) throw new ValidationError("Animal not found.");
+
+  const duplicate = await prisma.weightRecord.findFirst({
+    where: { cowId, date, weightKg, createdAt: { gte: new Date(Date.now() - 120_000) } },
+    select: { id: true },
+  });
+  if (duplicate) throw new ValidationError("This weight was just recorded, so it wasn't saved twice.");
 
   await prisma.weightRecord.create({
-    data: { cowId, date: new Date(dateRaw), weightKg, enteredBy: session?.user?.name ?? null },
+    data: { cowId, date, weightKg, enteredBy: user.name },
   });
 
   revalidatePath(`/admin/cows/${cowId}`);
@@ -178,18 +203,21 @@ export async function addWeightRecord(_prev: FormState, formData: FormData): Pro
 }
 
 export async function addCowMovement(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await auth();
-  const cowId = formData.get("cowId") as string | null;
-  const dateRaw = formData.get("date") as string | null;
-  const location = (formData.get("location") as string | null)?.trim();
-  const notes = (formData.get("notes") as string | null)?.trim() || null;
+  return runAction(() => addCowMovementImpl(_prev, formData));
+}
 
-  if (!cowId || !dateRaw || !location) {
-    return { success: false, message: "Date and location are required." };
-  }
+async function addCowMovementImpl(_prev: FormState, formData: FormData): Promise<FormState> {
+  const user = await requireAccess({ module: "OPERATIONS" });
+  const cowId = reqId(formData, "cowId", "Animal");
+  const date = reqDate(formData, "date", "Date");
+  const location = reqText(formData, "location", "Location", { max: 100 });
+  const notes = optText(formData, "notes", "Notes", { max: 500 });
+
+  const cow = await prisma.cow.findUnique({ where: { id: cowId }, select: { id: true } });
+  if (!cow) throw new ValidationError("Animal not found.");
 
   await prisma.cowMovement.create({
-    data: { cowId, date: new Date(dateRaw), location, notes, enteredBy: session?.user?.name ?? null },
+    data: { cowId, date, location, notes, enteredBy: user.name },
   });
 
   revalidatePath(`/admin/cows/${cowId}`);
@@ -197,9 +225,10 @@ export async function addCowMovement(_prev: FormState, formData: FormData): Prom
 }
 
 export async function updateCowStatus(formData: FormData): Promise<void> {
-  const cowId = formData.get("cowId") as string;
-  const status = formData.get("status") as string;
-  await prisma.cow.update({ where: { id: cowId }, data: { status: status as never } });
+  await requireAccess({ module: "OPERATIONS" });
+  const cowId = reqId(formData, "cowId", "Cow");
+  const status = reqEnum(formData, "status", "Status", STATUSES);
+  await prisma.cow.updateMany({ where: { id: cowId }, data: { status } });
   revalidatePath("/admin/cows");
 }
 
@@ -211,6 +240,11 @@ export type DeleteState = { success: boolean; message: string } | undefined;
 // history. Use a status change (Sold/Dead) for those instead. This only
 // clears genuinely empty entries, e.g. a duplicate or mistyped tag.
 export async function deleteCow(_prev: DeleteState, formData: FormData): Promise<DeleteState> {
+  return runAction(() => deleteCowImpl(_prev, formData));
+}
+
+async function deleteCowImpl(_prev: DeleteState, formData: FormData): Promise<DeleteState> {
+  await requireAccess({ module: "OPERATIONS" });
   const cowId = formData.get("cowId") as string | null;
   if (!cowId) return { success: false, message: "Missing cow id." };
 
@@ -247,10 +281,12 @@ export type BulkDeleteState = { success: boolean; message: string } | undefined;
 // cow with recorded milking/breeding/calving history is skipped, not force-
 // deleted, so a batch selection can never silently destroy production data.
 export async function deleteCows(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
-  const session = await auth();
-  if ((session?.user as { role?: string } | undefined)?.role !== "ADMIN") {
-    return { success: false, message: "Only Admin can delete multiple animals." };
-  }
+  return runAction(() => deleteCowsImpl(_prev, formData));
+}
+
+async function deleteCowsImpl(_prev: BulkDeleteState, formData: FormData): Promise<BulkDeleteState> {
+  await requireAccess({ module: "OPERATIONS" });
+  await requireAccess({ admin: true });
 
   const cowIds = formData.getAll("cowIds") as string[];
   if (cowIds.length === 0) return { success: false, message: "No animals selected." };

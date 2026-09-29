@@ -22,9 +22,10 @@ export default async function UsersAdminPage() {
       <p className="text-sm text-neutral-500 max-w-2xl">
         ADMIN can see and edit everything. ENTRY defaults to Data Entry plus the Dashboard, and can
         be granted access to specific admin sections below — Operations, Financial, People, Admin —
-        without becoming a full administrator. Deactivating an account blocks future logins but
-        keeps their name on past records. Neither a deactivation nor a module change takes effect
-        on an already-open browser session until it&apos;s refreshed by signing in again.
+        without becoming a full administrator. Deactivating an account blocks it immediately —
+        every save and every page load re-checks the account — and keeps their name on past records.
+        Only an Admin can create or change Admin accounts, change roles, or reset an Admin&apos;s
+        password; People-module users can manage ENTRY accounts and can only grant modules they hold.
       </p>
       <AddUserForm />
       <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
