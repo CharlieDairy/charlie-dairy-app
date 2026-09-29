@@ -23,6 +23,7 @@ const IconUsers = <Ic><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circl
 const IconTag = <Ic><path d="M20.59 13.41L11 3.83a2 2 0 00-1.41-.58H4a2 2 0 00-2 2v5.59a2 2 0 00.58 1.41l9.58 9.58a2 2 0 002.83 0l6.59-6.59a2 2 0 000-2.83z" /><line x1="7" y1="7" x2="7.01" y2="7" /></Ic>;
 const IconDollar = <Ic><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></Ic>;
 const IconLayers = <Ic><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></Ic>;
+const IconCalendar = <Ic><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></Ic>;
 
 const ICON_TONE: Record<string, string> = {
   teal: "bg-teal-50 text-teal-600",
@@ -47,16 +48,25 @@ function Panel({ title, href, icon, tone = "teal", children, className = "" }: {
     </section>
   );
 }
-function Metric({ label, value, detail, tone = "slate" }: { label: string; value: string; detail: string; tone?: "slate" | "green" | "rose" | "amber" }) {
+function Metric({ label, value, detail, tone = "slate", icon }: { label: string; value: string; detail: string; tone?: "slate" | "green" | "rose" | "amber"; icon?: ReactNode }) {
   const toneClasses: Record<string, string> = {
     slate: "border-l-teal-500 bg-white",
     green: "border-l-emerald-500 bg-emerald-50/60",
     rose: "border-l-rose-500 bg-rose-50/60",
     amber: "border-l-amber-500 bg-amber-50/60",
   };
+  const chipClasses: Record<string, string> = {
+    slate: "bg-teal-50 text-teal-600",
+    green: "bg-emerald-50 text-emerald-600",
+    rose: "bg-rose-50 text-rose-600",
+    amber: "bg-amber-50 text-amber-600",
+  };
   return (
     <div className={`rounded-2xl border border-slate-200 border-l-4 p-4 shadow-sm ${toneClasses[tone]}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+        {icon && <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${chipClasses[tone]}`}>{icon}</span>}
+      </div>
       <p className="text-3xl font-bold text-slate-900 my-2">{value}</p>
       <p className="text-xs text-slate-500">{detail}</p>
     </div>
@@ -140,21 +150,31 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 
   return (
     <div className="flex flex-col gap-5 text-slate-900">
-      <header className="flex flex-wrap justify-between gap-4 items-center">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-white">{IconDroplet}</span>
-          <div>
-            <h1 className="text-2xl font-bold">Charlie Dairy Farm</h1>
-            <p className="text-sm text-slate-500">{d.today} · Pakistan time{operations ? ` · ${alerts.length} checks need attention` : ""}</p>
+      <div className="rounded-2xl bg-gradient-to-br from-green-900 to-green-700 px-6 py-6 flex flex-wrap items-center justify-between gap-6">
+        <div className="flex flex-col gap-3 max-w-xl">
+          {operations && (
+            <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold tracking-wide ${alerts.length > 0 ? "bg-amber-400/20 text-amber-200" : "bg-emerald-400/20 text-emerald-200"}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${alerts.length > 0 ? "bg-amber-300" : "bg-emerald-300"}`} />
+              {alerts.length > 0 ? `${alerts.length} CHECK${alerts.length === 1 ? "" : "S"} NEED ATTENTION` : "ALL CAUGHT UP"}
+            </span>
+          )}
+          <h1 className="text-2xl font-bold text-white">Charlie Dairy Farm</h1>
+          <p className="text-sm text-green-100">Here&apos;s what&apos;s happening on the farm today.</p>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {operations && <Link href="/entry/milking" className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-green-800 hover:bg-green-50">Record milk</Link>}
+            {operations && <Link href="/admin/cows/add" className="rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20">+ Animal</Link>}
+            {operations && <Link href="/admin/reports/breeding" className="rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20">Breeding</Link>}
+            {finance && <Link href="/entry/cash" className="rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20">Expense</Link>}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {operations && <Link href="/entry/milking" className="rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700">Record milk</Link>}
-          {operations && <Link href="/admin/cows/add" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-teal-50">+ Animal</Link>}
-          {operations && <Link href="/admin/reports/breeding" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-teal-50">Breeding</Link>}
-          {finance && <Link href="/entry/cash" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-teal-50">Expense</Link>}
+        <div className="flex items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">{IconCalendar}</span>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-green-200">Today · Pakistan time</p>
+            <p className="text-sm font-bold text-white">{d.today}</p>
+          </div>
         </div>
-      </header>
+      </div>
 
       {operations && <>
         <form className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
@@ -170,10 +190,10 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           <p className="text-xs text-slate-500 ml-auto">Today&apos;s milk book · 7-day average: {d.average7 === null ? "Not available" : `${d.average7.toFixed(1)} L (${d.averageDays}/7 days recorded)`}</p>
         </form>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          <Metric label="Milk today" value={d.dailyMilk.records ? `${d.dailyMilk.litres.toFixed(1)} L` : "Pending"} detail={d.previous !== null && d.dailyMilk.records ? `${(d.dailyMilk.litres - d.previous).toFixed(1)} L vs previous day · may be partial` : "No comparable complete-day result yet"} />
-          <Metric label="Sold today" value={salesComplete ? `${sold.toFixed(1)} L` : d.saleDay.length ? "Incomplete" : "Not recorded"} detail={`${formatRs(d.saleDay.reduce((n, s) => n + s.amount, 0))} recorded · ${new Set(d.saleDay.map(s => s.buyer).filter(Boolean)).size} named buyers`} />
-          <Metric label="Unsold balance" value={d.dailyMilk.records && salesComplete ? `${(d.dailyMilk.litres - sold).toFixed(1)} L` : "Unreconciled"} detail="Not confirmed unsold stock: use, waste and opening stock need reconciliation" />
-          <Metric label="Avg per milking cow" value={d.dailyMilk.average === null ? "Pending" : `${d.dailyMilk.average.toFixed(1)} L`} detail={`${d.dailyMilk.recorded} of ${d.expected.length} logged today`} />
+          <Metric icon={IconDroplet} label="Milk today" value={d.dailyMilk.records ? `${d.dailyMilk.litres.toFixed(1)} L` : "Pending"} detail={d.previous !== null && d.dailyMilk.records ? `${(d.dailyMilk.litres - d.previous).toFixed(1)} L vs previous day · may be partial` : "No comparable complete-day result yet"} />
+          <Metric icon={IconTrend} label="Sold today" value={salesComplete ? `${sold.toFixed(1)} L` : d.saleDay.length ? "Incomplete" : "Not recorded"} detail={`${formatRs(d.saleDay.reduce((n, s) => n + s.amount, 0))} recorded · ${new Set(d.saleDay.map(s => s.buyer).filter(Boolean)).size} named buyers`} />
+          <Metric icon={IconArchive} label="Unsold balance" value={d.dailyMilk.records && salesComplete ? `${(d.dailyMilk.litres - sold).toFixed(1)} L` : "Unreconciled"} detail="Not confirmed unsold stock: use, waste and opening stock need reconciliation" />
+          <Metric icon={IconUsers} label="Avg per milking cow" value={d.dailyMilk.average === null ? "Pending" : `${d.dailyMilk.average.toFixed(1)} L`} detail={`${d.dailyMilk.recorded} of ${d.expected.length} logged today`} />
         </div>
         <p className="text-xs text-slate-500">AM: {d.morning.records ? `${d.morning.litres.toFixed(1)} L` : "pending"} · PM: {d.evening.records ? `${d.evening.litres.toFixed(1)} L` : "pending"}. Missing-entry checks use the current milking herd; historical herd membership may differ. Explicit zero entries remain zero.</p>
 
@@ -260,9 +280,9 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         {finance && (
           <Panel title={`Finances · ${d.range.start.toISOString().slice(0, 10)} to ${new Date(d.range.end.getTime() - 86400000).toISOString().slice(0, 10)}`} href="/admin/reports/pl" icon={IconDollar} tone="green" className="xl:col-span-2">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-              <Metric label="Recorded income" value={formatRs(income)} detail="Sales plus other recorded income" tone="green" />
-              <Metric label="Recorded outgoings" value={formatRs(expense)} detail="Includes capital spending if entered here" tone="rose" />
-              <Metric label="Recorded net" value={formatRs(net)} detail={income > 0 ? `${(net / income * 100).toFixed(1)}% of recorded income` : "No income recorded"} tone="amber" />
+              <Metric icon={IconDollar} label="Recorded income" value={formatRs(income)} detail="Sales plus other recorded income" tone="green" />
+              <Metric icon={IconLayers} label="Recorded outgoings" value={formatRs(expense)} detail="Includes capital spending if entered here" tone="rose" />
+              <Metric icon={IconTrend} label="Recorded net" value={formatRs(net)} detail={income > 0 ? `${(net / income * 100).toFixed(1)}% of recorded income` : "No income recorded"} tone="amber" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Breakdown title="Income by category" values={d.income} />
