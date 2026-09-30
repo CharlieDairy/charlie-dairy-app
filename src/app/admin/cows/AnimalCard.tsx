@@ -50,12 +50,20 @@ export default function AnimalCard({
         />
       )}
       {animal.photoUrl ? (
-        <div className="w-16 h-16 rounded-md border border-neutral-200 bg-neutral-50 shrink-0 overflow-hidden flex items-center justify-center">
+        <Link
+          href={`/admin/cows/${animal.id}?edit=1`}
+          title="Edit"
+          className="w-16 h-16 rounded-md border border-neutral-200 bg-neutral-50 shrink-0 overflow-hidden flex items-center justify-center"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={animal.photoUrl} alt={`Cow ${animal.tag}`} className="w-full h-full object-contain" />
-        </div>
+        </Link>
       ) : (
-        <div className="w-16 h-16 rounded-md bg-neutral-100 border border-neutral-200 shrink-0" />
+        <Link
+          href={`/admin/cows/${animal.id}?edit=1`}
+          title="Edit"
+          className="w-16 h-16 rounded-md bg-neutral-100 border border-neutral-200 shrink-0"
+        />
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">

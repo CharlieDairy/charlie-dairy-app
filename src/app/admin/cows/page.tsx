@@ -27,6 +27,8 @@ export default async function CowsAdminPage() {
   for (const w of latestWeights) latestWeightByCow.set(w.cowId, w.weightKg); // last write wins -- ascending order, so last = most recent
 
   const allStatusOptions = statusItems.map((s) => ({ code: s.code, label: s.label }));
+  const soldOrDeadCount = cows.filter((c) => c.status === "SOLD" || c.status === "DEAD").length;
+  const activeCount = cows.length - soldOrDeadCount;
 
   const animals: AnimalRow[] = cows
     .sort((a, b) => Number(a.tag) - Number(b.tag) || a.tag.localeCompare(b.tag))
@@ -52,14 +54,13 @@ export default async function CowsAdminPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        <StatCard label="Total" value={overview.total.toString()} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Total" value={`${activeCount}/${overview.total}`} />
         <StatCard label="Milking" value={overview.milking.toString()} />
         <StatCard label="Pregnant" value={overview.pregnant.toString()} />
         <StatCard label="Dry" value={overview.dry.toString()} />
         <StatCard label="Calves" value={overview.calves.toString()} />
         <StatCard label="Males" value={overview.males.toString()} />
-        <StatCard label="Milk (L)" value={overview.milkToday.toLocaleString(undefined, { maximumFractionDigits: 1 })} />
       </div>
 
       <AnimalListClient animals={animals} categories={categories} statusOptions={allStatusOptions} isAdmin={isAdmin} />

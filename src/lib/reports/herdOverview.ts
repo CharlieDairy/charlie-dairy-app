@@ -47,9 +47,9 @@ export type AnimalCategory = { key: string; label: string; count: number };
 
 // Channab's category tabs (All/Breeder/Pregnant/Dry/Milking/.../Calf/Other)
 // -- adapted to Charlie's actual status model rather than invented category
-// names that don't correspond to real data here. Sold/Dead are excluded
-// from the quick tabs (historical records, not active-herd filters) the
-// same way Channab's own tabs don't surface them either.
+// names that don't correspond to real data here. Sold/Dead are included so
+// every status on the register is filterable from these tabs, not just the
+// active-herd ones.
 export async function getAnimalCategories(): Promise<AnimalCategory[]> {
   const grouped = await prisma.cow.groupBy({ by: ["status"], _count: { _all: true } });
   const countFor = (status: string) => grouped.find((g) => g.status === status)?._count._all ?? 0;
@@ -62,5 +62,7 @@ export async function getAnimalCategories(): Promise<AnimalCategory[]> {
     { key: "HEIFER", label: "Heifer", count: countFor("HEIFER") },
     { key: "CALF", label: "Calf", count: countFor("CALF") },
     { key: "INSEMINATED", label: "Inseminated", count: countFor("INSEMINATED") },
+    { key: "SOLD", label: "Sold", count: countFor("SOLD") },
+    { key: "DEAD", label: "Dead", count: countFor("DEAD") },
   ];
 }

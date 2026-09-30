@@ -43,10 +43,10 @@ export default async function CowProfilePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; edit?: string }>;
 }) {
   const { id } = await params;
-  const { period: periodParam } = await searchParams;
+  const { period: periodParam, edit } = await searchParams;
   const period: PeriodKey = (["day", "week", "month", "year", "all"] as const).includes(periodParam as PeriodKey)
     ? (periodParam as PeriodKey)
     : "month";
@@ -145,6 +145,7 @@ export default async function CowProfilePage({
             source={cow.source}
             notes={cow.notes}
             photoUrl={cow.photoUrl}
+            autoOpen={edit === "1"}
           />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm mt-2">

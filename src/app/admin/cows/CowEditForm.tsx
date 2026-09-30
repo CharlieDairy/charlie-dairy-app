@@ -12,6 +12,7 @@ export default function CowEditForm({
   source,
   notes,
   photoUrl,
+  autoOpen = false,
 }: {
   cowId: string;
   breed: string | null;
@@ -21,10 +22,12 @@ export default function CowEditForm({
   source: string | null;
   notes: string | null;
   photoUrl: string | null;
+  autoOpen?: boolean;
 }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(updateCowDetails, undefined);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -45,7 +48,10 @@ export default function CowEditForm({
     );
   }
 
+  const hasPhoto = Boolean(photoPreview || photoUrl);
+
   return (
+    <>
     <form
       ref={formRef}
       action={formAction}
@@ -54,8 +60,11 @@ export default function CowEditForm({
       <input type="hidden" name="id" value={cowId} />
       <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-5">
         <div className="flex flex-col gap-2">
-          <div className="w-full aspect-square rounded-md border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden">
-            {photoPreview || photoUrl ? (
+          <div
+            onClick={() => hasPhoto && setLightboxOpen(true)}
+            className={`w-full aspect-square rounded-md border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden ${hasPhoto ? "cursor-zoom-in" : ""}`}
+          >
+            {hasPhoto ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photoPreview ?? photoUrl ?? undefined} alt="Cow" className="w-full h-full object-contain" />
             ) : (
@@ -125,5 +134,15 @@ export default function CowEditForm({
         </button>
       </div>
     </form>
+    {lightboxOpen && hasPhoto && (
+      <div
+        onClick={() => setLightboxOpen(false)}
+        className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6 cursor-zoom-out"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={photoPreview ?? photoUrl ?? undefined} alt="Cow (enlarged)" className="max-w-full max-h-full object-contain rounded-md" />
+      </div>
+    )}
+    </>
   );
 }
