@@ -48,6 +48,21 @@ async function submitMilkingImpl(formData: FormData): Promise<FormState> {
     );
   }
 
+  // A herd/group total (cowId null) for this same date+shift already covers
+  // this cow's production in the farm-wide sum -- reports don't distinguish
+  // "individual rows that make up a group total" from "extra production on
+  // top of it", so letting both exist would double-count when totalled. See
+  // submitGroupMilkingImpl's matching check below.
+  const groupExists = await prisma.milkingRecord.findFirst({
+    where: { cowId: null, shift, date },
+    select: { id: true },
+  });
+  if (groupExists) {
+    throw new ValidationError(
+      `A herd/group total already covers the ${shift.toLowerCase()} shift on that date. Record individual cows for a shift either all together or as one group total, not both — delete the group total first if you need per-cow detail.`
+    );
+  }
+
   await prisma.milkingRecord.create({
     data: { cowId, shift, litres, fatPct, snfPct, date, enteredBy: user.name },
   });
@@ -79,6 +94,16 @@ async function submitGroupMilkingImpl(formData: FormData): Promise<FormState> {
   if (existing) {
     throw new ValidationError(
       `A herd total for the ${shift.toLowerCase()} shift on that date already exists (${existing.litres} L). It was not saved again.`
+    );
+  }
+
+  // Same reasoning as submitMilkingImpl's matching check: individual rows
+  // already recorded for this date+shift would be double-counted alongside
+  // a new group total when a report sums all MilkingRecord rows together.
+  const individualCount = await prisma.milkingRecord.count({ where: { cowId: { not: null }, shift, date } });
+  if (individualCount > 0) {
+    throw new ValidationError(
+      `${individualCount} individual milking${individualCount === 1 ? "" : "s"} already recorded for the ${shift.toLowerCase()} shift on that date. Record a shift either as individual cows or as one group total, not both.`
     );
   }
 

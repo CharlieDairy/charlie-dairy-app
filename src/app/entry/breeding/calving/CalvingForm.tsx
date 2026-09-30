@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import { recordCalving, type FormState } from "./actions";
 
 function todayIso() {
@@ -9,10 +9,14 @@ function todayIso() {
 
 export default function CalvingForm({ cows }: { cows: { id: string; tag: string }[] }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(recordCalving, undefined);
+  const [calfCount, setCalfCount] = useState(1);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state?.success) formRef.current?.reset();
+    if (state?.success) {
+      formRef.current?.reset();
+      setCalfCount(1);
+    }
   }, [state]);
 
   return (
@@ -58,36 +62,49 @@ export default function CalvingForm({ cows }: { cows: { id: string; tag: string 
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="calfCount" className="text-sm font-medium text-neutral-700">Number of Calves</label>
-        <input id="calfCount" name="calfCount" type="number" min="1" defaultValue={1} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        <input
+          id="calfCount"
+          name="calfCount"
+          type="number"
+          min="1"
+          max="4"
+          value={calfCount}
+          onChange={(e) => setCalfCount(Math.max(1, Math.min(4, Number(e.target.value) || 1)))}
+          className="border border-neutral-300 rounded-md px-3 py-2 text-base"
+        />
       </div>
 
-      <div className="border-t border-neutral-200 pt-3 flex flex-col gap-4">
-        <p className="text-sm font-medium text-neutral-700">Calf details (primary calf — for twins, note the second in remarks below)</p>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="calfSex" className="text-sm font-medium text-neutral-700">Calf Sex</label>
-          <select id="calfSex" name="calfSex" required defaultValue="UNKNOWN" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
-            <option value="FEMALE">Female</option>
-            <option value="MALE">Male</option>
-            <option value="UNKNOWN">Unknown</option>
-          </select>
+      {Array.from({ length: calfCount }, (_, i) => (
+        <div key={i} className="border-t border-neutral-200 pt-3 flex flex-col gap-4">
+          <p className="text-sm font-medium text-neutral-700">
+            {calfCount > 1 ? `Calf ${i + 1} of ${calfCount}` : "Calf details"}
+          </p>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={`calf_${i}_sex`} className="text-sm font-medium text-neutral-700">Sex</label>
+            <select id={`calf_${i}_sex`} name={`calf_${i}_sex`} required defaultValue="UNKNOWN" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
+              <option value="FEMALE">Female</option>
+              <option value="MALE">Male</option>
+              <option value="UNKNOWN">Unknown</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={`calf_${i}_outcome`} className="text-sm font-medium text-neutral-700">Outcome</label>
+            <select id={`calf_${i}_outcome`} name={`calf_${i}_outcome`} required defaultValue="ALIVE" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
+              <option value="ALIVE">Alive</option>
+              <option value="STILLBORN">Stillborn</option>
+              <option value="DIED_WITHIN_24H">Died within 24h</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={`calf_${i}_weight`} className="text-sm font-medium text-neutral-700">Birth Weight, kg (optional)</label>
+            <input id={`calf_${i}_weight`} name={`calf_${i}_weight`} type="number" step="0.1" min="0" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={`calf_${i}_tag`} className="text-sm font-medium text-neutral-700">New Calf Tag (optional — registers as a new animal if alive)</label>
+            <input id={`calf_${i}_tag`} name={`calf_${i}_tag`} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+          </div>
         </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="calfOutcome" className="text-sm font-medium text-neutral-700">Calf Outcome</label>
-          <select id="calfOutcome" name="calfOutcome" required defaultValue="ALIVE" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
-            <option value="ALIVE">Alive</option>
-            <option value="STILLBORN">Stillborn</option>
-            <option value="DIED_WITHIN_24H">Died within 24h</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="calfWeight" className="text-sm font-medium text-neutral-700">Birth Weight, kg (optional)</label>
-          <input id="calfWeight" name="calfWeight" type="number" step="0.1" min="0" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="calfTag" className="text-sm font-medium text-neutral-700">New Calf Tag (optional — registers as a new animal if alive)</label>
-          <input id="calfTag" name="calfTag" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
-        </div>
-      </div>
+      ))}
 
       <div className="flex flex-col gap-1">
         <label htmlFor="notes" className="text-sm font-medium text-neutral-700">Notes</label>

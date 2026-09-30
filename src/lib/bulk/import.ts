@@ -189,6 +189,7 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
 
     case "milkSales": {
       const parsed: Prisma.MilkSaleCreateManyInput[] = [];
+      const seenSales = new Set<string>();
       dataRows.forEach((cells, i) => {
         const rowNum = i + 2;
         const date = parseDate(cells, 0, "date", rowNum, errors, true);
@@ -207,15 +208,38 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
           errors.push(`Row ${rowNum}: amount ${amount} doesn't match litres × rate (${Math.round(rate * litres)}).`);
         }
         const rowEnteredBy = cell(cells, 7) || enteredBy;
-        if (date && buyer) parsed.push({ date, buyer, litres, rate, fatPct, snf, amount, enteredBy: rowEnteredBy });
+        if (date && buyer) {
+          const dupKey = `${date.toISOString().slice(0, 10)}|${buyer}|${litres}|${amount}`;
+          if (seenSales.has(dupKey)) errors.push(`Row ${rowNum}: an identical sale to "${buyer}" already appears earlier in this file.`);
+          seenSales.add(dupKey);
+          parsed.push({ date, buyer, litres, rate, fatPct, snf, amount, enteredBy: rowEnteredBy });
+        }
       });
       if (errors.length > 0) return FAIL("Fix the errors below and re-upload. Nothing was imported.", errors);
+
+      // Re-uploading the same file must not silently double revenue.
+      if (parsed.length > 0) {
+        const times = parsed.map((r) => (r.date as Date).getTime());
+        const existingRows = await prisma.milkSale.findMany({
+          where: { date: { gte: new Date(Math.min(...times)), lte: new Date(Math.max(...times)) } },
+          select: { date: true, buyer: true, litres: true, amount: true },
+        });
+        const existingKeys = new Set(existingRows.map((r) => `${r.date.toISOString().slice(0, 10)}|${r.buyer}|${r.litres}|${r.amount}`));
+        const clashes = parsed.filter((r) => existingKeys.has(`${(r.date as Date).toISOString().slice(0, 10)}|${r.buyer}|${r.litres}|${r.amount}`));
+        if (clashes.length > 0) {
+          return FAIL(
+            `${clashes.length} row${clashes.length === 1 ? "" : "s"} match milk sales that already exist — nothing was imported (was this file uploaded before?).`,
+            clashes.slice(0, 20).map((r) => `${(r.date as Date).toISOString().slice(0, 10)} ${r.buyer} already recorded.`)
+          );
+        }
+      }
       const result = await prisma.milkSale.createMany({ data: parsed });
       return { success: true, message: `Imported ${result.count} milk sales.`, errors: [], insertedCount: result.count };
     }
 
     case "feed": {
       const parsed: Prisma.FeedTransactionCreateManyInput[] = [];
+      const seenFeed = new Set<string>();
       dataRows.forEach((cells, i) => {
         const rowNum = i + 2;
         const date = parseDate(cells, 0, "date", rowNum, errors, true);
@@ -229,15 +253,37 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         range(errors, rowNum, "cost", cost, 0, 10_000_000_000);
         const notes = cell(cells, 6) || null;
         const rowEnteredBy = cell(cells, 7) || enteredBy;
-        if (date && feedType) parsed.push({ date, feedType, direction, quantity, rate, cost, notes, enteredBy: rowEnteredBy });
+        if (date && feedType) {
+          const dupKey = `${date.toISOString().slice(0, 10)}|${feedType}|${direction}|${quantity}`;
+          if (seenFeed.has(dupKey)) errors.push(`Row ${rowNum}: an identical ${feedType} ${direction} entry already appears earlier in this file.`);
+          seenFeed.add(dupKey);
+          parsed.push({ date, feedType, direction, quantity, rate, cost, notes, enteredBy: rowEnteredBy });
+        }
       });
       if (errors.length > 0) return FAIL("Fix the errors below and re-upload. Nothing was imported.", errors);
+
+      if (parsed.length > 0) {
+        const times = parsed.map((r) => (r.date as Date).getTime());
+        const existingRows = await prisma.feedTransaction.findMany({
+          where: { date: { gte: new Date(Math.min(...times)), lte: new Date(Math.max(...times)) } },
+          select: { date: true, feedType: true, direction: true, quantity: true },
+        });
+        const existingKeys = new Set(existingRows.map((r) => `${r.date.toISOString().slice(0, 10)}|${r.feedType}|${r.direction}|${r.quantity}`));
+        const clashes = parsed.filter((r) => existingKeys.has(`${(r.date as Date).toISOString().slice(0, 10)}|${r.feedType}|${r.direction}|${r.quantity}`));
+        if (clashes.length > 0) {
+          return FAIL(
+            `${clashes.length} row${clashes.length === 1 ? "" : "s"} match feed transactions that already exist — nothing was imported (was this file uploaded before?).`,
+            clashes.slice(0, 20).map((r) => `${(r.date as Date).toISOString().slice(0, 10)} ${r.feedType} ${r.direction} already recorded.`)
+          );
+        }
+      }
       const result = await prisma.feedTransaction.createMany({ data: parsed });
       return { success: true, message: `Imported ${result.count} feed transactions.`, errors: [], insertedCount: result.count };
     }
 
     case "cash": {
       const parsed: Prisma.CashTransactionCreateManyInput[] = [];
+      const seenCash = new Set<string>();
       dataRows.forEach((cells, i) => {
         const rowNum = i + 2;
         const date = parseDate(cells, 0, "date", rowNum, errors, true);
@@ -256,10 +302,29 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         const projectLand = cell(cells, 9) || null;
         const remark = cell(cells, 10) || null;
         if (date && category) {
+          const dupKey = `${date.toISOString().slice(0, 10)}|${category}|${party}|${mode}|${amountIn}|${amountOut}`;
+          if (seenCash.has(dupKey)) errors.push(`Row ${rowNum}: an identical cash entry already appears earlier in this file.`);
+          seenCash.add(dupKey);
           parsed.push({ date, time, account, party, category, mode, amountIn, amountOut, enteredBy: rowEnteredBy, projectLand, remark });
         }
       });
       if (errors.length > 0) return FAIL("Fix the errors below and re-upload. Nothing was imported.", errors);
+
+      if (parsed.length > 0) {
+        const times = parsed.map((r) => (r.date as Date).getTime());
+        const existingRows = await prisma.cashTransaction.findMany({
+          where: { date: { gte: new Date(Math.min(...times)), lte: new Date(Math.max(...times)) } },
+          select: { date: true, category: true, party: true, mode: true, amountIn: true, amountOut: true },
+        });
+        const existingKeys = new Set(existingRows.map((r) => `${r.date.toISOString().slice(0, 10)}|${r.category}|${r.party}|${r.mode}|${r.amountIn}|${r.amountOut}`));
+        const clashes = parsed.filter((r) => existingKeys.has(`${(r.date as Date).toISOString().slice(0, 10)}|${r.category}|${r.party}|${r.mode}|${r.amountIn}|${r.amountOut}`));
+        if (clashes.length > 0) {
+          return FAIL(
+            `${clashes.length} row${clashes.length === 1 ? "" : "s"} match cash entries that already exist — nothing was imported (was this file uploaded before?).`,
+            clashes.slice(0, 20).map((r) => `${(r.date as Date).toISOString().slice(0, 10)} ${r.category} already recorded.`)
+          );
+        }
+      }
       const result = await prisma.cashTransaction.createMany({ data: parsed });
       return { success: true, message: `Imported ${result.count} cash transactions.`, errors: [], insertedCount: result.count };
     }

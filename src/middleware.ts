@@ -42,7 +42,18 @@ export default auth((req) => {
     }
   }
 
-  return NextResponse.next();
+  // This first-pass gate above only ever sees the JWT's modules snapshot
+  // from sign-in (edge middleware can't touch Prisma -- see the comment on
+  // the `auth` instance above), so a permission revoked mid-session would
+  // otherwise stay readable until the token expires. Forward the path as a
+  // REQUEST header (not a response header -- those never reach the Server
+  // Component render) so admin/layout.tsx and entry/layout.tsx, which
+  // already do a live DB permission read for the sidebar on every request,
+  // can re-check this specific route against CURRENT grants, not the stale
+  // token.
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-pathname", pathname);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 });
 
 export const config = {
