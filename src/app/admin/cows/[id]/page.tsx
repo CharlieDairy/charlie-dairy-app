@@ -12,6 +12,12 @@ import WeightChart from "../WeightChart";
 import CowCustomFieldsForm from "../CowCustomFieldsForm";
 import PeriodSelect from "./PeriodSelect";
 
+// This page's Milking Summary reads the "period" search param on every
+// request (day/week/month/year/all) -- force-dynamic guarantees a fresh
+// server render (and fresh dailyBreakdown query) per selection instead of
+// risking a cached render being reused across period changes.
+export const dynamic = "force-dynamic";
+
 function fmtDate(d: Date | null | undefined): string {
   return d ? d.toISOString().slice(0, 10) : "—";
 }
@@ -38,7 +44,7 @@ export default async function CowProfilePage({
     : "month";
   const profile = await getCowProfile(id, period);
   if (!profile) notFound();
-  const { cow, milking, dailyBreakdown, customFields } = profile;
+  const { cow, milking, dailyBreakdown, customFields, health } = profile;
 
   const [statusLabels, genderLabels, locationRows] = await Promise.all([
     getLabelMap("COW_STATUS"),
@@ -47,6 +53,17 @@ export default async function CowProfilePage({
   ]);
   const locations = locationRows.map((r) => r.location);
   const currentLocation = cow.movements[0]?.location ?? null;
+
+  // Calving/calf breakdown for the Overview panel -- "kinds of calvings"
+  // means difficulty (unassisted vs. needed help) and calf outcome, not
+  // just the raw count already shown in the top stat strip.
+  const allCalvesForSummary = cow.calvingsAsDam.flatMap((c) => c.calves);
+  const assistedCalvings = cow.calvingsAsDam.filter((c) => c.difficulty !== "UNASSISTED").length;
+  const liveCalves = allCalvesForSummary.filter((c) => c.outcome === "ALIVE").length;
+  const lostCalves = allCalvesForSummary.length - liveCalves;
+  const daysInMilk = cow.status === "MILKING" && cow.lastCalvingDate
+    ? Math.floor((Date.now() - cow.lastCalvingDate.getTime()) / 86_400_000)
+    : null;
 
   const allCalves = cow.calvingsAsDam.flatMap((c) => c.calves.map((calf) => ({ calf, calving: c })));
 
@@ -132,6 +149,35 @@ export default async function CowProfilePage({
           <div><span className="text-neutral-500">Source:</span> {cow.source ?? "—"}</div>
         </div>
         {cow.notes && <p className="text-sm text-neutral-600 mt-3 border-t border-neutral-100 pt-3">{cow.notes}</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mt-3 border-t border-neutral-100 pt-3">
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase mb-1">Calvings</p>
+            <p>
+              {cow.calvingsAsDam.length} calving{cow.calvingsAsDam.length === 1 ? "" : "s"} ·{" "}
+              {allCalvesForSummary.length} {allCalvesForSummary.length === 1 ? "calf" : "calves"}
+            </p>
+            <p className="text-neutral-500">
+              {liveCalves} alive{lostCalves > 0 ? `, ${lostCalves} lost` : ""} · {assistedCalvings} assisted
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase mb-1">Productivity</p>
+            <p>{milking.totalLitres.toLocaleString()} L lifetime · {milking.avgPerDay.toFixed(1)} L/day avg</p>
+            <p className="text-neutral-500">{daysInMilk != null ? `${daysInMilk} days in milk` : "Not currently milking"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase mb-1">Health</p>
+            <p>
+              {health.vaccinationCount} vaccination{health.vaccinationCount === 1 ? "" : "s"} ·{" "}
+              {health.treatmentCount} treatment{health.treatmentCount === 1 ? "" : "s"}
+            </p>
+            <p className="text-neutral-500">
+              {health.nextVaccinationDue
+                ? `Next: ${health.nextVaccinationDue.vaccineName} (${fmtDate(health.nextVaccinationDue.dueDate)})`
+                : "No vaccination due date on record"}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
@@ -256,33 +302,35 @@ export default async function CowProfilePage({
         </div>
         <div className="mt-4">
           <p className="text-xs font-medium text-neutral-500 uppercase mb-2">Daily Yield by Shift</p>
-          <LactationChart data={dailyBreakdown} />
+          <LactationChart key={period} data={dailyBreakdown} />
         </div>
         {dailyBreakdown.length > 0 && (
-          <table className="w-full text-sm mt-3">
-            <thead>
-              <tr className="text-xs text-neutral-500 border-t border-neutral-100">
-                <th className="text-left py-1 font-normal">Date</th>
-                <th className="text-right py-1 font-normal">Morning</th>
-                <th className="text-right py-1 font-normal">Afternoon</th>
-                <th className="text-right py-1 font-normal">Evening</th>
-                <th className="text-right py-1 font-normal">Total</th>
-                <th className="text-right py-1 font-normal">Daily Avg</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...dailyBreakdown].reverse().map((d) => (
-                <tr key={d.date} className="border-t border-neutral-100">
-                  <td className="py-1">{d.date}</td>
-                  <td className="py-1 text-right">{d.morning != null ? d.morning : "—"}</td>
-                  <td className="py-1 text-right">{d.afternoon != null ? d.afternoon : "—"}</td>
-                  <td className="py-1 text-right">{d.evening != null ? d.evening : "—"}</td>
-                  <td className="py-1 text-right font-medium">{d.total.toLocaleString()}</td>
-                  <td className="py-1 text-right">{d.avgPerShift.toFixed(1)}</td>
+          <div className="overflow-x-auto border border-neutral-200 rounded-lg mt-3">
+            <table className="w-full text-sm text-center">
+              <thead className="bg-neutral-100">
+                <tr className="text-xs text-neutral-500">
+                  <th className="py-2 px-3 font-medium">Date</th>
+                  <th className="py-2 px-3 font-medium">Morning</th>
+                  <th className="py-2 px-3 font-medium">Afternoon</th>
+                  <th className="py-2 px-3 font-medium">Evening</th>
+                  <th className="py-2 px-3 font-medium">Total</th>
+                  <th className="py-2 px-3 font-medium">Daily Avg</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {[...dailyBreakdown].reverse().map((d) => (
+                  <tr key={d.date} className="border-t border-neutral-100">
+                    <td className="py-2 px-3">{d.date}</td>
+                    <td className="py-2 px-3">{d.morning != null ? d.morning : "—"}</td>
+                    <td className="py-2 px-3">{d.afternoon != null ? d.afternoon : "—"}</td>
+                    <td className="py-2 px-3">{d.evening != null ? d.evening : "—"}</td>
+                    <td className="py-2 px-3 font-medium">{d.total.toLocaleString()}</td>
+                    <td className="py-2 px-3">{d.avgPerShift.toFixed(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         {dailyBreakdown.length === 0 && (
           <p className="text-sm text-neutral-400 mt-3">No milking entries recorded for this period.</p>

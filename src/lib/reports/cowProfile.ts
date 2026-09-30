@@ -27,7 +27,7 @@ export async function getCowProfile(id: string, period: PeriodKey = "month") {
   });
   if (!cow) return null;
 
-  const [milkAgg, qualityAgg, customFieldDefs, customFieldValues] = await Promise.all([
+  const [milkAgg, qualityAgg, customFieldDefs, customFieldValues, vaccinationCount, treatmentCount, nextVaccination] = await Promise.all([
     prisma.milkingRecord.aggregate({
       where: { cowId: id },
       _sum: { litres: true },
@@ -39,6 +39,11 @@ export async function getCowProfile(id: string, period: PeriodKey = "month") {
     }),
     prisma.cowCustomFieldDef.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.cowCustomFieldValue.findMany({ where: { cowId: id } }),
+    // Total counts, not the `take: 10` truncated lists above -- the Health
+    // summary needs the real career totals, not just the most recent page.
+    prisma.vaccinationRecord.count({ where: { cowId: id } }),
+    prisma.treatmentRecord.count({ where: { cowId: id } }),
+    prisma.vaccinationRecord.findFirst({ where: { cowId: id, nextDueDate: { not: null } }, orderBy: { nextDueDate: "asc" } }),
   ]);
   const valueMap = new Map(customFieldValues.map((v) => [v.fieldDefId, v.value]));
   const customFields = customFieldDefs.map((def) => ({ def, value: valueMap.get(def.id) ?? "" }));
@@ -99,6 +104,11 @@ export async function getCowProfile(id: string, period: PeriodKey = "month") {
     },
     dailyBreakdown,
     customFields,
+    health: {
+      vaccinationCount,
+      treatmentCount,
+      nextVaccinationDue: nextVaccination ? { vaccineName: nextVaccination.vaccineName, dueDate: nextVaccination.nextDueDate } : null,
+    },
   };
 }
 

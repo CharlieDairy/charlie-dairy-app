@@ -57,7 +57,7 @@ export default function CowEditForm({
           <div className="w-full aspect-square rounded-md border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden">
             {photoPreview || photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={photoPreview ?? photoUrl ?? undefined} alt="Cow" className="w-full h-full object-cover" />
+              <img src={photoPreview ?? photoUrl ?? undefined} alt="Cow" className="w-full h-full object-contain" />
             ) : (
               <span className="text-neutral-300 text-sm">No photo</span>
             )}
