@@ -52,7 +52,10 @@ export default async function CowsAdminPage() {
   const allStatusOptions = statusItems.map((s) => ({ code: s.code, label: s.label }));
   const soldOrDeadCount = cows.filter((c) => c.status === "SOLD" || c.status === "DEAD").length;
   const activeCount = cows.length - soldOrDeadCount;
-  const nonMilkingActiveCount = activeCount - overview.milking;
+  // Producing/breeding stock vs. not-yet-productive young stock -- Dead/Sold
+  // are excluded simply by not appearing in either bucket.
+  const producingCount = cows.filter((c) => c.status === "MILKING" || c.status === "DRY" || c.status === "INSEMINATED").length;
+  const youngStockCount = cows.filter((c) => c.status === "HEIFER" || c.status === "CALF").length;
 
   const animals: AnimalRow[] = cows
     .sort((a, b) => Number(a.tag) - Number(b.tag) || a.tag.localeCompare(b.tag))
@@ -85,7 +88,7 @@ export default async function CowsAdminPage() {
         <StatCard label="Dry" value={overview.dry.toString()} icon={IconPause} iconTone="brand" />
         <StatCard label="Calves" value={overview.calves.toString()} icon={IconSprout} iconTone="brand" />
         <StatCard label="Males" value={overview.males.toString()} icon={IconMale} iconTone="brand" />
-        <StatCard label="Milking : Non-Milking" value={simplifyRatio(overview.milking, nonMilkingActiveCount)} icon={IconRatio} iconTone="brand" />
+        <StatCard label="Producing : Young Stock" value={simplifyRatio(producingCount, youngStockCount)} icon={IconRatio} iconTone="brand" />
       </div>
 
       <AnimalListClient animals={animals} categories={categories} statusOptions={allStatusOptions} isAdmin={isAdmin} />
