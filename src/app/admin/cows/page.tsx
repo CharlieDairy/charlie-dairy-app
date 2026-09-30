@@ -28,6 +28,13 @@ function monthsSince(d: Date | null): number | null {
   return Math.max(0, Math.round(ms / (30.44 * 86_400_000)));
 }
 
+function simplifyRatio(a: number, b: number): string {
+  if (a === 0 && b === 0) return "0:0";
+  const gcd = (x: number, y: number): number => (y === 0 ? x : gcd(y, x % y));
+  const divisor = gcd(a, b);
+  return `${a / divisor}:${b / divisor}`;
+}
+
 export default async function CowsAdminPage() {
   const session = await auth();
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
@@ -78,7 +85,7 @@ export default async function CowsAdminPage() {
         <StatCard label="Dry" value={overview.dry.toString()} icon={IconPause} iconTone="brand" />
         <StatCard label="Calves" value={overview.calves.toString()} icon={IconSprout} iconTone="brand" />
         <StatCard label="Males" value={overview.males.toString()} icon={IconMale} iconTone="brand" />
-        <StatCard label="Milking : Non-Milking" value={`${overview.milking}:${nonMilkingActiveCount}`} icon={IconRatio} iconTone="brand" />
+        <StatCard label="Milking : Non-Milking" value={simplifyRatio(overview.milking, nonMilkingActiveCount)} icon={IconRatio} iconTone="brand" />
       </div>
 
       <AnimalListClient animals={animals} categories={categories} statusOptions={allStatusOptions} isAdmin={isAdmin} />
