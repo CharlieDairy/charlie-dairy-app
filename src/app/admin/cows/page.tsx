@@ -20,6 +20,7 @@ const IconHeart = <Ic><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.0
 const IconPause = <Ic><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></Ic>;
 const IconSprout = <Ic><path d="M7 20h10" /><path d="M12 20v-8" /><path d="M12 12C12 7 7 4 3 4c0 5 3 9 9 9z" /><path d="M12 12c0-4 4-7 9-7 0 4-3 8-9 8z" /></Ic>;
 const IconMale = <Ic><circle cx="10" cy="14" r="6" /><path d="M14.5 9.5L20 4" /><path d="M15 4h5v5" /></Ic>;
+const IconRatio = <Ic><circle cx="8" cy="12" r="5" /><circle cx="16" cy="12" r="5" /></Ic>;
 
 function monthsSince(d: Date | null): number | null {
   if (!d) return null;
@@ -44,6 +45,7 @@ export default async function CowsAdminPage() {
   const allStatusOptions = statusItems.map((s) => ({ code: s.code, label: s.label }));
   const soldOrDeadCount = cows.filter((c) => c.status === "SOLD" || c.status === "DEAD").length;
   const activeCount = cows.length - soldOrDeadCount;
+  const nonMilkingActiveCount = activeCount - overview.milking;
 
   const animals: AnimalRow[] = cows
     .sort((a, b) => Number(a.tag) - Number(b.tag) || a.tag.localeCompare(b.tag))
@@ -69,13 +71,14 @@ export default async function CowsAdminPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Total" value={`${activeCount}/${overview.total}`} icon={IconUsers} />
-        <StatCard label="Milking" value={overview.milking.toString()} icon={IconDroplet} />
-        <StatCard label="Pregnant" value={overview.pregnant.toString()} icon={IconHeart} />
-        <StatCard label="Dry" value={overview.dry.toString()} icon={IconPause} />
-        <StatCard label="Calves" value={overview.calves.toString()} icon={IconSprout} />
-        <StatCard label="Males" value={overview.males.toString()} icon={IconMale} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+        <StatCard label="Total" value={`${activeCount}/${overview.total}`} icon={IconUsers} iconTone="brand" />
+        <StatCard label="Milking" value={overview.milking.toString()} icon={IconDroplet} iconTone="brand" />
+        <StatCard label="Pregnant" value={overview.pregnant.toString()} icon={IconHeart} iconTone="brand" />
+        <StatCard label="Dry" value={overview.dry.toString()} icon={IconPause} iconTone="brand" />
+        <StatCard label="Calves" value={overview.calves.toString()} icon={IconSprout} iconTone="brand" />
+        <StatCard label="Males" value={overview.males.toString()} icon={IconMale} iconTone="brand" />
+        <StatCard label="Milking : Non-Milking" value={`${overview.milking}:${nonMilkingActiveCount}`} icon={IconRatio} iconTone="brand" />
       </div>
 
       <AnimalListClient animals={animals} categories={categories} statusOptions={allStatusOptions} isAdmin={isAdmin} />
