@@ -4,6 +4,7 @@ import { getCowProfile } from "@/lib/reports/cowProfile";
 import { getLabelMap, labelFor } from "@/lib/masterData";
 import { prisma } from "@/lib/prisma";
 import type { PeriodKey } from "@/lib/reports/herd";
+import { getCowScore, type ScoreCategory } from "@/lib/reports/scoring";
 import CowEditForm from "../CowEditForm";
 import WeightForm from "../WeightForm";
 import MovementForm from "../MovementForm";
@@ -17,6 +18,13 @@ import PeriodSelect from "./PeriodSelect";
 // server render (and fresh dailyBreakdown query) per selection instead of
 // risking a cached render being reused across period changes.
 export const dynamic = "force-dynamic";
+
+const HEALTH_BADGE_CLASS: Record<ScoreCategory, string> = {
+  Excellent: "bg-green-50 text-green-700",
+  Good: "bg-amber-50 text-amber-700",
+  Fair: "bg-orange-50 text-orange-700",
+  Poor: "bg-red-50 text-red-700",
+};
 
 function fmtDate(d: Date | null | undefined): string {
   return d ? d.toISOString().slice(0, 10) : "—";
@@ -46,10 +54,11 @@ export default async function CowProfilePage({
   if (!profile) notFound();
   const { cow, milking, dailyBreakdown, customFields, health } = profile;
 
-  const [statusLabels, genderLabels, locationRows] = await Promise.all([
+  const [statusLabels, genderLabels, locationRows, healthScore] = await Promise.all([
     getLabelMap("COW_STATUS"),
     getLabelMap("COW_GENDER"),
     prisma.cowMovement.findMany({ select: { location: true }, distinct: ["location"], orderBy: { location: "asc" } }),
+    getCowScore(id),
   ]);
   const locations = locationRows.map((r) => r.location);
   const currentLocation = cow.movements[0]?.location ?? null;
@@ -168,7 +177,12 @@ export default async function CowProfilePage({
             <p className="text-neutral-500">{daysInMilk != null ? `${daysInMilk} days in milk` : "Not currently milking"}</p>
           </div>
           <div>
-            <p className="text-xs font-medium text-neutral-500 uppercase mb-1">Health</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-xs font-medium text-neutral-500 uppercase">Health</p>
+              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${HEALTH_BADGE_CLASS[healthScore.category]}`}>
+                {healthScore.score}/100 · {healthScore.category}
+              </span>
+            </div>
             <p>
               {health.vaccinationCount} vaccination{health.vaccinationCount === 1 ? "" : "s"} ·{" "}
               {health.treatmentCount} treatment{health.treatmentCount === 1 ? "" : "s"}

@@ -42,6 +42,10 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/entry/health/treatment", label: "Treatment Entry" },
       { href: "/admin/health/vaccines", label: "Vaccines" },
       { href: "/admin/health/medicines", label: "Medicines" },
+      { href: "/admin/health/scoring", label: "Score Dashboard" },
+      { href: "/admin/health/scoring/setup", label: "Scoring Setup" },
+      { href: "/admin/health/schedules", label: "Health Schedules" },
+      { href: "/admin/health/targets", label: "Production Targets" },
     ],
   },
   {

@@ -110,6 +110,7 @@ model Cow {
   customFieldValues CowCustomFieldValue[]
   vaccinations      VaccinationRecord[]
   treatments        TreatmentRecord[]
+  productionTargets ProductionTarget[]
 }
 
 enum CustomFieldType {
@@ -210,6 +211,64 @@ model TreatmentRecord {
 
   @@index([cowId])
   @@index([date])
+}
+
+// Scoring module (Channab-style): a configurable weighted health score per
+// animal, computed live from real vaccination/treatment data rather than
+// stored -- there's nothing to keep in sync, and it's always accurate.
+// ScoringFactor rows are the "Scoring Setup" weights; UI enforces they sum
+// to 100 before saving, so scoring.ts can trust that invariant when reading.
+enum ScoringFactorKey {
+  VACCINATION_COMPLIANCE
+  TREATMENT_FREQUENCY
+  HEALTH_RECENCY
+}
+
+model ScoringFactor {
+  id        String           @id @default(cuid())
+  key       ScoringFactorKey @unique
+  label     String
+  weightPct Int
+  updatedAt DateTime         @updatedAt
+}
+
+enum HealthScheduleType {
+  VACCINATION
+  DEWORMING
+  CHECKUP
+}
+
+// A recurring rule ("Deworm every 90 days"), not a per-animal occurrence --
+// due/overdue status is derived by matching the most recent Vaccination/
+// TreatmentRecord whose name matches this schedule's name against its
+// interval, the same live-computed approach as the scoring engine.
+model HealthSchedule {
+  id           String             @id @default(cuid())
+  name         String
+  type         HealthScheduleType
+  intervalDays Int
+  active       Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+enum ProductionTargetType {
+  MILK_DAILY
+  WEIGHT
+}
+
+model ProductionTarget {
+  id          String               @id @default(cuid())
+  cowId       String
+  cow         Cow                  @relation(fields: [cowId], references: [id], onDelete: Cascade)
+  type        ProductionTargetType
+  targetValue Float
+  targetDate  DateTime?
+  active      Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([cowId])
 }
 
 // Herd Management: per-animal weight over time, shown as a trend on the cow
