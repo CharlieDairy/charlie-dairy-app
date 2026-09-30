@@ -45,10 +45,24 @@ async function recordPregnancyCheckImpl(formData: FormData): Promise<FormState> 
     orderBy: { date: "desc" },
   });
 
+  // Only a check newer than (or equal to) her latest existing one should
+  // change the dam's *current* reproductive state -- same guard calving
+  // already uses (src/app/entry/breeding/calving/actions.ts `isLatest`).
+  // Without it, backdating an old check (or recording checks out of order)
+  // can overwrite expectedCalving/dryDate with stale data.
+  const latestExisting = await prisma.pregnancyCheck.findFirst({
+    where: { cowId },
+    orderBy: { date: "desc" },
+    select: { date: true },
+  });
+  const isLatest = !latestExisting || date >= latestExisting.date;
+
   await prisma.$transaction(async (tx) => {
     await tx.pregnancyCheck.create({
       data: { cowId, inseminationId: insemination?.id ?? null, date, method, result, notes, performedBy },
     });
+
+    if (!isLatest) return;
 
     if (result === "PREGNANT") {
       const conceptionDate = insemination?.date ?? date;
@@ -64,5 +78,6 @@ async function recordPregnancyCheckImpl(formData: FormData): Promise<FormState> 
   revalidatePath("/entry/breeding/reproduction");
   revalidatePath("/admin/cows");
   revalidatePath("/admin/reports/breeding");
-  return { success: true, message: `Pregnancy check (${result}) recorded for cow ${cow.tag}.` };
+  const historical = isLatest ? "" : " This is older than her latest check, so her current status was left unchanged.";
+  return { success: true, message: `Pregnancy check (${result}) recorded for cow ${cow.tag}.${historical}` };
 }

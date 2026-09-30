@@ -72,13 +72,36 @@ async function updateCashEntryImpl(formData: FormData): Promise<FormState> {
   const amountIn = direction === "IN" ? amount : 0;
   const amountOut = direction === "OUT" ? amount : 0;
 
-  await prisma.cashTransaction.update({
-    where: { id },
-    data: { date, category, party, remark, mode, amountIn, amountOut },
+  // A receipt/salary payment creates a linked CashTransaction (see
+  // CustomerPayment/SalaryPayment in schema.prisma) so it shows up in Cash
+  // Flow immediately. Editing only the cash row here would let the ledger
+  // disagree with the receivable/payroll record it came from -- keep the
+  // linked amount/date/mode in sync in the same transaction.
+  const [linkedPayment, linkedSalary] = await Promise.all([
+    prisma.customerPayment.findUnique({ where: { cashTransactionId: id } }),
+    prisma.salaryPayment.findUnique({ where: { cashTransactionId: id } }),
+  ]);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.cashTransaction.update({
+      where: { id },
+      data: { date, category, party, remark, mode, amountIn, amountOut },
+    });
+    if (linkedPayment) {
+      await tx.customerPayment.update({ where: { id: linkedPayment.id }, data: { date, amount, mode } });
+    }
+    if (linkedSalary) {
+      await tx.salaryPayment.update({ where: { id: linkedSalary.id }, data: { date, amount, mode } });
+    }
   });
 
   refresh();
-  return { success: true, message: "Cash entry updated." };
+  const linkNote = linkedPayment
+    ? ` Linked customer payment updated to match.`
+    : linkedSalary
+      ? ` Linked salary payment updated to match.`
+      : "";
+  return { success: true, message: `Cash entry updated.${linkNote}` };
 }
 
 export async function deleteCashEntry(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -91,6 +114,22 @@ async function deleteCashEntryImpl(formData: FormData): Promise<FormState> {
 
   const existing = await prisma.cashTransaction.findUnique({ where: { id } });
   if (!existing) return { success: false, message: "Entry not found." };
+
+  // The FK from CustomerPayment/SalaryPayment to CashTransaction is ON
+  // DELETE SET NULL, not RESTRICT -- deleting here would silently orphan
+  // the payment record (still shows money received/paid, with no cash-
+  // ledger entry backing it). Block it instead; the payment has to be
+  // reversed/deleted from its own page first.
+  const [linkedPayment, linkedSalary] = await Promise.all([
+    prisma.customerPayment.findUnique({ where: { cashTransactionId: id }, select: { buyer: true } }),
+    prisma.salaryPayment.findUnique({ where: { cashTransactionId: id }, select: { employee: { select: { name: true } } } }),
+  ]);
+  if (linkedPayment) {
+    throw new ValidationError(`This entry is linked to a customer payment from ${linkedPayment.buyer}. Delete that payment first.`);
+  }
+  if (linkedSalary) {
+    throw new ValidationError(`This entry is linked to a salary payment for ${linkedSalary.employee.name}. Delete that payment first.`);
+  }
 
   await prisma.cashTransaction.delete({ where: { id } });
   refresh();
@@ -114,8 +153,23 @@ async function deleteCashEntriesImpl(formData: FormData): Promise<BulkDeleteStat
   const ids = formData.getAll("entryIds") as string[];
   if (ids.length === 0) return { success: false, message: "No entries selected." };
 
-  const { count } = await prisma.cashTransaction.deleteMany({ where: { id: { in: ids } } });
+  // Same guard as the single-row delete: skip anything linked to a customer
+  // or salary payment rather than silently orphaning it (the FK is SET
+  // NULL, not RESTRICT).
+  const [linkedPayments, linkedSalaries] = await Promise.all([
+    prisma.customerPayment.findMany({ where: { cashTransactionId: { in: ids } }, select: { cashTransactionId: true } }),
+    prisma.salaryPayment.findMany({ where: { cashTransactionId: { in: ids } }, select: { cashTransactionId: true } }),
+  ]);
+  const linkedIds = new Set([...linkedPayments, ...linkedSalaries].map((r) => r.cashTransactionId));
+  const deletableIds = ids.filter((id) => !linkedIds.has(id));
+
+  const { count } = deletableIds.length > 0
+    ? await prisma.cashTransaction.deleteMany({ where: { id: { in: deletableIds } } })
+    : { count: 0 };
 
   refresh();
-  return { success: true, message: `Deleted ${count} entr${count === 1 ? "y" : "ies"}.` };
+  const skippedNote = linkedIds.size > 0
+    ? ` ${linkedIds.size} skipped — linked to a customer/salary payment; delete those first.`
+    : "";
+  return { success: true, message: `Deleted ${count} entr${count === 1 ? "y" : "ies"}.${skippedNote}` };
 }

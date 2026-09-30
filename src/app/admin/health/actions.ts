@@ -145,6 +145,10 @@ async function recordTreatmentImpl(formData: FormData): Promise<FormState> {
   const date = reqDate(formData, "date", "Date");
   const dosage = optText(formData, "dosage", "Dosage", { max: 100 });
   const quantityUsed = optNum(formData, "quantityUsed", "Quantity used", { positive: true, max: 1_000_000 });
+  // For a multi-day course, withdrawal should count from the LAST dose, not
+  // the start date -- defaults to `date` (a single-dose treatment) when left
+  // blank, but a course's real last-dose date takes priority when given.
+  const lastDoseDate = optDate(formData, "lastDoseDate", "Last dose date", { futureDays: 0 });
   const reason = optText(formData, "reason", "Reason", { max: 300 });
   const cost = optNum(formData, "cost", "Cost", { max: 10_000_000 });
   const administeredBy = optText(formData, "administeredBy", "Administered by", { max: 100 });
@@ -154,9 +158,17 @@ async function recordTreatmentImpl(formData: FormData): Promise<FormState> {
   if (!cow) throw new ValidationError("Animal not found.");
 
   const matchedDef = await prisma.medicineDef.findFirst({ where: { name: { equals: medicineName, mode: "insensitive" } } });
+  const withdrawalBasisDate = lastDoseDate ?? date;
   const withdrawalUntil = matchedDef?.withdrawalDays != null
-    ? new Date(date.getTime() + matchedDef.withdrawalDays * 86_400_000)
+    ? new Date(withdrawalBasisDate.getTime() + matchedDef.withdrawalDays * 86_400_000)
     : null;
+  // Silent gap otherwise: a typo or an unlisted medicine name gets no
+  // withdrawal tracking at all, with nothing telling the person entering it.
+  const unmatchedWarning = !matchedDef
+    ? ` "${medicineName}" isn't in the Medicines catalog, so no withdrawal period was tracked for this treatment.`
+    : matchedDef.withdrawalDays == null
+      ? ` ${medicineName} has no withdrawal days configured, so no withdrawal period was tracked.`
+      : "";
 
   const duplicate = await prisma.treatmentRecord.findFirst({
     where: { cowId, medicineName, date, createdAt: { gte: new Date(Date.now() - 120_000) } },
@@ -216,7 +228,7 @@ async function recordTreatmentImpl(formData: FormData): Promise<FormState> {
 
   const withdrawalNote = withdrawalUntil
     ? ` Milk withdrawal in effect until ${withdrawalUntil.toISOString().slice(0, 10)}.`
-    : "";
+    : unmatchedWarning;
   const stockWarning =
     stockAfter !== null && stockAfter < 0
       ? ` Warning: recorded stock of ${medicineName} is now ${stockAfter.toFixed(1)} — a restock entry may be missing.`

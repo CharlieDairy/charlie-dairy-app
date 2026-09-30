@@ -166,7 +166,11 @@ export async function createAccessRole(_prev: FormState, formData: FormData): Pr
 }
 
 async function createAccessRoleImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("admin", "CREATE");
+  // Defining what a role grants is ADMIN-only, not delegatable via
+  // admin:CREATE -- otherwise a role holding admin:CREATE could mint a new
+  // role with broader permissions than its own and assign it to itself.
+  // Matches deleteAccessRoleImpl's existing bar below.
+  await requireAccess({ admin: true });
   const name = reqText(formData, "name", "Role name", { max: 60 });
   const description = optText(formData, "description", "Description", { max: 300 });
 
@@ -194,7 +198,11 @@ export async function updateAccessRole(_prev: FormState, formData: FormData): Pr
 }
 
 async function updateAccessRoleImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("admin", "EDIT");
+  // Same reasoning as createAccessRoleImpl: editing a role's grants
+  // (including the caller's own role) is ADMIN-only, not admin:EDIT --
+  // otherwise a role holding admin:EDIT could self-escalate by rewriting
+  // its own grant set. Matches deleteAccessRoleImpl's existing bar below.
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Role");
   const name = reqText(formData, "name", "Role name", { max: 60 });
   const description = optText(formData, "description", "Description", { max: 300 });

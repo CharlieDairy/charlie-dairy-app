@@ -59,6 +59,11 @@ export default function TreatmentForm({
         <span className="text-xs text-neutral-400">Deducts from medicine stock if this medicine has stock tracked.</span>
       </div>
       <div className="flex flex-col gap-1">
+        <label htmlFor="lastDoseDate" className="text-sm font-medium text-neutral-700">Last Dose Date (optional, for a multi-day course)</label>
+        <input id="lastDoseDate" name="lastDoseDate" type="date" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        <span className="text-xs text-neutral-400">If this treatment runs over several days, the milk withdrawal period counts from the last dose, not this start date — leave blank for a single dose.</span>
+      </div>
+      <div className="flex flex-col gap-1">
         <label htmlFor="cost" className="text-sm font-medium text-neutral-700">Cost (Rs, optional)</label>
         <input id="cost" name="cost" type="number" step="0.01" min="0" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
       </div>

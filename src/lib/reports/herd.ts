@@ -62,7 +62,6 @@ export async function getHerdSummary(period: PeriodKey = "all"): Promise<HerdRow
         FROM "Cow" c
         LEFT JOIN "MilkingRecord" m ON m."cowId" = c.id AND m.date >= ${range.start} AND m.date < ${range.end}
         GROUP BY c.id, c.tag, c.status
-        ORDER BY CAST(c.tag AS INTEGER) ASC
       `
     : await prisma.$queryRaw<
         {
@@ -83,21 +82,26 @@ export async function getHerdSummary(period: PeriodKey = "all"): Promise<HerdRow
         FROM "Cow" c
         LEFT JOIN "MilkingRecord" m ON m."cowId" = c.id
         GROUP BY c.id, c.tag, c.status
-        ORDER BY CAST(c.tag AS INTEGER) ASC
       `;
 
-  return rows.map((r) => {
-    const daysMilked = Number(r.daysMilked);
-    const totalLitres = r.totalLitres ?? 0;
-    return {
-      cowId: r.cowId,
-      tag: r.tag,
-      status: r.status,
-      totalLitres,
-      daysMilked,
-      avgLitresPerDay: daysMilked > 0 ? totalLitres / daysMilked : 0,
-      avgFatPct: r.avgFatPct,
-      avgSnfPct: r.avgSnfPct,
-    };
-  });
+  return rows
+    .map((r) => {
+      const daysMilked = Number(r.daysMilked);
+      const totalLitres = r.totalLitres ?? 0;
+      return {
+        cowId: r.cowId,
+        tag: r.tag,
+        status: r.status,
+        totalLitres,
+        daysMilked,
+        avgLitresPerDay: daysMilked > 0 ? totalLitres / daysMilked : 0,
+        avgFatPct: r.avgFatPct,
+        avgSnfPct: r.avgSnfPct,
+      };
+    })
+    // A raw `CAST(tag AS INTEGER)` ORDER BY (the previous approach) throws a
+    // Postgres error the moment any tag isn't purely numeric (e.g. "PK-001")
+    // -- sort in JS instead, same numeric-first-then-text fallback used
+    // everywhere else in the app a cow tag is sorted (e.g. admin/cows/page.tsx).
+    .sort((a, b) => Number(a.tag) - Number(b.tag) || a.tag.localeCompare(b.tag));
 }

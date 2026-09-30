@@ -3,10 +3,18 @@
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import DataTable, { type DataTableColumn } from "@/components/DataTable";
-import type { HerdRow } from "@/lib/reports/herd";
+import type { HerdRow, PeriodKey } from "@/lib/reports/herd";
 import { deleteMilkProductionForCows, type BulkDeleteState } from "./actions";
 
-export default function MilkProductionTable({ rows, isAdmin = false }: { rows: HerdRow[]; isAdmin?: boolean }) {
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  day: "Today",
+  week: "This Week",
+  month: "This Month",
+  year: "This Year",
+  all: "All Time",
+};
+
+export default function MilkProductionTable({ rows, isAdmin = false, period }: { rows: HerdRow[]; isAdmin?: boolean; period: PeriodKey }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [state, formAction, isPending] = useActionState<BulkDeleteState, FormData>(deleteMilkProductionForCows, undefined);
@@ -82,10 +90,11 @@ export default function MilkProductionTable({ rows, isAdmin = false }: { rows: H
           ref={formRef}
           action={formAction}
           onSubmit={(e) => {
-            if (!confirm(`Delete all milking records for ${selected.size} selected animal${selected.size === 1 ? "" : "s"}? This can't be undone.`)) e.preventDefault();
+            if (!confirm(`Delete milking records within ${PERIOD_LABELS[period]} for ${selected.size} selected animal${selected.size === 1 ? "" : "s"}? This can't be undone.`)) e.preventDefault();
           }}
           className="flex items-center gap-3"
         >
+          <input type="hidden" name="period" value={period} />
           {Array.from(selected).map((id) => (
             <input key={id} type="hidden" name="cowIds" value={id} />
           ))}
@@ -94,7 +103,7 @@ export default function MilkProductionTable({ rows, isAdmin = false }: { rows: H
             disabled={selected.size === 0 || isPending}
             className="text-xs rounded px-3 py-1.5 border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {isPending ? "Deleting…" : `Delete selected (${selected.size})`}
+            {isPending ? "Deleting…" : `Delete selected (${selected.size}) — ${PERIOD_LABELS[period]}`}
           </button>
           {state && <p className={`text-xs ${state.success ? "text-green-700" : "text-red-600"}`}>{state.message}</p>}
         </form>

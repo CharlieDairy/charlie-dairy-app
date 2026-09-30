@@ -3,13 +3,20 @@ const fs = require('fs');
 const path = require('path');
 const prisma = new PrismaClient();
 
+// Kept in sync with every top-level model in prisma/schema.prisma (`grep
+// "^model "`) -- this list previously referenced moduleAccess, inventoryItem
+// and inventoryTransaction, none of which exist anymore (replaced by
+// AccessRole/AccessRolePermission and FeedItem/FeedTransaction respectively),
+// so the script threw before writing anything. Re-check this list whenever
+// a model is added, renamed or removed.
 const MODELS = [
-  'user', 'moduleAccess', 'cow', 'cowCustomFieldDef', 'cowCustomFieldValue',
-  'vaccineDef', 'vaccinationRecord', 'medicineDef', 'treatmentRecord',
+  'user', 'accessRole', 'accessRolePermission', 'cow', 'cowCustomFieldDef', 'cowCustomFieldValue',
+  'vaccineDef', 'vaccinationRecord', 'medicineDef', 'treatmentRecord', 'medicineStockTransaction',
+  'scoringFactor', 'healthSchedule', 'productionTarget',
   'weightRecord', 'weightStandard', 'cowMovement', 'heatEvent', 'insemination',
-  'pregnancyCheck', 'calving', 'calf', 'milkingRecord', 'milkSale',
+  'pregnancyCheck', 'calving', 'calf', 'milkingRecord', 'milkUsageRecord', 'milkSale',
   'customerPayment', 'employee', 'salaryPayment', 'attendanceRecord',
-  'feedTransaction', 'inventoryItem', 'inventoryTransaction', 'cashTransaction',
+  'feedTransaction', 'feedItem', 'customer', 'vendor', 'cashTransaction',
   'capitalEntry', 'masterDataItem', 'asset', 'auditLog',
 ];
 

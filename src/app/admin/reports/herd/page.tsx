@@ -57,7 +57,7 @@ export default async function MilkProductionByCowPage({
           </Link>
         ))}
       </div>
-      <MilkProductionTable rows={rows} isAdmin={isAdmin} />
+      <MilkProductionTable rows={rows} isAdmin={isAdmin} period={period} />
     </div>
   );
 }

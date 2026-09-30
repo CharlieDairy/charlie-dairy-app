@@ -4,9 +4,11 @@ import Card from "@/components/Card";
 import StatCard from "@/components/StatCard";
 import { formatRs } from "@/lib/format";
 import { getCustomerDetail, getDistinctBuyers } from "@/lib/reports/milkSalesByCustomer";
+import { getActiveWithdrawals } from "@/lib/reports/withdrawal";
 import { periodRange, type PeriodKey } from "@/lib/reports/herd";
 import type { LedgerSaleRow } from "@/app/entry/milk-sale/MilkSalesLedger";
 import MilkSalesLedger from "@/app/entry/milk-sale/MilkSalesLedger";
+import WithdrawalWarningBanner from "@/components/WithdrawalWarningBanner";
 import PeriodSelect from "./PeriodSelect";
 import AddSaleToggle from "./AddSaleToggle";
 import RecordPaymentForm from "./RecordPaymentForm";
@@ -26,7 +28,7 @@ export default async function MilkSalesPage({
     : "all";
   const range = periodRange(period);
 
-  const [customers, buyers, sales, detail] = await Promise.all([
+  const [customers, buyers, sales, detail, activeWithdrawals] = await Promise.all([
     prisma.customer.findMany({ where: { active: true }, select: { name: true, agreedRate: true } }),
     getDistinctBuyers(),
     prisma.milkSale.findMany({
@@ -38,6 +40,7 @@ export default async function MilkSalesPage({
       select: { id: true, date: true, buyer: true, shift: true, litres: true, rate: true, amount: true },
     }),
     params.buyer ? getCustomerDetail(params.buyer) : null,
+    getActiveWithdrawals(),
   ]);
 
   const ledgerRows: LedgerSaleRow[] = sales.map((s) => ({
@@ -86,6 +89,8 @@ export default async function MilkSalesPage({
         <StatCard label="3rd Sale" value={`${evening.toLocaleString()} L`} />
         <StatCard label="Total" value={`${total.toLocaleString()} L · ${formatRs(totalAmount)}`} />
       </div>
+
+      <WithdrawalWarningBanner withdrawals={activeWithdrawals} />
 
       <AddSaleToggle
         buyers={buyers}
