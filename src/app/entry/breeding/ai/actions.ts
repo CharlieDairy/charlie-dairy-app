@@ -67,6 +67,7 @@ async function recordInseminationImpl(formData: FormData): Promise<FormState> {
   });
 
   revalidatePath("/entry/breeding/ai");
+  revalidatePath("/entry/breeding/reproduction");
   revalidatePath("/admin/reports/breeding");
   return { success: true, message: `Insemination #${priorCount + 1} recorded for cow ${cow.tag}.` };
 }

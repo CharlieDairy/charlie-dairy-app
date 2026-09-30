@@ -61,6 +61,7 @@ async function recordPregnancyCheckImpl(formData: FormData): Promise<FormState> 
   });
 
   revalidatePath("/entry/breeding/pregnancy-check");
+  revalidatePath("/entry/breeding/reproduction");
   revalidatePath("/admin/cows");
   revalidatePath("/admin/reports/breeding");
   return { success: true, message: `Pregnancy check (${result}) recorded for cow ${cow.tag}.` };

@@ -26,9 +26,7 @@ export const NAV_SECTIONS: NavSection[] = [
     key: "breeding",
     label: "Breeding",
     items: [
-      { href: "/entry/breeding/heat", label: "Heat Detection" },
-      { href: "/entry/breeding/ai", label: "Insemination / Service" },
-      { href: "/entry/breeding/pregnancy-check", label: "Pregnancy Check" },
+      { href: "/entry/breeding/reproduction", label: "Reproduction Entry" },
       { href: "/entry/breeding/calving", label: "Calving" },
       { href: "/admin/reports/breeding", label: "Breeding & Reproduction Report" },
     ],

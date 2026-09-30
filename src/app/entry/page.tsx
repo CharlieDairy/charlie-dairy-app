@@ -6,9 +6,7 @@ const tiles: { href: string; label: string; desc: string; module: PermissionModu
   { href: "/entry/milking", label: "Milking Entry", desc: "Record litres per cow, per shift", module: "milk" },
   { href: "/entry/feed", label: "Feed Entry", desc: "Record feed inward / outward", module: "feed" },
   { href: "/entry/milk-sale", label: "Milk Sale Entry", desc: "Record a milk sale", module: "milk" },
-  { href: "/entry/breeding/heat", label: "Heat Detection", desc: "Record a heat event", module: "breeding" },
-  { href: "/entry/breeding/ai", label: "Insemination / Service", desc: "Record AI, natural service or embryo transfer", module: "breeding" },
-  { href: "/entry/breeding/pregnancy-check", label: "Pregnancy Check", desc: "Record a pregnancy diagnosis", module: "breeding" },
+  { href: "/entry/breeding/reproduction", label: "Reproduction Entry", desc: "Heat, insemination and pregnancy check", module: "breeding" },
   { href: "/entry/breeding/calving", label: "Calving", desc: "Record a calving and its calf", module: "breeding" },
   { href: "/entry/cash", label: "Cash Entry", desc: "Record cash in / cash out", module: "financial" },
 ];

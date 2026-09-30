@@ -41,6 +41,7 @@ async function recordHeatImpl(formData: FormData): Promise<FormState> {
   });
 
   revalidatePath("/entry/breeding/heat");
+  revalidatePath("/entry/breeding/reproduction");
   revalidatePath("/admin/reports/breeding");
   return { success: true, message: `Heat recorded for cow ${cow.tag}.` };
 }
