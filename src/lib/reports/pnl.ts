@@ -68,13 +68,32 @@ export async function getMonthlyPnl(): Promise<MonthlyPnl[]> {
   return Array.from(months.values()).sort((a, b) => a.month.localeCompare(b.month));
 }
 
-export type MonthlyCashFlow = { month: string; netCashFlow: number; cumulativeCash: number };
+export type MonthlyCashFlow = { month: string; cashIn: number; cashOut: number; netCashFlow: number; cumulativeCash: number };
 
+// Genuinely cash-basis: sums real CashTransaction movements directly, unlike
+// getMonthlyPnl's revenue (which recognizes a MilkSale's full amount at sale
+// time whether or not it's been paid). A sale made on credit is real
+// accrual revenue but not yet real cash -- it belongs in P&L, not here. Once
+// the customer actually pays, recordCustomerPayment() creates the
+// CashTransaction that shows up in this sum, exactly when the cash moves.
 export async function getMonthlyCashFlow(): Promise<MonthlyCashFlow[]> {
-  const monthly = await getMonthlyPnl();
+  const cash = await prisma.cashTransaction.findMany({ select: { date: true, amountIn: true, amountOut: true } });
+
+  const months = new Map<string, { cashIn: number; cashOut: number }>();
+  for (const c of cash) {
+    const key = monthKey(c.date);
+    if (!months.has(key)) months.set(key, { cashIn: 0, cashOut: 0 });
+    const m = months.get(key)!;
+    m.cashIn += c.amountIn;
+    m.cashOut += c.amountOut;
+  }
+
   let cumulative = 0;
-  return monthly.map((m) => {
-    cumulative += m.net;
-    return { month: m.month, netCashFlow: m.net, cumulativeCash: cumulative };
-  });
+  return Array.from(months.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, m]) => {
+      const netCashFlow = m.cashIn - m.cashOut;
+      cumulative += netCashFlow;
+      return { month, cashIn: m.cashIn, cashOut: m.cashOut, netCashFlow, cumulativeCash: cumulative };
+    });
 }
