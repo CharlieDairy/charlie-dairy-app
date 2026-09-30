@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { getCowProfile } from "@/lib/reports/cowProfile";
 import { getLabelMap, labelFor } from "@/lib/masterData";
 import { prisma } from "@/lib/prisma";
+import type { PeriodKey } from "@/lib/reports/herd";
 import CowEditForm from "../CowEditForm";
 import WeightForm from "../WeightForm";
 import MovementForm from "../MovementForm";
 import LactationChart from "../LactationChart";
 import WeightChart from "../WeightChart";
 import CowCustomFieldsForm from "../CowCustomFieldsForm";
+import PeriodSelect from "./PeriodSelect";
 
 function fmtDate(d: Date | null | undefined): string {
   return d ? d.toISOString().slice(0, 10) : "—";
@@ -22,11 +24,21 @@ function ageFromDob(dob: Date | null): string {
   return `${years.toFixed(1)} years`;
 }
 
-export default async function CowProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CowProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ period?: string }>;
+}) {
   const { id } = await params;
-  const profile = await getCowProfile(id);
+  const { period: periodParam } = await searchParams;
+  const period: PeriodKey = (["day", "week", "month", "year", "all"] as const).includes(periodParam as PeriodKey)
+    ? (periodParam as PeriodKey)
+    : "month";
+  const profile = await getCowProfile(id, period);
   if (!profile) notFound();
-  const { cow, milking, lactationSeries, customFields } = profile;
+  const { cow, milking, dailyBreakdown, customFields } = profile;
 
   const [statusLabels, genderLabels, locationRows] = await Promise.all([
     getLabelMap("COW_STATUS"),
@@ -94,7 +106,7 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
       )}
 
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
           <h2 className="font-semibold text-neutral-900">Overview</h2>
           <CowEditForm
             cowId={cow.id}
@@ -226,7 +238,10 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
-        <h2 className="font-semibold text-neutral-900 mb-1">Milking Summary</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+          <h2 className="font-semibold text-neutral-900">Milking Summary</h2>
+          <PeriodSelect period={period} />
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mt-2">
           <div><span className="text-neutral-500">Total Litres:</span> {milking.totalLitres.toLocaleString()} L</div>
           <div><span className="text-neutral-500">Days Recorded:</span> {milking.daysRecorded}</div>
@@ -240,31 +255,37 @@ export default async function CowProfilePage({ params }: { params: Promise<{ id:
           )}
         </div>
         <div className="mt-4">
-          <p className="text-xs font-medium text-neutral-500 uppercase mb-2">Lactation Curve</p>
-          <LactationChart data={lactationSeries} />
+          <p className="text-xs font-medium text-neutral-500 uppercase mb-2">Daily Yield by Shift</p>
+          <LactationChart data={dailyBreakdown} />
         </div>
-        {milking.recent.length > 0 && (
+        {dailyBreakdown.length > 0 && (
           <table className="w-full text-sm mt-3">
             <thead>
               <tr className="text-xs text-neutral-500 border-t border-neutral-100">
                 <th className="text-left py-1 font-normal">Date</th>
-                <th className="text-left py-1 font-normal">Shift</th>
-                <th className="text-right py-1 font-normal">Litres</th>
+                <th className="text-right py-1 font-normal">Morning</th>
+                <th className="text-right py-1 font-normal">Afternoon</th>
+                <th className="text-right py-1 font-normal">Evening</th>
+                <th className="text-right py-1 font-normal">Total</th>
+                <th className="text-right py-1 font-normal">Daily Avg</th>
               </tr>
             </thead>
             <tbody>
-              {milking.recent.map((m) => (
-                <tr key={m.id} className="border-t border-neutral-100">
-                  <td className="py-1">{fmtDate(m.date)}</td>
-                  <td className="py-1">{m.shift}</td>
-                  <td className="py-1 text-right">{m.litres}</td>
+              {[...dailyBreakdown].reverse().map((d) => (
+                <tr key={d.date} className="border-t border-neutral-100">
+                  <td className="py-1">{d.date}</td>
+                  <td className="py-1 text-right">{d.morning != null ? d.morning : "—"}</td>
+                  <td className="py-1 text-right">{d.afternoon != null ? d.afternoon : "—"}</td>
+                  <td className="py-1 text-right">{d.evening != null ? d.evening : "—"}</td>
+                  <td className="py-1 text-right font-medium">{d.total.toLocaleString()}</td>
+                  <td className="py-1 text-right">{d.avgPerShift.toFixed(1)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-        {milking.recordCount > 10 && (
-          <p className="text-xs text-neutral-400 mt-2">Showing the 10 most recent entries of {milking.recordCount} total.</p>
+        {dailyBreakdown.length === 0 && (
+          <p className="text-sm text-neutral-400 mt-3">No milking entries recorded for this period.</p>
         )}
       </div>
 

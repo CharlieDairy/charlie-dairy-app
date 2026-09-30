@@ -72,7 +72,7 @@ enum CowStatus {
   DRY
   HEIFER
   CALF
-  DORMANT
+  INSEMINATED
   SOLD
   DEAD
 }
@@ -82,7 +82,7 @@ model Cow {
   tag               String   @unique
   breed             String?
   gender            CowGender @default(UNKNOWN)
-  status            CowStatus @default(DORMANT)
+  status            CowStatus @default(INSEMINATED)
   condition         String?
   dateOfBirth       DateTime?
   purchaseDate      DateTime?

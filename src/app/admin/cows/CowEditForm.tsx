@@ -49,20 +49,20 @@ export default function CowEditForm({
     <form
       ref={formRef}
       action={formAction}
-      className="flex flex-col gap-3 bg-white border border-neutral-200 rounded-lg p-4"
+      className="w-full flex flex-col gap-4 bg-white border border-neutral-200 rounded-lg p-4"
     >
       <input type="hidden" name="id" value={cowId} />
-      <div className="flex items-start gap-4">
-        <div className="flex flex-col gap-2 w-28 shrink-0">
-          <div className="w-28 h-28 rounded-md border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-5">
+        <div className="flex flex-col gap-2">
+          <div className="w-full aspect-square rounded-md border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden">
             {photoPreview || photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photoPreview ?? photoUrl ?? undefined} alt="Cow" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-neutral-300 text-xs">No photo</span>
+              <span className="text-neutral-300 text-sm">No photo</span>
             )}
           </div>
-          <label className="bg-green-700 text-white rounded-md px-2 py-1.5 text-xs font-medium text-center cursor-pointer">
+          <label className="bg-green-700 text-white rounded-md px-3 py-2 text-sm font-medium text-center cursor-pointer hover:bg-green-800">
             {photoUrl ? "Change photo" : "Upload photo"}
             <input
               id="photo"
@@ -76,38 +76,40 @@ export default function CowEditForm({
               }}
             />
           </label>
+          {photoUrl && !photoPreview && (
+            <label className="flex items-center gap-2 text-xs text-neutral-500">
+              <input type="checkbox" name="removePhoto" /> Remove current photo
+            </label>
+          )}
         </div>
-        {photoUrl && !photoPreview && (
-          <label className="flex items-center gap-2 text-xs text-neutral-500 mt-1">
-            <input type="checkbox" name="removePhoto" /> Remove current photo
-          </label>
-        )}
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="breed" className="text-sm font-medium text-neutral-700">Breed</label>
-          <input id="breed" name="breed" placeholder="e.g. Sahiwal, Holstein" defaultValue={breed ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="breed" className="text-sm font-medium text-neutral-700">Breed</label>
+              <input id="breed" name="breed" placeholder="e.g. Sahiwal, Holstein" defaultValue={breed ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="condition" className="text-sm font-medium text-neutral-700">Condition</label>
+              <input id="condition" name="condition" defaultValue={condition ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="purchasePrice" className="text-sm font-medium text-neutral-700">Purchase Price (Rs, optional)</label>
+              <input id="purchasePrice" name="purchasePrice" type="number" step="0.01" min="0" defaultValue={purchasePrice ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="purchaseDate" className="text-sm font-medium text-neutral-700">Purchase Date (optional)</label>
+              <input id="purchaseDate" name="purchaseDate" type="date" defaultValue={purchaseDate ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="source" className="text-sm font-medium text-neutral-700">Source (optional)</label>
+              <input id="source" name="source" placeholder="e.g. Born on farm, purchased" defaultValue={source ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="notes" className="text-sm font-medium text-neutral-700">Notes</label>
+            <input id="notes" name="notes" defaultValue={notes ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+          </div>
         </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="condition" className="text-sm font-medium text-neutral-700">Condition</label>
-          <input id="condition" name="condition" defaultValue={condition ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="purchasePrice" className="text-sm font-medium text-neutral-700">Purchase Price (Rs, optional)</label>
-          <input id="purchasePrice" name="purchasePrice" type="number" step="0.01" min="0" defaultValue={purchasePrice ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="purchaseDate" className="text-sm font-medium text-neutral-700">Purchase Date (optional)</label>
-          <input id="purchaseDate" name="purchaseDate" type="date" defaultValue={purchaseDate ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="source" className="text-sm font-medium text-neutral-700">Source (optional)</label>
-          <input id="source" name="source" placeholder="e.g. Born on farm, purchased" defaultValue={source ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
-        </div>
-      </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="notes" className="text-sm font-medium text-neutral-700">Notes</label>
-        <input id="notes" name="notes" defaultValue={notes ?? ""} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
       </div>
       {state && (
         <p className={`text-sm ${state.success ? "text-green-700" : "text-red-600"}`} role="status">

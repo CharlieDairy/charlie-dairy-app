@@ -22,7 +22,7 @@ export const MASTER_CATEGORIES: MasterCategoryDef[] = [
       { code: "DRY", label: "Dry" },
       { code: "HEIFER", label: "Heifer" },
       { code: "CALF", label: "Calf" },
-      { code: "DORMANT", label: "Dormant" },
+      { code: "INSEMINATED", label: "Inseminated" },
       { code: "SOLD", label: "Sold" },
       { code: "DEAD", label: "Dead" },
     ],

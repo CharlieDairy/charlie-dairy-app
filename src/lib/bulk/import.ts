@@ -111,7 +111,7 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         }
         const breed = cell(cells, 1) || null;
         const gender = parseEnum(cells, 2, "gender", rowNum, errors, ["FEMALE", "MALE", "UNKNOWN"] as const, "UNKNOWN", false);
-        const status = parseEnum(cells, 3, "status", rowNum, errors, ["MILKING", "DRY", "HEIFER", "CALF", "DORMANT", "SOLD", "DEAD"] as const, "DORMANT", false);
+        const status = parseEnum(cells, 3, "status", rowNum, errors, ["MILKING", "DRY", "HEIFER", "CALF", "INSEMINATED", "SOLD", "DEAD"] as const, "INSEMINATED", false);
         const dateOfBirth = parseDate(cells, 4, "dateOfBirth", rowNum, errors, false);
         const condition = cell(cells, 5) || null;
         const lastCalvingDate = parseDate(cells, 6, "lastCalvingDate", rowNum, errors, false);

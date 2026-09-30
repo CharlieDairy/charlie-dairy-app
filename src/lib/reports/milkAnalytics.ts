@@ -198,7 +198,7 @@ export type HerdCompositionRow = { status: string; label: string; count: number 
 
 export async function getHerdComposition(labelMap: Map<string, string>): Promise<HerdCompositionRow[]> {
   const grouped = await prisma.cow.groupBy({ by: ["status"], _count: { _all: true } });
-  const order = ["MILKING", "DRY", "HEIFER", "CALF", "DORMANT", "SOLD", "DEAD"];
+  const order = ["MILKING", "DRY", "HEIFER", "CALF", "INSEMINATED", "SOLD", "DEAD"];
   return grouped
     .map((g) => ({ status: g.status, label: labelMap.get(g.status) ?? g.status, count: g._count._all }))
     .sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status));

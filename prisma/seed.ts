@@ -84,7 +84,7 @@ async function seedCows() {
     data: cows.map((c) => ({
       tag: c.tag,
       gender: c.gender as "FEMALE" | "MALE" | "UNKNOWN",
-      status: c.status as "MILKING" | "DRY" | "HEIFER" | "CALF" | "DORMANT" | "SOLD" | "DEAD",
+      status: (c.status === "DORMANT" ? "INSEMINATED" : c.status) as "MILKING" | "DRY" | "HEIFER" | "CALF" | "INSEMINATED" | "SOLD" | "DEAD",
       condition: c.condition ?? null,
       lastCalvingDate: c.lastCalvingDate ? new Date(c.lastCalvingDate) : null,
       expectedCalving: c.expectedCalving ? new Date(c.expectedCalving) : null,

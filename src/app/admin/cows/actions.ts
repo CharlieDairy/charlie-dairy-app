@@ -9,7 +9,7 @@ import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optDate, optNum, optText } from "@/lib/validate";
 
 const GENDERS = ["FEMALE", "MALE", "UNKNOWN"] as const;
-const STATUSES = ["MILKING", "DRY", "HEIFER", "CALF", "DORMANT", "SOLD", "DEAD"] as const;
+const STATUSES = ["MILKING", "DRY", "HEIFER", "CALF", "INSEMINATED", "SOLD", "DEAD"] as const;
 
 export type FormState = { success: boolean; message: string } | undefined;
 

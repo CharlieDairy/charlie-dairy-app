@@ -8,7 +8,7 @@ const COLORS: Record<string, string> = {
   DRY: "#ecd699",
   HEIFER: "#60a5fa",
   CALF: "#fbbf24",
-  DORMANT: "#a3a3a3",
+  INSEMINATED: "#a3a3a3",
   SOLD: "#d4d4d4",
   DEAD: "#e5e5e4",
 };

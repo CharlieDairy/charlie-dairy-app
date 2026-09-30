@@ -61,6 +61,6 @@ export async function getAnimalCategories(): Promise<AnimalCategory[]> {
     { key: "DRY", label: "Dry", count: countFor("DRY") },
     { key: "HEIFER", label: "Heifer", count: countFor("HEIFER") },
     { key: "CALF", label: "Calf", count: countFor("CALF") },
-    { key: "DORMANT", label: "Dormant", count: countFor("DORMANT") },
+    { key: "INSEMINATED", label: "Inseminated", count: countFor("INSEMINATED") },
   ];
 }

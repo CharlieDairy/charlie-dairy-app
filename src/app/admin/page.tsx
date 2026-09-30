@@ -230,7 +230,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
               <Row label="Unknown sex" value={d.active.filter(c => c.gender === "UNKNOWN").length} />
               <Row label="Sold" value={d.cows.filter(c => c.status === "SOLD").length} />
               <Row label="Deceased" value={d.cows.filter(c => c.status === "DEAD").length} />
-              <Row label="Dormant / unclassified" value={d.cows.filter(c => !["MILKING", "DRY", "HEIFER", "CALF", "SOLD", "DEAD"].includes(c.status)).length} />
+              <Row label="Inseminated" value={d.cows.filter(c => !["MILKING", "DRY", "HEIFER", "CALF", "SOLD", "DEAD"].includes(c.status)).length} />
             </div>
           </Panel>
         </div>
