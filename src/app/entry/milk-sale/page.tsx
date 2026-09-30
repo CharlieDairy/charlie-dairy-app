@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getTodaysSellableBalance } from "@/lib/reports/reconciliation";
+import { getActiveWithdrawals } from "@/lib/reports/withdrawal";
 import { periodRange, type PeriodKey } from "@/lib/reports/herd";
 import StatCard from "@/components/StatCard";
 import MilkSaleForm from "./MilkSaleForm";
@@ -23,7 +24,7 @@ export default async function MilkSaleEntryPage({
   const period: PeriodKey = PERIODS.some((p) => p.key === params.period) ? (params.period as PeriodKey) : "week";
   const range = periodRange(period);
 
-  const [rows, customers, balance, sales] = await Promise.all([
+  const [rows, customers, balance, sales, activeWithdrawals] = await Promise.all([
     prisma.milkSale.findMany({
       select: { buyer: true },
       distinct: ["buyer"],
@@ -36,6 +37,7 @@ export default async function MilkSaleEntryPage({
       orderBy: { date: "desc" },
       select: { id: true, date: true, buyer: true, shift: true, litres: true, rate: true, amount: true },
     }),
+    getActiveWithdrawals(),
   ]);
   const buyers = Array.from(new Set([...customers.map((c) => c.name), ...rows.map((r) => r.buyer)])).sort();
 
@@ -54,6 +56,24 @@ export default async function MilkSaleEntryPage({
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold text-neutral-900">Milk Sale Entry</h1>
+      {activeWithdrawals.length > 0 && (
+        <div className="max-w-md rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
+          <p className="font-medium text-red-700">
+            ⚠ {activeWithdrawals.length} animal{activeWithdrawals.length === 1 ? " is" : "s are"} in milk withdrawal — verify their milk was excluded from this sale.
+          </p>
+          <ul className="text-xs text-red-600 mt-1.5 space-y-0.5">
+            {activeWithdrawals.map((w) => (
+              <li key={w.cowId}>
+                Cow {w.cowTag} — {w.medicineName}, until {w.withdrawalUntil.toISOString().slice(0, 10)}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-red-500 mt-1.5">
+            Milk sales aren&apos;t tracked per animal (batches are pooled), so this can&apos;t block a specific sale —
+            it&apos;s a reminder to check before selling.
+          </p>
+        </div>
+      )}
       <div className="max-w-md rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm">
         <p className="font-medium text-neutral-700">Available to sell today: {balance.available.toFixed(1)} L</p>
         <p className="text-xs text-neutral-500 mt-1">

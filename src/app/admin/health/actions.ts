@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
-import { reqDate, reqId, reqText, optDate, optNum, optText } from "@/lib/validate";
+import { reqDate, reqId, reqNum, reqText, optDate, optNum, optText } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -42,11 +42,13 @@ async function addMedicineDefImpl(formData: FormData): Promise<FormState> {
   await requirePermission("health", "CREATE");
   const name = reqText(formData, "name", "Medicine name", { max: 100 });
   const unit = optText(formData, "unit", "Unit", { max: 20 });
+  const withdrawalDays = optNum(formData, "withdrawalDays", "Withdrawal days", { min: 0, max: 365, decimals: 0 });
+  const reorderLevel = optNum(formData, "reorderLevel", "Reorder level", { min: 0, max: 1_000_000 });
 
   const existing = await prisma.medicineDef.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
   if (existing) return { success: false, message: `A medicine named "${name}" already exists.` };
 
-  await prisma.medicineDef.create({ data: { name, unit } });
+  await prisma.medicineDef.create({ data: { name, unit, withdrawalDays, reorderLevel } });
   revalidatePath("/admin/health/medicines");
   return { success: true, message: `Medicine "${name}" added.` };
 }
@@ -57,6 +59,25 @@ export async function toggleMedicineActive(formData: FormData): Promise<void> {
   const active = formData.get("active") === "true";
   await prisma.medicineDef.updateMany({ where: { id }, data: { active } });
   revalidatePath("/admin/health/medicines");
+}
+
+export async function updateMedicineDef(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => updateMedicineDefImpl(formData));
+}
+
+async function updateMedicineDefImpl(formData: FormData): Promise<FormState> {
+  await requirePermission("health", "EDIT");
+  const id = reqId(formData, "id", "Medicine");
+  const unit = optText(formData, "unit", "Unit", { max: 20 });
+  const withdrawalDays = optNum(formData, "withdrawalDays", "Withdrawal days", { min: 0, max: 365, decimals: 0 });
+  const reorderLevel = optNum(formData, "reorderLevel", "Reorder level", { min: 0, max: 1_000_000 });
+
+  const existing = await prisma.medicineDef.findUnique({ where: { id } });
+  if (!existing) return { success: false, message: "Medicine not found." };
+
+  await prisma.medicineDef.update({ where: { id }, data: { unit, withdrawalDays, reorderLevel } });
+  revalidatePath("/admin/health/medicines");
+  return { success: true, message: `${existing.name} updated.` };
 }
 
 export async function recordVaccination(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -123,15 +144,19 @@ async function recordTreatmentImpl(formData: FormData): Promise<FormState> {
   const medicineName = reqText(formData, "medicineName", "Medicine", { max: 100 });
   const date = reqDate(formData, "date", "Date");
   const dosage = optText(formData, "dosage", "Dosage", { max: 100 });
+  const quantityUsed = optNum(formData, "quantityUsed", "Quantity used", { positive: true, max: 1_000_000 });
   const reason = optText(formData, "reason", "Reason", { max: 300 });
   const cost = optNum(formData, "cost", "Cost", { max: 10_000_000 });
   const administeredBy = optText(formData, "administeredBy", "Administered by", { max: 100 });
   const notes = optText(formData, "notes", "Notes", { max: 1000 });
 
-  const cow = await prisma.cow.findUnique({ where: { id: cowId }, select: { id: true } });
+  const cow = await prisma.cow.findUnique({ where: { id: cowId }, select: { id: true, tag: true } });
   if (!cow) throw new ValidationError("Animal not found.");
 
   const matchedDef = await prisma.medicineDef.findFirst({ where: { name: { equals: medicineName, mode: "insensitive" } } });
+  const withdrawalUntil = matchedDef?.withdrawalDays != null
+    ? new Date(date.getTime() + matchedDef.withdrawalDays * 86_400_000)
+    : null;
 
   const duplicate = await prisma.treatmentRecord.findFirst({
     where: { cowId, medicineName, date, createdAt: { gte: new Date(Date.now() - 120_000) } },
@@ -139,23 +164,85 @@ async function recordTreatmentImpl(formData: FormData): Promise<FormState> {
   });
   if (duplicate) throw new ValidationError("This treatment was just recorded, so it wasn't saved twice.");
 
-  await prisma.treatmentRecord.create({
-    data: {
-      cowId,
-      medicineDefId: matchedDef?.id ?? null,
-      medicineName,
-      date,
-      dosage,
-      reason,
-      cost,
-      administeredBy,
-      notes,
-      enteredBy: user.name,
-    },
+  // Stock deficit is a warning, not a block (mirrors submitFeed in
+  // src/app/entry/feed/actions.ts) -- older stock may simply never have
+  // been entered into the ledger.
+  let stockAfter: number | null = null;
+  if (quantityUsed && matchedDef) {
+    const [inAgg, outAgg] = await Promise.all([
+      prisma.medicineStockTransaction.aggregate({ _sum: { quantity: true }, where: { medicineDefId: matchedDef.id, direction: "IN" } }),
+      prisma.medicineStockTransaction.aggregate({ _sum: { quantity: true }, where: { medicineDefId: matchedDef.id, direction: "OUT" } }),
+    ]);
+    stockAfter = (inAgg._sum.quantity ?? 0) - (outAgg._sum.quantity ?? 0) - quantityUsed;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.treatmentRecord.create({
+      data: {
+        cowId,
+        medicineDefId: matchedDef?.id ?? null,
+        medicineName,
+        date,
+        dosage,
+        quantityUsed,
+        withdrawalUntil,
+        reason,
+        cost,
+        administeredBy,
+        notes,
+        enteredBy: user.name,
+      },
+    });
+    if (quantityUsed && matchedDef) {
+      await tx.medicineStockTransaction.create({
+        data: {
+          medicineDefId: matchedDef.id,
+          date,
+          direction: "OUT",
+          quantity: quantityUsed,
+          notes: `Treatment: Cow ${cow.tag}`,
+          enteredBy: user.name,
+        },
+      });
+    }
   });
 
   revalidatePath(`/admin/cows/${cowId}`);
   revalidatePath("/admin/reports/health");
   revalidatePath("/entry/health/treatment");
-  return { success: true, message: "Treatment recorded." };
+  revalidatePath("/admin/health/medicines");
+  revalidatePath("/admin/health/medicines/stock");
+  revalidatePath("/entry/milk-sale");
+
+  const withdrawalNote = withdrawalUntil
+    ? ` Milk withdrawal in effect until ${withdrawalUntil.toISOString().slice(0, 10)}.`
+    : "";
+  const stockWarning =
+    stockAfter !== null && stockAfter < 0
+      ? ` Warning: recorded stock of ${medicineName} is now ${stockAfter.toFixed(1)} — a restock entry may be missing.`
+      : "";
+  return { success: true, message: `Treatment recorded.${withdrawalNote}${stockWarning}` };
+}
+
+export async function restockMedicine(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => restockMedicineImpl(formData));
+}
+
+async function restockMedicineImpl(formData: FormData): Promise<FormState> {
+  const user = await requirePermission("health", "CREATE");
+  const medicineDefId = reqId(formData, "medicineDefId", "Medicine");
+  const date = reqDate(formData, "date", "Date");
+  const quantity = reqNum(formData, "quantity", "Quantity", { positive: true, max: 1_000_000 });
+  const cost = optNum(formData, "cost", "Cost", { max: 10_000_000 });
+  const notes = optText(formData, "notes", "Notes", { max: 500 });
+
+  const medicine = await prisma.medicineDef.findUnique({ where: { id: medicineDefId }, select: { id: true, name: true } });
+  if (!medicine) throw new ValidationError("Medicine not found.");
+
+  await prisma.medicineStockTransaction.create({
+    data: { medicineDefId, date, direction: "IN", quantity, cost, notes, enteredBy: user.name },
+  });
+
+  revalidatePath("/admin/health/medicines/stock");
+  return { success: true, message: `Restocked ${quantity} of ${medicine.name}.` };
 }

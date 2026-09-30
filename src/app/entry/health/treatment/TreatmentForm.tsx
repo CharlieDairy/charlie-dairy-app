@@ -54,6 +54,11 @@ export default function TreatmentForm({
         <input id="dosage" name="dosage" placeholder="e.g. 10ml, twice daily for 3 days" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
       </div>
       <div className="flex flex-col gap-1">
+        <label htmlFor="quantityUsed" className="text-sm font-medium text-neutral-700">Quantity Used (optional)</label>
+        <input id="quantityUsed" name="quantityUsed" type="number" step="0.01" min="0" placeholder="e.g. 10" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        <span className="text-xs text-neutral-400">Deducts from medicine stock if this medicine has stock tracked.</span>
+      </div>
+      <div className="flex flex-col gap-1">
         <label htmlFor="cost" className="text-sm font-medium text-neutral-700">Cost (Rs, optional)</label>
         <input id="cost" name="cost" type="number" step="0.01" min="0" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
       </div>

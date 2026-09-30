@@ -19,7 +19,15 @@ export default function AddMedicineForm() {
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="unit" className="text-sm font-medium text-neutral-700">Unit (optional)</label>
-        <input id="unit" name="unit" placeholder="e.g. ml" className="border border-neutral-300 rounded-md px-3 py-2 text-base w-32" />
+        <input id="unit" name="unit" placeholder="e.g. ml" className="border border-neutral-300 rounded-md px-3 py-2 text-base w-28" />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="withdrawalDays" className="text-sm font-medium text-neutral-700">Milk Withdrawal Days (optional)</label>
+        <input id="withdrawalDays" name="withdrawalDays" type="number" min="0" step="1" placeholder="e.g. 4" className="border border-neutral-300 rounded-md px-3 py-2 text-base w-28" />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="reorderLevel" className="text-sm font-medium text-neutral-700">Reorder Level (optional)</label>
+        <input id="reorderLevel" name="reorderLevel" type="number" min="0" step="0.1" placeholder="e.g. 50" className="border border-neutral-300 rounded-md px-3 py-2 text-base w-28" />
       </div>
       <button type="submit" disabled={isPending} className="bg-green-700 text-white rounded-md px-4 py-2 font-medium disabled:opacity-60">
         {isPending ? "Adding…" : "Add Medicine"}

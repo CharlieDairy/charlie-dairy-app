@@ -187,10 +187,17 @@ model MedicineDef {
   id        String   @id @default(cuid())
   name      String   @unique
   unit      String?
+  // Days milk must be withheld after treatment. Null = no withdrawal
+  // configured for this medicine yet (deliberately not defaulted -- a wrong
+  // guess at a regulatory withdrawal period is worse than none at all;
+  // left for the admin to set per medicine).
+  withdrawalDays Int?
+  reorderLevel   Float?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  records   TreatmentRecord[]
+  records          TreatmentRecord[]
+  stockTransactions MedicineStockTransaction[]
 }
 
 model TreatmentRecord {
@@ -202,6 +209,15 @@ model TreatmentRecord {
   medicineName  String
   date          DateTime
   dosage        String?
+  // Structured quantity consumed, separate from the free-text `dosage`
+  // description -- this is what actually deducts MedicineStockTransaction
+  // stock; `dosage` stays free text ("10ml, twice daily for 3 days") since
+  // that's how vets/farmhands actually describe a regimen.
+  quantityUsed  Float?
+  // date + medicineDef.withdrawalDays at the time this was recorded, so
+  // "who's currently in withdrawal" is a fast indexed range query instead
+  // of a join + recompute against every medicine's current withdrawalDays.
+  withdrawalUntil DateTime?
   reason        String?
   cost          Float?
   administeredBy String?
@@ -210,6 +226,33 @@ model TreatmentRecord {
   createdAt     DateTime     @default(now())
 
   @@index([cowId])
+  @@index([date])
+  @@index([withdrawalUntil])
+}
+
+enum MedicineStockDirection {
+  IN
+  OUT
+}
+
+// Mirrors FeedTransaction's IN/OUT ledger pattern, keyed by a real FK
+// (MedicineDef already has one, unlike Feed's free-text match) since every
+// treatment is already linked to a catalog medicine. OUT rows are created
+// automatically by recordTreatment when a quantityUsed is entered; IN rows
+// come from the Restock Medicine form.
+model MedicineStockTransaction {
+  id            String                 @id @default(cuid())
+  medicineDefId String
+  medicineDef   MedicineDef            @relation(fields: [medicineDefId], references: [id])
+  date          DateTime
+  direction     MedicineStockDirection
+  quantity      Float
+  cost          Float?
+  notes         String?
+  enteredBy     String?
+  createdAt     DateTime               @default(now())
+
+  @@index([medicineDefId])
   @@index([date])
 }
 
