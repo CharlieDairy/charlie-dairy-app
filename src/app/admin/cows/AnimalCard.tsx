@@ -50,8 +50,10 @@ export default function AnimalCard({
         />
       )}
       {animal.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={animal.photoUrl} alt={`Cow ${animal.tag}`} className="w-16 h-16 object-cover rounded-md border border-neutral-200 shrink-0" />
+        <div className="w-16 h-16 rounded-md border border-neutral-200 bg-neutral-50 shrink-0 overflow-hidden flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={animal.photoUrl} alt={`Cow ${animal.tag}`} className="w-full h-full object-contain" />
+        </div>
       ) : (
         <div className="w-16 h-16 rounded-md bg-neutral-100 border border-neutral-200 shrink-0" />
       )}

@@ -72,8 +72,10 @@ export default async function CowProfilePage({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {cow.photoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={cow.photoUrl} alt={`Cow ${cow.tag}`} className="w-16 h-16 object-cover rounded-md border border-neutral-200" />
+            <div className="w-16 h-16 rounded-md border border-neutral-200 bg-neutral-50 overflow-hidden flex items-center justify-center shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={cow.photoUrl} alt={`Cow ${cow.tag}`} className="w-full h-full object-contain" />
+            </div>
           )}
           <div>
             <h1 className="text-2xl font-semibold text-neutral-900">Cow {cow.tag}</h1>
