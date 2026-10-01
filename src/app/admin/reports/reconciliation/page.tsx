@@ -33,6 +33,11 @@ export default async function ReconciliationPage({
         historical sale volumes weren&apos;t migrated from the old spreadsheets, so early-date variance will show as
         fully unaccounted for.
       </p>
+      <p className="text-xs text-neutral-400 max-w-2xl -mt-4">
+        Opening/Closing Balance is a running total of each day&apos;s unexplained variance, carried from the very first
+        production record on file — not a real counted tank reading. There&apos;s no opening-stock entry anywhere in
+        the app yet, so this is a derived running total, not a verified physical balance.
+      </p>
 
       <div className="flex gap-1.5 flex-wrap">
         {PERIODS.map((p) => (
@@ -59,35 +64,39 @@ export default async function ReconciliationPage({
       </div>
 
       <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
-        <table className="min-w-full text-sm">
+        <table className="min-w-full text-sm text-center">
           <thead className="bg-neutral-100">
             <tr>
-              <th className="text-left px-3 py-2">Date</th>
-              <th className="text-right px-3 py-2">Produced (L)</th>
-              <th className="text-right px-3 py-2">Calf Use (L)</th>
-              <th className="text-right px-3 py-2">Farm Use (L)</th>
-              <th className="text-right px-3 py-2">Employee Use (L)</th>
-              <th className="text-right px-3 py-2">Recorded Sales (L)</th>
-              <th className="text-right px-3 py-2">Unexplained Variance (L)</th>
-              <th className="text-right px-3 py-2">Notional Use Cost</th>
+              <th className="px-3 py-2 font-medium">Date</th>
+              <th className="px-3 py-2 font-medium">Opening Balance (L)</th>
+              <th className="px-3 py-2 font-medium">Produced (L)</th>
+              <th className="px-3 py-2 font-medium">Calf Use (L)</th>
+              <th className="px-3 py-2 font-medium">Farm Use (L)</th>
+              <th className="px-3 py-2 font-medium">Employee Use (L)</th>
+              <th className="px-3 py-2 font-medium">Recorded Sales (L)</th>
+              <th className="px-3 py-2 font-medium">Unexplained Variance (L)</th>
+              <th className="px-3 py-2 font-medium">Closing Balance (L)</th>
+              <th className="px-3 py-2 font-medium">Notional Use Cost</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.date} className="border-t border-neutral-100">
-                <td className="px-3 py-2">{r.date.slice(0, 10)}</td>
-                <td className="px-3 py-2 text-right">{r.producedLitres.toFixed(1)}</td>
-                <td className="px-3 py-2 text-right">{r.calfUseLitres.toFixed(1)}</td>
-                <td className="px-3 py-2 text-right">{r.farmUseLitres.toFixed(1)}</td>
-                <td className="px-3 py-2 text-right">{r.employeeUseLitres.toFixed(1)}</td>
-                <td className="px-3 py-2 text-right">{r.recordedSaleLitres.toFixed(1)}</td>
-                <td className={`px-3 py-2 text-right ${Math.abs(r.varianceLitres) > 0.05 ? "text-danger" : ""}`}>{r.varianceLitres.toFixed(1)}</td>
-                <td className="px-3 py-2 text-right">{formatRs(r.notionalUseCost)}</td>
+                <td className="px-3 py-2 font-medium">{r.date.slice(0, 10)}</td>
+                <td className="px-3 py-2 text-neutral-500">{r.openingBalanceLitres.toFixed(1)}</td>
+                <td className="px-3 py-2">{r.producedLitres.toFixed(1)}</td>
+                <td className="px-3 py-2">{r.calfUseLitres.toFixed(1)}</td>
+                <td className="px-3 py-2">{r.farmUseLitres.toFixed(1)}</td>
+                <td className="px-3 py-2">{r.employeeUseLitres.toFixed(1)}</td>
+                <td className="px-3 py-2">{r.recordedSaleLitres.toFixed(1)}</td>
+                <td className={`px-3 py-2 ${Math.abs(r.varianceLitres) > 0.05 ? "text-danger" : ""}`}>{r.varianceLitres.toFixed(1)}</td>
+                <td className="px-3 py-2 font-semibold">{r.closingBalanceLitres.toFixed(1)}</td>
+                <td className="px-3 py-2">{formatRs(r.notionalUseCost)}</td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-neutral-400">No production recorded in this period.</td>
+                <td colSpan={10} className="px-3 py-6 text-center text-neutral-400">No production recorded in this period.</td>
               </tr>
             )}
           </tbody>

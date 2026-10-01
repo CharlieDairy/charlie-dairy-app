@@ -10,6 +10,8 @@ export type ReconciliationRow = {
   recordedSaleLitres: number;
   varianceLitres: number;
   notionalUseCost: number;
+  openingBalanceLitres: number;
+  closingBalanceLitres: number;
 };
 
 // MilkSale is only populated by entries logged going forward through the app
@@ -31,18 +33,15 @@ async function getAvgSaleRate(): Promise<number> {
 
 export async function getProductionReconciliation(period: PeriodKey = "all"): Promise<ReconciliationRow[]> {
   const range = periodRange(period);
-  const dateFilter = range ? { gte: range.start, lt: range.end } : undefined;
 
+  // Opening/closing balance needs the FULL history in chronological order --
+  // a period filter only trims which rows are RETURNED below, never what's
+  // used to compute the running balance, so switching to "This Month" can't
+  // falsely reset the opening balance to zero mid-history.
   const [production, sales, usage, avgRate] = await Promise.all([
-    dateFilter
-      ? prisma.$queryRaw<{ date: string | Date; total: number }[]>`
-          SELECT date, CAST(SUM(litres) AS REAL) as total FROM "MilkingRecord"
-          WHERE date >= ${range!.start} AND date < ${range!.end}
-          GROUP BY date ORDER BY date DESC
-        `
-      : prisma.$queryRaw<{ date: string | Date; total: number }[]>`
-          SELECT date, CAST(SUM(litres) AS REAL) as total FROM "MilkingRecord" GROUP BY date ORDER BY date DESC LIMIT 60
-        `,
+    prisma.$queryRaw<{ date: string | Date; total: number }[]>`
+      SELECT date, CAST(SUM(litres) AS REAL) as total FROM "MilkingRecord" GROUP BY date ORDER BY date ASC
+    `,
     prisma.$queryRaw<{ date: string | Date; total: number }[]>`
       SELECT date, CAST(SUM(litres) AS REAL) as total FROM "MilkSale" GROUP BY date
     `,
@@ -62,25 +61,40 @@ export async function getProductionReconciliation(period: PeriodKey = "all"): Pr
     map.set(key, (map.get(key) ?? 0) + u.total);
   }
 
-  return production
-    .map((p) => {
-      const date = toIsoDate(p.date);
-      const recorded = salesByDate.get(date) ?? 0;
-      const calfUse = calfUseByDate.get(date) ?? 0;
-      const farmUse = farmUseByDate.get(date) ?? 0;
-      const employeeUse = employeeUseByDate.get(date) ?? 0;
-      return {
-        date,
-        producedLitres: p.total,
-        calfUseLitres: calfUse,
-        farmUseLitres: farmUse,
-        employeeUseLitres: employeeUse,
-        recordedSaleLitres: recorded,
-        varianceLitres: p.total - calfUse - farmUse - employeeUse - recorded,
-        notionalUseCost: (calfUse + farmUse + employeeUse) * avgRate,
-      };
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
+  let balance = 0;
+  const chronological: ReconciliationRow[] = production.map((p) => {
+    const date = toIsoDate(p.date);
+    const recorded = salesByDate.get(date) ?? 0;
+    const calfUse = calfUseByDate.get(date) ?? 0;
+    const farmUse = farmUseByDate.get(date) ?? 0;
+    const employeeUse = employeeUseByDate.get(date) ?? 0;
+    const varianceLitres = p.total - calfUse - farmUse - employeeUse - recorded;
+    const openingBalanceLitres = balance;
+    balance += varianceLitres;
+    return {
+      date,
+      producedLitres: p.total,
+      calfUseLitres: calfUse,
+      farmUseLitres: farmUse,
+      employeeUseLitres: employeeUse,
+      recordedSaleLitres: recorded,
+      varianceLitres,
+      notionalUseCost: (calfUse + farmUse + employeeUse) * avgRate,
+      openingBalanceLitres,
+      closingBalanceLitres: balance,
+    };
+  });
+
+  // "All time" still caps what's displayed (same 60-row cap as before) --
+  // only the balance computation above needed the unbounded history.
+  const inPeriod = range
+    ? chronological.filter((r) => {
+        const d = new Date(`${r.date}T00:00:00.000Z`);
+        return d >= range.start && d < range.end;
+      })
+    : chronological.slice(-60);
+
+  return inPeriod.sort((a, b) => b.date.localeCompare(a.date));
 }
 
 // Today's sellable balance so Milk Sale Entry can show "available to sell"
