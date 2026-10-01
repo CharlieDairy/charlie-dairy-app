@@ -152,6 +152,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const dayLink = (offset: number) => { const date = new Date(`${d.day}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + offset); return `?${new URLSearchParams({ ...params, day: date.toISOString().slice(0, 10) })}`; };
   const feedValue = (f: { amount: number; count: number; missing: number }) => !f.count ? "Not recorded" : `${formatRs(f.amount)}${f.missing ? " · incomplete costs" : ""}`;
   const isToday = d.day >= d.today;
+  const periodRangeLabel = `${d.range.start.toISOString().slice(0, 10)} to ${new Date(d.range.end.getTime() - 86400000).toISOString().slice(0, 10)}`;
 
   return (
     <div className="flex flex-col gap-5 text-slate-900">
@@ -194,6 +195,25 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           <Link href={dayLink(1)} aria-label="Next day" className={`rounded-md px-2 py-1 ${isToday ? "pointer-events-none text-slate-300" : "hover:bg-slate-100"}`}>›</Link>
           <p className="text-xs text-slate-500 ml-auto">Today&apos;s milk book · 7-day average: {d.average7 === null ? "Not available" : `${d.average7.toFixed(1)} L (${d.averageDays}/7 days recorded)`}</p>
         </form>
+      </>}
+
+      {(finance || operations) && (
+        <form className="flex flex-wrap gap-2 items-center rounded-xl border border-slate-200 bg-white p-3">
+          <span className="text-xs font-semibold text-slate-500">PERIOD</span>
+          {periods.map(([key, label]) => (
+            <Link key={key} href={`?day=${d.day}&period=${key}`} className={`rounded-full border px-3 py-2 text-xs ${(params.period ?? "month") === key ? "bg-teal-600 text-white border-teal-600" : "border-slate-200"}`}>{label}</Link>
+          ))}
+          <input type="hidden" name="day" value={d.day} />
+          <input type="hidden" name="period" value="custom" />
+          <label className="sr-only" htmlFor="from-date">Period from</label>
+          <input className="border rounded-lg p-2 text-xs" id="from-date" type="date" name="from" required defaultValue={params.from} />
+          <label className="sr-only" htmlFor="to-date">Period to</label>
+          <input className="border rounded-lg p-2 text-xs" id="to-date" type="date" name="to" required defaultValue={params.to} />
+          <button className="border rounded-lg p-2 text-sm">Apply period</button>
+        </form>
+      )}
+
+      {operations && <>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
           <Metric icon={IconDroplet} label="Milk today" value={d.dailyMilk.records ? `${d.dailyMilk.litres.toFixed(1)} L` : "Pending"} detail={d.previous !== null && d.dailyMilk.records ? `${(d.dailyMilk.litres - d.previous).toFixed(1)} L vs previous day · may be partial` : "No comparable complete-day result yet"} />
           <Metric icon={IconTrend} label="Sold today" value={salesComplete ? `${sold.toFixed(1)} L` : d.saleDay.length ? "Incomplete" : "Not recorded"} detail={`${formatRs(d.saleDay.reduce((n, s) => n + s.amount, 0))} recorded · ${new Set(d.saleDay.map(s => s.buyer).filter(Boolean)).size} named buyers`} />
@@ -218,7 +238,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </Panel>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <Panel title="Production vs sales · last 14 days" href="/admin/reports/reconciliation" icon={IconTrend} className="xl:col-span-2">
+          <Panel title={`Production vs sales · ${periodRangeLabel}`} href="/admin/reports/reconciliation" icon={IconTrend} className="xl:col-span-2">
             <DailyProductionChart data={d.series} />
             <p className="text-xs text-slate-500">Gaps mean missing or incomplete records, not zero production or sales.</p>
           </Panel>
@@ -265,25 +285,9 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </div>
       </>}
 
-      {(finance || operations) && (
-        <form className="flex flex-wrap gap-2 items-center rounded-xl border border-slate-200 bg-white p-3">
-          <span className="text-xs font-semibold text-slate-500">PERIOD</span>
-          {periods.map(([key, label]) => (
-            <Link key={key} href={`?day=${d.day}&period=${key}`} className={`rounded-full border px-3 py-2 text-xs ${(params.period ?? "month") === key ? "bg-teal-600 text-white border-teal-600" : "border-slate-200"}`}>{label}</Link>
-          ))}
-          <input type="hidden" name="day" value={d.day} />
-          <input type="hidden" name="period" value="custom" />
-          <label className="sr-only" htmlFor="from-date">Period from</label>
-          <input className="border rounded-lg p-2 text-xs" id="from-date" type="date" name="from" required defaultValue={params.from} />
-          <label className="sr-only" htmlFor="to-date">Period to</label>
-          <input className="border rounded-lg p-2 text-xs" id="to-date" type="date" name="to" required defaultValue={params.to} />
-          <button className="border rounded-lg p-2 text-sm">Apply period</button>
-        </form>
-      )}
-
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {finance && (
-          <Panel title={`Finances · ${d.range.start.toISOString().slice(0, 10)} to ${new Date(d.range.end.getTime() - 86400000).toISOString().slice(0, 10)}`} href="/admin/reports/pl" icon={IconDollar} tone="green" className="xl:col-span-2">
+          <Panel title={`Finances · ${periodRangeLabel}`} href="/admin/reports/pl" icon={IconDollar} tone="green" className="xl:col-span-2">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               <Metric icon={IconDollar} label="Recorded income" value={formatRs(income)} detail="Sales plus other recorded income" tone="green" />
               <Metric icon={IconLayers} label="Recorded outgoings" value={formatRs(expense)} detail="Includes capital spending if entered here" tone="rose" />
