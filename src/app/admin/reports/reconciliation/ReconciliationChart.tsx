@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
+import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
 import type { ReconciliationRow } from "@/lib/reports/reconciliation";
 
 export default function ReconciliationChart({ rows }: { rows: ReconciliationRow[] }) {
@@ -8,9 +8,11 @@ export default function ReconciliationChart({ rows }: { rows: ReconciliationRow[
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((r) => ({
       date: r.date.slice(5),
+      "Calf Use": r.calfUseLitres,
+      "Farm Use": r.farmUseLitres,
+      "Employee Use": r.employeeUseLitres,
+      "Recorded Sale": r.recordedSaleLitres,
       Produced: r.producedLitres,
-      Used: r.calfUseLitres + r.farmUseLitres + r.employeeUseLitres,
-      Sold: r.recordedSaleLitres,
     }));
 
   return (
@@ -22,9 +24,11 @@ export default function ReconciliationChart({ rows }: { rows: ReconciliationRow[
           <YAxis width={45} tick={{ fontSize: 11 }} unit="L" />
           <Tooltip />
           <Legend />
-          <Area name="Produced" dataKey="Produced" stroke="#0d9488" fill="#ccfbf1" connectNulls={false} />
-          <Line name="Used (Calf/Farm/Employee)" dataKey="Used" stroke="#f59e0b" strokeDasharray="5 4" dot={false} connectNulls={false} />
-          <Line name="Sold" dataKey="Sold" stroke="#0ea5e9" strokeDasharray="2 2" dot={false} connectNulls={false} />
+          <Bar name="Calf Use" dataKey="Calf Use" stackId="disposition" fill="#f59e0b" />
+          <Bar name="Farm Use" dataKey="Farm Use" stackId="disposition" fill="#8b5cf6" />
+          <Bar name="Employee Use" dataKey="Employee Use" stackId="disposition" fill="#f43f5e" />
+          <Bar name="Recorded Sale" dataKey="Recorded Sale" stackId="disposition" fill="#0ea5e9" radius={[3, 3, 0, 0]} />
+          <Line name="Produced (total)" dataKey="Produced" stroke="#0d9488" strokeWidth={2} dot={false} connectNulls={false} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
