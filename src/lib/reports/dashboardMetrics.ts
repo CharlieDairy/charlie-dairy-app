@@ -41,6 +41,7 @@ export function periodBounds(period: string, today: string, from?: string, to?: 
   const now = dateBounds(today).start;
   let start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   let end = dateBounds(today).end;
+  if (period === "day") start = now;
   if (period === "week") start = new Date(now.getTime() - ((now.getUTCDay() + 6) % 7) * 86400000);
   if (period === "last-month") { end = start; start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)); }
   if (period === "quarter") start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 2, 1));

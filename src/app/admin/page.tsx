@@ -148,7 +148,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
     { title: "Calving dates to review", count: d.overdueCalvings, detail: "Past expected date; confirm outcome", href: "/admin/reports/breeding", tone: "violet" as const },
     { title: "Incomplete sale quantities", count: d.missingQuantities, detail: "Milk reconciliation remains incomplete", href: "/admin/reports/milk-sales", tone: "amber" as const },
   ].filter(a => a.count > 0);
-  const periods = [["week", "This week"], ["month", "This month"], ["last-month", "Last month"], ["quarter", "Last 3 months"], ["year", "This year"], ["last-year", "Last year"]];
+  const periods = [["day", "Today"], ["week", "This week"], ["month", "This month"], ["last-month", "Last month"], ["quarter", "Last 3 months"], ["year", "This year"], ["last-year", "Last year"]];
   const dayLink = (offset: number) => { const date = new Date(`${d.day}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + offset); return `?${new URLSearchParams({ ...params, day: date.toISOString().slice(0, 10) })}`; };
   const feedValue = (f: { amount: number; count: number; missing: number }) => !f.count ? "Not recorded" : `${formatRs(f.amount)}${f.missing ? " · incomplete costs" : ""}`;
   const isToday = d.day >= d.today;
