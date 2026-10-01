@@ -39,6 +39,11 @@ export default async function ReconciliationPage({
         the app yet, so this is a derived running total, not a verified physical balance.
       </p>
 
+      <div className="flex gap-3 text-xs">
+        <Link href="/entry/milk-sale" className="text-primary underline">Milk Sale Entry →</Link>
+        <Link href="/admin/reports/ar-aging" className="text-primary underline">Customer / AR Aging →</Link>
+      </div>
+
       <div className="flex gap-1.5 flex-wrap">
         {PERIODS.map((p) => (
           <Link
@@ -58,7 +63,7 @@ export default async function ReconciliationPage({
         <ReconciliationChart rows={rows} />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div id="record-use" className="flex flex-col gap-2 scroll-mt-4">
         <h2 className="text-sm font-semibold text-neutral-700">Record Calf / Farm / Employee Use</h2>
         <MilkUsageForm />
       </div>
