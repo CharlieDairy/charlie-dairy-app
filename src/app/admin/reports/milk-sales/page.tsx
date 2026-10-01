@@ -5,7 +5,8 @@ import StatCard from "@/components/StatCard";
 import { formatRs } from "@/lib/format";
 import { getCustomerDetail, getDistinctBuyers } from "@/lib/reports/milkSalesByCustomer";
 import { getActiveWithdrawals } from "@/lib/reports/withdrawal";
-import { periodRange, type PeriodKey } from "@/lib/reports/herd";
+import { periodRange } from "@/lib/reports/herd";
+import { resolvePeriod } from "@/lib/period";
 import type { LedgerSaleRow } from "@/app/entry/milk-sale/MilkSalesLedger";
 import MilkSalesLedger from "@/app/entry/milk-sale/MilkSalesLedger";
 import WithdrawalWarningBanner from "@/components/WithdrawalWarningBanner";
@@ -23,9 +24,7 @@ export default async function MilkSalesPage({
   searchParams: Promise<{ buyer?: string; period?: string }>;
 }) {
   const params = await searchParams;
-  const period: PeriodKey = (["day", "week", "month", "year", "all"] as const).includes(params.period as PeriodKey)
-    ? (params.period as PeriodKey)
-    : "all";
+  const period = await resolvePeriod(params.period, "all");
   const range = periodRange(period);
 
   const [customers, buyers, sales, detail, activeWithdrawals] = await Promise.all([

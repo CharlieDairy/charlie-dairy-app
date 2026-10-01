@@ -1,17 +1,10 @@
 import Link from "next/link";
 import { getProductionReconciliation } from "@/lib/reports/reconciliation";
 import { formatRs } from "@/lib/format";
-import type { PeriodKey } from "@/lib/reports/herd";
+import { resolvePeriod } from "@/lib/period";
 import MilkUsageForm from "@/app/entry/milk-usage/MilkUsageForm";
 import ReconciliationChart from "./ReconciliationChart";
-
-const PERIODS: { key: PeriodKey; label: string }[] = [
-  { key: "day", label: "Today" },
-  { key: "week", label: "This Week" },
-  { key: "month", label: "This Month" },
-  { key: "year", label: "This Year" },
-  { key: "all", label: "All Time" },
-];
+import PeriodPills from "@/components/PeriodPills";
 
 export default async function ReconciliationPage({
   searchParams,
@@ -19,7 +12,7 @@ export default async function ReconciliationPage({
   searchParams: Promise<{ period?: string }>;
 }) {
   const params = await searchParams;
-  const period: PeriodKey = PERIODS.some((p) => p.key === params.period) ? (params.period as PeriodKey) : "all";
+  const period = await resolvePeriod(params.period, "all");
   const rows = await getProductionReconciliation(period);
 
   return (
@@ -44,19 +37,7 @@ export default async function ReconciliationPage({
         <Link href="/admin/reports/ar-aging" className="text-primary underline">Customer / AR Aging →</Link>
       </div>
 
-      <div className="flex gap-1.5 flex-wrap">
-        {PERIODS.map((p) => (
-          <Link
-            key={p.key}
-            href={`?period=${p.key}`}
-            className={`text-xs rounded-full px-3 py-1.5 border ${
-              period === p.key ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-neutral-100"
-            }`}
-          >
-            {p.label}
-          </Link>
-        ))}
-      </div>
+      <PeriodPills period={period} />
 
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
         <h2 className="text-sm font-semibold text-neutral-700 mb-3">Produced vs Used vs Sold</h2>

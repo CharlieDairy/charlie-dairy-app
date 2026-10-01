@@ -1,18 +1,12 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { PERIOD_COOKIE, PERIOD_OPTIONS } from "@/lib/periodOptions";
 
 const STATUS_OPTIONS = [
   { key: "active", label: "Active" },
   { key: "hidden", label: "Hidden" },
   { key: "all", label: "All" },
-];
-const PERIOD_OPTIONS = [
-  { key: "day", label: "Today" },
-  { key: "week", label: "This Week" },
-  { key: "month", label: "This Month" },
-  { key: "year", label: "This Year" },
-  { key: "all", label: "All Time" },
 ];
 
 export default function FilterBar({ status, period }: { status: string; period: string }) {
@@ -20,6 +14,12 @@ export default function FilterBar({ status, period }: { status: string; period: 
   const searchParams = useSearchParams();
 
   function updateParam(key: string, value: string) {
+    // Customers, Production Reconciliation and Milk Sales are cross-linked --
+    // this cookie (read server-side by lib/period.ts resolvePeriod) lets the
+    // period selected here carry over when navigating to either of those.
+    if (key === "period") {
+      document.cookie = `${PERIOD_COOKIE}=${value}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+    }
     const next = new URLSearchParams(searchParams.toString());
     next.set(key, value);
     router.push(`?${next.toString()}`);

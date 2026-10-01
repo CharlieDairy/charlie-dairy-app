@@ -3,20 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { getTodaysSellableBalance, getProductionReconciliation } from "@/lib/reports/reconciliation";
 import { getActiveWithdrawals } from "@/lib/reports/withdrawal";
 import { getCustomerSalesSummary } from "@/lib/reports/milkSalesByCustomer";
-import { periodRange, type PeriodKey } from "@/lib/reports/herd";
+import { periodRange } from "@/lib/reports/herd";
+import { resolvePeriod } from "@/lib/period";
 import StatCard from "@/components/StatCard";
 import WithdrawalWarningBanner from "@/components/WithdrawalWarningBanner";
 import MilkSaleForm from "./MilkSaleForm";
 import MilkSalesLedger, { type LedgerSaleRow } from "./MilkSalesLedger";
 import { formatRs } from "@/lib/format";
-
-const PERIODS: { key: PeriodKey; label: string }[] = [
-  { key: "day", label: "Today" },
-  { key: "week", label: "This Week" },
-  { key: "month", label: "This Month" },
-  { key: "year", label: "This Year" },
-  { key: "all", label: "All Time" },
-];
+import PeriodPills from "@/components/PeriodPills";
 
 export default async function MilkSaleEntryPage({
   searchParams,
@@ -24,7 +18,7 @@ export default async function MilkSaleEntryPage({
   searchParams: Promise<{ period?: string }>;
 }) {
   const params = await searchParams;
-  const period: PeriodKey = PERIODS.some((p) => p.key === params.period) ? (params.period as PeriodKey) : "week";
+  const period = await resolvePeriod(params.period, "week");
   const range = periodRange(period);
 
   const [rows, customers, balance, sales, activeWithdrawals, todayReconciliation, customerBalances] = await Promise.all([
@@ -103,19 +97,7 @@ export default async function MilkSaleEntryPage({
 
       <div className="flex items-center justify-between flex-wrap gap-3 mt-4">
         <h2 className="text-sm font-semibold text-neutral-700">Recent Sales</h2>
-        <div className="flex gap-1.5 flex-wrap">
-          {PERIODS.map((p) => (
-            <Link
-              key={p.key}
-              href={`?period=${p.key}`}
-              className={`text-xs rounded-full px-3 py-1.5 border ${
-                period === p.key ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-neutral-100"
-              }`}
-            >
-              {p.label}
-            </Link>
-          ))}
-        </div>
+        <PeriodPills period={period} />
       </div>
       <div className="grid grid-cols-2 gap-3 max-w-md">
         <StatCard label="Litres Sold" value={totalLitres.toLocaleString()} />

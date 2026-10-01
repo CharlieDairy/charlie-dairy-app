@@ -2,7 +2,7 @@ import Link from "next/link";
 import StatCard from "@/components/StatCard";
 import { formatRs } from "@/lib/format";
 import { getCustomersWithSales } from "@/lib/reports/milkSalesByCustomer";
-import type { PeriodKey } from "@/lib/reports/herd";
+import { resolvePeriod } from "@/lib/period";
 import CustomersTable from "./CustomersTable";
 import FilterBar from "./FilterBar";
 import AddCustomerToggle from "./AddCustomerToggle";
@@ -14,9 +14,7 @@ export default async function CustomersPage({
 }) {
   const params = await searchParams;
   const status = params.status === "hidden" || params.status === "all" ? params.status : "active";
-  const period: PeriodKey = (["day", "week", "month", "year", "all"] as const).includes(params.period as PeriodKey)
-    ? (params.period as PeriodKey)
-    : "month";
+  const period = await resolvePeriod(params.period, "month");
 
   const all = await getCustomersWithSales(period);
   const rows = status === "all" ? all : all.filter((c) => (status === "active" ? c.active : !c.active));
