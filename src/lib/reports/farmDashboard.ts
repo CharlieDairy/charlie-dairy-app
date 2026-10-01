@@ -1,20 +1,25 @@
 import { prisma } from "@/lib/prisma";
-import { cashTotals, dateBounds, farmDateKey, milkSession, periodBounds, validDay } from "./dashboardMetrics";
+import { cashTotals, dateBounds, farmDateKey, milkSession, periodBounds } from "./dashboardMetrics";
 
-export async function getFarmDashboard(params: { day?: string; period?: string; from?: string; to?: string }) {
+export async function getFarmDashboard(params: { period?: string; from?: string; to?: string }) {
   const today = farmDateKey();
-  const day = validDay(params.day, today) > today ? today : validDay(params.day, today);
-  const { start, end } = dateBounds(day);
+  // "Today" bounds are no longer user-selectable (the standalone DAY picker
+  // was removed as a duplicate of the PERIOD selector's own Today option) --
+  // still needed internally for genuinely today-specific operational facts
+  // (the "milk records pending" alert, feed cost "today", latest-recorded-
+  // day lookup) that shouldn't silently become week/month/year totals just
+  // because PERIOD is set to something broader.
+  const { start, end } = dateBounds(today);
   const range = periodBounds(params.period ?? "month", today, params.from, params.to);
-  const trailing = new Date(start.getTime() - 13 * 86400000);
   // Production vs sales chart follows the PERIOD selector (range), which can
-  // span further back than the day-picker's own fixed 14-day trailing
-  // window (used only for the separate "7-day average" footer stat below) --
-  // widen the milk query's lower bound to cover whichever reaches further.
-  const seriesStart = range.start < trailing ? range.start : trailing;
+  // span further back than today -- widen the milk query's lower bound to
+  // cover whichever reaches further, and the upper bound in case a custom
+  // period's "to" date is in the future.
+  const seriesStart = range.start < start ? range.start : start;
+  const seriesEnd = range.end > end ? range.end : end;
   const [cows, milk, sales, payments, cash, feed, vaccinations, treatments, lastMilk] = await Promise.all([
     prisma.cow.findMany({ select: { id: true, tag: true, gender: true, status: true, breed: true, dateOfBirth: true, expectedCalving: true, nextAiDate: true } }),
-    prisma.milkingRecord.findMany({ where: { date: { gte: seriesStart, lt: end } }, select: { cowId: true, date: true, shift: true, litres: true } }),
+    prisma.milkingRecord.findMany({ where: { date: { gte: seriesStart, lt: seriesEnd } }, select: { cowId: true, date: true, shift: true, litres: true } }),
     prisma.milkSale.findMany({ where: { date: { lt: dateBounds(today).end } }, select: { date: true, buyer: true, litres: true, amount: true, enteredBy: true } }),
     prisma.customerPayment.findMany({ where: { date: { lt: dateBounds(today).end } }, select: { buyer: true, amount: true } }),
     prisma.cashTransaction.findMany({ select: { date: true, category: true, mode: true, amountIn: true, amountOut: true } }),
@@ -26,17 +31,15 @@ export async function getFarmDashboard(params: { day?: string; period?: string; 
   const active = cows.filter(c => ["MILKING", "DRY", "HEIFER", "CALF"].includes(c.status));
   const activeIds = new Set(active.map(c => c.id));
   const expected = active.filter(c => c.status === "MILKING").map(c => c.id);
-  const daily = milk.filter(r => r.date >= start);
+  const daily = milk.filter(r => r.date >= start && r.date < end);
   const saleDay = sales.filter(s => s.date >= start && s.date < end);
   const dailyMilk = milkSession(daily, expected);
-  // Fixed 14-day trailing window ending on the selected day -- feeds ONLY
-  // the day-picker's own "7-day average" footer stat (prior7/previous
-  // below), independent of the PERIOD selector.
-  const trailingDaily = Array.from({ length: 14 }, (_, i) => {
-    const key = new Date(trailing.getTime() + i * 86400000).toISOString().slice(0, 10);
-    const m = milk.filter(r => r.date.toISOString().slice(0, 10) === key);
-    return { date: key, produced: m.length ? m.reduce((n, r) => n + r.litres, 0) : null };
-  });
+  // The 4 top metric cards (Milk/Sold/Unsold/Avg) follow the PERIOD selector
+  // instead of always being exactly today, now that there's no separate DAY
+  // picker to anchor them to a specific day.
+  const periodMilkRows = milk.filter(r => r.date >= range.start && r.date < range.end);
+  const periodSales = sales.filter(s => s.date >= range.start && s.date < range.end);
+  const periodMilk = milkSession(periodMilkRows, expected);
   // Production vs sales chart: follows the PERIOD selector (range) instead
   // of a fixed trailing window, so switching Week/Month/Year/custom above
   // actually changes what the chart shows.
@@ -47,7 +50,6 @@ export async function getFarmDashboard(params: { day?: string; period?: string; 
     const s = sales.filter(r => r.date.toISOString().slice(0, 10) === key);
     return { date: key, produced: m.length ? m.reduce((n, r) => n + r.litres, 0) : null, sold: s.length && s.every(r => r.litres > 0) ? s.reduce((n, r) => n + r.litres, 0) : null };
   });
-  const prior7 = trailingDaily.slice(-8, -1).filter(r => r.produced !== null);
   const inPeriod = (d: Date) => d >= range.start && d < range.end;
   const income: Record<string, number> = {}, expenses: Record<string, number> = {};
   for (const c of cash.filter(c => inPeriod(c.date))) {
@@ -89,5 +91,5 @@ export async function getFarmDashboard(params: { day?: string; period?: string; 
     const rows = feed.filter(f => f.direction === "OUT" && test(f.date));
     return { amount: rows.reduce((n, f) => n + (f.cost ?? 0), 0), count: rows.length, missing: rows.filter(f => f.cost === null).length };
   };
-  return { today, day, range, active, cows, expected, dailyMilk, morning: milkSession(daily.filter(r => r.shift === "MORNING"), expected), evening: milkSession(daily.filter(r => r.shift === "EVENING"), expected), saleDay, series, previous: trailingDaily[12].produced, average7: prior7.length ? prior7.reduce((n, r) => n + r.produced!, 0) / prior7.length : null, averageDays: prior7.length, income, expenses, receivables, vaccinated, neverVaccinated: active.length - vaccinated, dueVaccines: [...latestVax.values()].filter(v => v.nextDueDate && v.nextDueDate >= nowStart && v.nextDueDate <= horizon).length, treatments: treatments.filter(t => activeIds.has(t.cowId)).length, breeding, pregnant: active.filter(c => c.expectedCalving).length, calvings: active.filter(c => c.expectedCalving && c.expectedCalving >= nowStart && c.expectedCalving <= horizon).length, overdueCalvings: active.filter(c => c.expectedCalving && c.expectedCalving < nowStart).length, ages, stocks, lastDate, top: topRows.map(r => ({ id: r.cowId!, tag: cows.find(c => c.id === r.cowId)?.tag ?? "Unknown", litres: r._sum.litres ?? 0 })), feedDay: feedCost(d => d >= start && d < end), feedPeriod: feedCost(inPeriod), cash: cashTotals(cash.filter(c => c.date < dateBounds(today).end)), missingQuantities: sales.filter(s => s.litres <= 0).length };
+  return { today, range, active, cows, expected, dailyMilk, periodMilk, periodSales, morning: milkSession(periodMilkRows.filter(r => r.shift === "MORNING"), expected), evening: milkSession(periodMilkRows.filter(r => r.shift === "EVENING"), expected), saleDay, series, income, expenses, receivables, vaccinated, neverVaccinated: active.length - vaccinated, dueVaccines: [...latestVax.values()].filter(v => v.nextDueDate && v.nextDueDate >= nowStart && v.nextDueDate <= horizon).length, treatments: treatments.filter(t => activeIds.has(t.cowId)).length, breeding, pregnant: active.filter(c => c.expectedCalving).length, calvings: active.filter(c => c.expectedCalving && c.expectedCalving >= nowStart && c.expectedCalving <= horizon).length, overdueCalvings: active.filter(c => c.expectedCalving && c.expectedCalving < nowStart).length, ages, stocks, lastDate, top: topRows.map(r => ({ id: r.cowId!, tag: cows.find(c => c.id === r.cowId)?.tag ?? "Unknown", litres: r._sum.litres ?? 0 })), feedDay: feedCost(d => d >= start && d < end), feedPeriod: feedCost(inPeriod), cash: cashTotals(cash.filter(c => c.date < dateBounds(today).end)), missingQuantities: sales.filter(s => s.litres <= 0).length };
 }

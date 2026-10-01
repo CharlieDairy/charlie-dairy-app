@@ -122,7 +122,7 @@ const JUMP_LINKS: [string, string][] = [
   ["Weight", "/admin/reports/weight"], ["Customers", "/admin/customers"], ["Team", "/admin/team"],
 ];
 
-export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ day?: string; period?: string; from?: string; to?: string }> }) {
+export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ period?: string; from?: string; to?: string }> }) {
   const params = await searchParams;
   const user = await getLiveUser();
   const isAdmin = user?.role === "ADMIN";
@@ -136,22 +136,20 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const [d, feed] = await Promise.all([getFarmDashboard(params), getFeedOverview()]);
   const sum = (v: Record<string, number>) => Object.values(v).reduce((n, a) => n + a, 0);
   const income = sum(d.income), expense = sum(d.expenses), net = income - expense;
-  const sold = d.saleDay.reduce((n, s) => n + s.litres, 0);
-  const salesComplete = d.saleDay.length > 0 && d.saleDay.every(s => s.litres > 0);
+  const sold = d.periodSales.reduce((n, s) => n + s.litres, 0);
+  const salesComplete = d.periodSales.length > 0 && d.periodSales.every(s => s.litres > 0);
   const coverage = d.active.length ? Math.round(d.vaccinated / d.active.length * 100) : null;
   const overdueBreeding = d.breeding.filter(c => c.nextAiDate!.toISOString().slice(0, 10) < d.today).length;
   const breedingToday = d.breeding.filter(c => c.nextAiDate!.toISOString().slice(0, 10) === d.today).length;
   const alerts = [
     { title: "Breeding follow-up", count: overdueBreeding + breedingToday, detail: `${overdueBreeding} overdue · ${breedingToday} due today`, href: "/admin/reports/breeding", tone: "rose" as const },
-    { title: "Milk records pending", count: d.dailyMilk.missing, detail: `${d.dailyMilk.recorded} animals recorded on ${d.day}`, href: "/entry/milking", tone: "amber" as const },
+    { title: "Milk records pending", count: d.dailyMilk.missing, detail: `${d.dailyMilk.recorded} animals recorded today`, href: "/entry/milking", tone: "amber" as const },
     { title: "No vaccination record", count: d.neverVaccinated, detail: "Recorded coverage, not proof of immunity", href: "/admin/reports/health", tone: "sky" as const },
     { title: "Calving dates to review", count: d.overdueCalvings, detail: "Past expected date; confirm outcome", href: "/admin/reports/breeding", tone: "violet" as const },
     { title: "Incomplete sale quantities", count: d.missingQuantities, detail: "Milk reconciliation remains incomplete", href: "/admin/reports/milk-sales", tone: "amber" as const },
   ].filter(a => a.count > 0);
   const periods = [["day", "Today"], ["week", "This week"], ["month", "This month"], ["last-month", "Last month"], ["quarter", "Last 3 months"], ["year", "This year"], ["last-year", "Last year"]];
-  const dayLink = (offset: number) => { const date = new Date(`${d.day}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + offset); return `?${new URLSearchParams({ ...params, day: date.toISOString().slice(0, 10) })}`; };
   const feedValue = (f: { amount: number; count: number; missing: number }) => !f.count ? "Not recorded" : `${formatRs(f.amount)}${f.missing ? " · incomplete costs" : ""}`;
-  const isToday = d.day >= d.today;
   const periodRangeLabel = `${d.range.start.toISOString().slice(0, 10)} to ${new Date(d.range.end.getTime() - 86400000).toISOString().slice(0, 10)}`;
 
   return (
@@ -182,28 +180,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </div>
       </div>
 
-      {operations && <>
-        <form className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-          <span className="text-xs text-slate-500 font-semibold">DAY</span>
-          <Link href={dayLink(-1)} aria-label="Previous day" className="rounded-md px-2 py-1 hover:bg-slate-100">‹</Link>
-          <label className="sr-only" htmlFor="dashboard-day">Milk book date</label>
-          <input id="dashboard-day" className="rounded-lg border border-teal-200 p-2 text-sm" type="date" name="day" defaultValue={d.day} max={d.today} />
-          <input type="hidden" name="period" value={params.period ?? "month"} />
-          {params.from && <input type="hidden" name="from" value={params.from} />}
-          {params.to && <input type="hidden" name="to" value={params.to} />}
-          <button className="rounded-lg border px-3 py-2 text-sm">Apply day</button>
-          <Link href={dayLink(1)} aria-label="Next day" className={`rounded-md px-2 py-1 ${isToday ? "pointer-events-none text-slate-300" : "hover:bg-slate-100"}`}>›</Link>
-          <p className="text-xs text-slate-500 ml-auto">Today&apos;s milk book · 7-day average: {d.average7 === null ? "Not available" : `${d.average7.toFixed(1)} L (${d.averageDays}/7 days recorded)`}</p>
-        </form>
-      </>}
-
       {(finance || operations) && (
         <form className="flex flex-wrap gap-2 items-center rounded-xl border border-slate-200 bg-white p-3">
           <span className="text-xs font-semibold text-slate-500">PERIOD</span>
           {periods.map(([key, label]) => (
-            <Link key={key} href={`?day=${d.day}&period=${key}`} className={`rounded-full border px-3 py-2 text-xs ${(params.period ?? "month") === key ? "bg-teal-600 text-white border-teal-600" : "border-slate-200"}`}>{label}</Link>
+            <Link key={key} href={`?period=${key}`} className={`rounded-full border px-3 py-2 text-xs ${(params.period ?? "month") === key ? "bg-teal-600 text-white border-teal-600" : "border-slate-200"}`}>{label}</Link>
           ))}
-          <input type="hidden" name="day" value={d.day} />
           <input type="hidden" name="period" value="custom" />
           <label className="sr-only" htmlFor="from-date">Period from</label>
           <input className="border rounded-lg p-2 text-xs" id="from-date" type="date" name="from" required defaultValue={params.from} />
@@ -215,12 +197,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 
       {operations && <>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          <Metric icon={IconDroplet} label="Milk today" value={d.dailyMilk.records ? `${d.dailyMilk.litres.toFixed(1)} L` : "Pending"} detail={d.previous !== null && d.dailyMilk.records ? `${(d.dailyMilk.litres - d.previous).toFixed(1)} L vs previous day · may be partial` : "No comparable complete-day result yet"} />
-          <Metric icon={IconTrend} label="Sold today" value={salesComplete ? `${sold.toFixed(1)} L` : d.saleDay.length ? "Incomplete" : "Not recorded"} detail={`${formatRs(d.saleDay.reduce((n, s) => n + s.amount, 0))} recorded · ${new Set(d.saleDay.map(s => s.buyer).filter(Boolean)).size} named buyers`} />
-          <Metric icon={IconArchive} label="Unsold balance" value={d.dailyMilk.records && salesComplete ? `${(d.dailyMilk.litres - sold).toFixed(1)} L` : "Unreconciled"} detail="Not confirmed unsold stock: use, waste and opening stock need reconciliation" />
-          <Metric icon={IconUsers} label="Avg per milking cow" value={d.dailyMilk.average === null ? "Pending" : `${d.dailyMilk.average.toFixed(1)} L`} detail={`${d.dailyMilk.recorded} of ${d.expected.length} logged today`} />
+          <Metric icon={IconDroplet} label="Milk produced" value={d.periodMilk.records ? `${d.periodMilk.litres.toFixed(1)} L` : "Pending"} detail={periodRangeLabel} />
+          <Metric icon={IconTrend} label="Sold" value={salesComplete ? `${sold.toFixed(1)} L` : d.periodSales.length ? "Incomplete" : "Not recorded"} detail={`${formatRs(d.periodSales.reduce((n, s) => n + s.amount, 0))} recorded · ${new Set(d.periodSales.map(s => s.buyer).filter(Boolean)).size} named buyers`} />
+          <Metric icon={IconArchive} label="Unsold balance" value={d.periodMilk.records && salesComplete ? `${(d.periodMilk.litres - sold).toFixed(1)} L` : "Unreconciled"} detail="Not confirmed unsold stock: use, waste and opening stock need reconciliation" />
+          <Metric icon={IconUsers} label="Avg per milking cow" value={d.periodMilk.average === null ? "Pending" : `${d.periodMilk.average.toFixed(1)} L`} detail={`${d.periodMilk.recorded} of ${d.expected.length} logged in this period`} />
         </div>
-        <p className="text-xs text-slate-500">AM: {d.morning.records ? `${d.morning.litres.toFixed(1)} L` : "pending"} · PM: {d.evening.records ? `${d.evening.litres.toFixed(1)} L` : "pending"}. Missing-entry checks use the current milking herd; historical herd membership may differ. Explicit zero entries remain zero.</p>
+        <p className="text-xs text-slate-500">AM: {d.morning.records ? `${d.morning.litres.toFixed(1)} L` : "pending"} · PM: {d.evening.records ? `${d.evening.litres.toFixed(1)} L` : "pending"} · for the selected period. Missing-entry checks use the current milking herd; historical herd membership may differ. Explicit zero entries remain zero.</p>
 
         <Panel title="Needs attention">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -255,7 +237,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </Panel>
         </div>
 
-        <p className="text-xs text-slate-500">Operational summaries below reflect current records as of {d.today}; daily feeding cost follows the selected milk-book day.</p>
+        <p className="text-xs text-slate-500">Operational summaries below reflect current records as of {d.today}; daily feeding cost reflects today.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           <Panel title="Breeding" href="/admin/reports/breeding" icon={IconHeart} tone="rose">
             <p className="font-bold text-xl mb-2">{overdueBreeding + breedingToday} follow-ups due</p>
@@ -278,7 +260,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
             <p className="font-bold text-xl mb-2">{feed.lowStockCount} low stock item{feed.lowStockCount === 1 ? "" : "s"}</p>
             <Row label="Feed types tracked" value={d.stocks.length} />
             <Row label="Negative stock" value={d.stocks.filter(s => s.balance < 0).length} />
-            <Row label="Feed cost · selected day" value={feedValue(d.feedDay)} />
+            <Row label="Feed cost · today" value={feedValue(d.feedDay)} />
             <Row label="Cost · selected period" value={feedValue(d.feedPeriod)} />
             <p className="text-xs text-slate-500 mt-2">Based on recorded feed issued, not purchases. Manage feed types in Feed Master.</p>
           </Panel>
@@ -316,7 +298,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
               <p className="text-xs text-slate-500">Historical cash-ledger backfills excluded. Due dates and invoice allocations are not recorded, so overdue ageing is unavailable.</p>
             </Panel>
             <Panel title="Top producers" href="/admin/reports/herd" icon={IconTrend} tone="amber">
-              <p className="text-xs text-slate-500 mb-3">{d.lastDate ? `Recorded milk on ${d.lastDate}${d.lastDate !== d.day ? " · latest available before selected day" : ""}` : "No records yet"}</p>
+              <p className="text-xs text-slate-500 mb-3">{d.lastDate ? `Recorded milk on ${d.lastDate}${d.lastDate !== d.today ? " · latest available before today" : ""}` : "No records yet"}</p>
               {d.top.map((c, i) => (
                 <Link key={c.id} href={`/admin/cows/${c.id}`} className="flex justify-between border-b border-slate-100 py-3 text-sm">
                   <span>{i + 1}. Animal {c.tag}</span><strong>{c.litres.toFixed(1)} L</strong>
