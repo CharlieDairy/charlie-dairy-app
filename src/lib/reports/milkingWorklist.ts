@@ -88,3 +88,64 @@ export async function getMilkingWorklist(dateKey: string): Promise<MilkingWorkli
     },
   };
 }
+
+export type MilkingLogRow = {
+  key: string;
+  cowId: string | null;
+  tag: string; // "Group" for unattributed herd-total rows
+  date: string;
+  dim: number | null;
+  morning: number | null;
+  afternoon: number | null;
+  evening: number | null;
+  total: number;
+};
+
+const LOG_ROW_CAP = 300;
+
+// A log of actual recorded entries across a period (one row per cow+date
+// that has data), for the Milking Entry page's period view -- unlike the
+// single-day worklist above, this isn't a "who's missing" checklist, it's a
+// browsable record of what's already been saved, matching Channab's
+// "Individual Milk Records" period listing.
+export async function getMilkingLog(range: { start: Date; end: Date } | null): Promise<{ rows: MilkingLogRow[]; truncated: boolean }> {
+  const records = await prisma.milkingRecord.findMany({
+    where: range ? { date: { gte: range.start, lt: range.end } } : undefined,
+    select: { cowId: true, date: true, shift: true, litres: true },
+  });
+
+  const cowIds = Array.from(new Set(records.map((r) => r.cowId).filter((id): id is string => id !== null)));
+  const cows = cowIds.length
+    ? await prisma.cow.findMany({ where: { id: { in: cowIds } }, select: { id: true, tag: true, lastCalvingDate: true } })
+    : [];
+  const cowById = new Map(cows.map((c) => [c.id, c]));
+
+  const byKey = new Map<string, { cowId: string | null; date: string; morning: number | null; afternoon: number | null; evening: number | null }>();
+  for (const r of records) {
+    const dateKey = r.date.toISOString().slice(0, 10);
+    const key = `${r.cowId ?? "group"}|${dateKey}`;
+    const entry = byKey.get(key) ?? { cowId: r.cowId, date: dateKey, morning: null, afternoon: null, evening: null };
+    const field = r.shift === "MORNING" ? "morning" : r.shift === "AFTERNOON" ? "afternoon" : "evening";
+    entry[field] = (entry[field] ?? 0) + r.litres;
+    byKey.set(key, entry);
+  }
+
+  const rows: MilkingLogRow[] = Array.from(byKey.entries())
+    .map(([key, e]) => {
+      const cow = e.cowId ? cowById.get(e.cowId) : undefined;
+      return {
+        key,
+        cowId: e.cowId,
+        tag: e.cowId ? (cow?.tag ?? "—") : "Group",
+        date: e.date,
+        dim: e.cowId ? dayInMilk(cow?.lastCalvingDate ?? null, new Date(`${e.date}T00:00:00.000Z`)) : null,
+        morning: e.morning,
+        afternoon: e.afternoon,
+        evening: e.evening,
+        total: (e.morning ?? 0) + (e.afternoon ?? 0) + (e.evening ?? 0),
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date) || Number(a.tag) - Number(b.tag) || a.tag.localeCompare(b.tag));
+
+  return { rows: rows.slice(0, LOG_ROW_CAP), truncated: rows.length > LOG_ROW_CAP };
+}

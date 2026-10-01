@@ -1,45 +1,96 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getMilkingWorklist } from "@/lib/reports/milkingWorklist";
-import MilkingForm from "./MilkingForm";
-import GroupMilkingForm from "./GroupMilkingForm";
-import EntryTabs from "./EntryTabs";
+import { getMilkingWorklist, getMilkingLog } from "@/lib/reports/milkingWorklist";
+import { periodRange, type PeriodKey } from "@/lib/reports/herd";
+import MilkEntryPanel, { type DisplayRow } from "./MilkEntryPanel";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function shiftCell(litres: number | null) {
-  return litres !== null ? `${litres.toFixed(1)} L` : "—";
-}
+const PERIODS: { key: PeriodKey; label: string }[] = [
+  { key: "day", label: "Today" },
+  { key: "week", label: "This Week" },
+  { key: "month", label: "This Month" },
+  { key: "year", label: "This Year" },
+  { key: "all", label: "All Time" },
+];
 
 export default async function MilkingEntryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string; cowId?: string }>;
+  searchParams: Promise<{ date?: string; period?: string }>;
 }) {
   const params = await searchParams;
-  const date = params.date ?? todayIso();
   const today = todayIso();
+  const period: PeriodKey = PERIODS.some((p) => p.key === params.period) ? (params.period as PeriodKey) : "day";
+  const date = params.date ?? today;
 
-  const [cows, worklist] = await Promise.all([
-    prisma.cow
-      .findMany({ where: { status: { in: ["MILKING", "DRY"] } }, select: { id: true, tag: true } })
-      .then((rows) => rows.sort((a, b) => Number(a.tag) - Number(b.tag) || a.tag.localeCompare(b.tag))),
-    getMilkingWorklist(date),
-  ]);
+  const cows = await prisma.cow
+    .findMany({ where: { status: { in: ["MILKING", "DRY"] } }, select: { id: true, tag: true } })
+    .then((rows) => rows.sort((a, b) => Number(a.tag) - Number(b.tag) || a.tag.localeCompare(b.tag)));
+
+  const todayWorklist = await getMilkingWorklist(today);
+
+  let displayRows: DisplayRow[];
+  let sessionTotals: { morning: number; afternoon: number; evening: number; total: number };
+  let groupTotalLitres = 0;
+  let logTruncated = false;
+
+  if (period === "day") {
+    const dayWorklist = date === today ? todayWorklist : await getMilkingWorklist(date);
+    displayRows = dayWorklist.rows.map((r) => ({
+      key: r.cowId,
+      cowId: r.cowId,
+      tag: r.tag,
+      date,
+      dim: r.dim,
+      morning: r.morning,
+      afternoon: r.afternoon,
+      evening: r.evening,
+      total: r.total,
+      showAdd: !r.complete,
+    }));
+    sessionTotals = dayWorklist.sessionTotals;
+    groupTotalLitres = dayWorklist.groupTotalLitres;
+  } else {
+    const { rows: log, truncated } = await getMilkingLog(periodRange(period));
+    logTruncated = truncated;
+    displayRows = log.map((r) => ({
+      key: r.key,
+      cowId: r.cowId,
+      tag: r.tag,
+      date: r.date,
+      dim: r.dim,
+      morning: r.morning,
+      afternoon: r.afternoon,
+      evening: r.evening,
+      total: r.total,
+      showAdd: false,
+    }));
+    sessionTotals = log.reduce(
+      (acc, r) => ({
+        morning: acc.morning + (r.morning ?? 0),
+        afternoon: acc.afternoon + (r.afternoon ?? 0),
+        evening: acc.evening + (r.evening ?? 0),
+        total: acc.total + r.total,
+      }),
+      { morning: 0, afternoon: 0, evening: 0, total: 0 }
+    );
+    groupTotalLitres = log.filter((r) => r.cowId === null).reduce((n, r) => n + r.total, 0);
+  }
 
   const dayLink = (offset: number) => {
     const d = new Date(`${date}T00:00:00Z`);
     d.setUTCDate(d.getUTCDate() + offset);
-    return `?date=${d.toISOString().slice(0, 10)}`;
+    return `?period=day&date=${d.toISOString().slice(0, 10)}`;
   };
 
   const statCards = [
-    { label: "Morning", value: worklist.sessionTotals.morning, accent: "border-l-green-700" },
-    { label: "Afternoon", value: worklist.sessionTotals.afternoon, accent: "border-l-warning" },
-    { label: "Evening", value: worklist.sessionTotals.evening, accent: "border-l-info" },
-    { label: "Total", value: worklist.sessionTotals.total, accent: "border-l-green-900" },
+    { label: "Morning", value: sessionTotals.morning, accent: "border-l-green-700" },
+    { label: "Afternoon", value: sessionTotals.afternoon, accent: "border-l-warning" },
+    { label: "Evening", value: sessionTotals.evening, accent: "border-l-info" },
+    { label: "Total", value: sessionTotals.total, accent: "border-l-green-900" },
   ];
 
   return (
@@ -49,13 +100,30 @@ export default async function MilkingEntryPage({
           <p className="text-xs font-bold uppercase tracking-wide text-green-200">Milk Production and Sale</p>
           <h1 className="text-2xl font-bold text-white mt-1">Milking Entry</h1>
         </div>
-        <div className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5">
-          <span className="text-xs font-bold tracking-wide text-green-200">DAY</span>
-          <Link href={dayLink(-1)} className="px-2 text-white rounded hover:bg-white/10">‹</Link>
-          <span className="text-sm font-semibold text-white">{date}</span>
-          {date < today && <Link href={dayLink(1)} className="px-2 text-white rounded hover:bg-white/10">›</Link>}
-          {date !== today && <Link href="?" className="text-xs text-green-100 underline ml-1">Today</Link>}
-        </div>
+        {period === "day" && (
+          <div className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5">
+            <span className="text-xs font-bold tracking-wide text-green-200">DAY</span>
+            <Link href={dayLink(-1)} className="px-2 text-white rounded hover:bg-white/10">‹</Link>
+            <span className="text-sm font-semibold text-white">{date}</span>
+            {date < today && <Link href={dayLink(1)} className="px-2 text-white rounded hover:bg-white/10">›</Link>}
+            {date !== today && <Link href="?period=day" className="text-xs text-green-100 underline ml-1">Today</Link>}
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 items-center rounded-xl border border-border bg-white p-3">
+        <span className="text-xs font-bold text-text-muted">PERIOD</span>
+        {PERIODS.map((p) => (
+          <Link
+            key={p.key}
+            href={`?period=${p.key}`}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+              period === p.key ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-primary-light"
+            }`}
+          >
+            {p.label}
+          </Link>
+        ))}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -66,63 +134,19 @@ export default async function MilkingEntryPage({
           </div>
         ))}
       </div>
-      {worklist.groupTotalLitres > 0 && (
-        <p className="text-xs text-text-muted -mt-2">Total includes {worklist.groupTotalLitres.toFixed(1)} L unattributed Herd/Group total</p>
+      {groupTotalLitres > 0 && (
+        <p className="text-xs text-text-muted -mt-2">Includes {groupTotalLitres.toFixed(1)} L from earlier Herd/Group entries (tagged &quot;Group&quot; in the table).</p>
       )}
 
-      {(worklist.missingCount > 0 || worklist.incompleteCount > 0) && (
+      {(todayWorklist.missingCount > 0 || todayWorklist.incompleteCount > 0) && (
         <div className="flex items-center gap-2 rounded-xl border border-warning/30 bg-warning-light px-4 py-3 text-sm font-semibold text-warning">
           <span>⚠</span>
-          <span>Missing: {worklist.missingCount} · Incomplete: {worklist.incompleteCount}</span>
+          <span>Missing today: {todayWorklist.missingCount} · Incomplete today: {todayWorklist.incompleteCount}</span>
         </div>
       )}
+      {logTruncated && <p className="text-xs text-text-muted">Showing the most recent 300 records for this period.</p>}
 
-      <div className="overflow-x-auto bg-white border border-border rounded-xl">
-        <table className="min-w-full text-sm">
-          <thead className="bg-primary-light">
-            <tr>
-              <th className="text-left px-3 py-2 text-xs font-bold uppercase tracking-wide text-text-muted">Tag</th>
-              <th className="text-right px-3 py-2 text-xs font-bold uppercase tracking-wide text-text-muted">DIM</th>
-              <th className="text-right px-3 py-2 text-xs font-bold uppercase tracking-wide text-text-muted">Morning</th>
-              <th className="text-right px-3 py-2 text-xs font-bold uppercase tracking-wide text-text-muted">Afternoon</th>
-              <th className="text-right px-3 py-2 text-xs font-bold uppercase tracking-wide text-text-muted">Evening</th>
-              <th className="text-right px-3 py-2 text-xs font-bold uppercase tracking-wide text-text-muted">Total</th>
-              <th className="text-right px-3 py-2 text-xs font-bold uppercase tracking-wide text-text-muted">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {worklist.rows.map((r) => (
-              <tr key={r.cowId} className={`border-t border-border/60 ${r.recordedShifts === 0 ? "bg-danger-light/40" : !r.complete ? "bg-warning-light/40" : ""}`}>
-                <td className="px-3 py-2 font-semibold">{r.tag}</td>
-                <td className="px-3 py-2 text-right text-text-muted">{r.dim ?? "—"}</td>
-                <td className="px-3 py-2 text-right text-text-muted">{shiftCell(r.morning)}</td>
-                <td className="px-3 py-2 text-right text-text-muted">{shiftCell(r.afternoon)}</td>
-                <td className="px-3 py-2 text-right text-text-muted">{shiftCell(r.evening)}</td>
-                <td className="px-3 py-2 text-right font-semibold">{r.total.toFixed(1)} L</td>
-                <td className="px-3 py-2 text-right">
-                  {!r.complete && (
-                    <Link href={`?date=${date}&cowId=${r.cowId}#individual-entry`} className="inline-block text-xs rounded-full px-3 py-1 bg-primary text-white font-semibold hover:bg-primary-dark">
-                      + Add
-                    </Link>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {worklist.rows.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-text-muted">No active milking/dry animals.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div id="individual-entry" className="scroll-mt-4">
-        <EntryTabs
-          individual={<MilkingForm key={params.cowId ?? "none"} cows={cows} preselectedCowId={params.cowId} defaultDate={date} />}
-          group={<GroupMilkingForm date={date} />}
-        />
-      </div>
+      <MilkEntryPanel cows={cows} rows={displayRows} mode={period === "day" ? "day" : "log"} defaultDate={date} />
     </div>
   );
 }
