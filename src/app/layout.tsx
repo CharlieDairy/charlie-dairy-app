@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import InstallApp from "@/components/InstallApp";
 import { Open_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -12,13 +13,15 @@ export const metadata: Metadata = {
   description: "Data collection, master data, and financial reporting for Charlie Dairy Farm",
 };
 
+export const viewport: Viewport = { themeColor: "#143a22" };
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${openSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">{children}<InstallApp /></body>
     </html>
   );
 }
