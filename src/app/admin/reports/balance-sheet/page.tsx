@@ -17,13 +17,13 @@ export default async function BalanceSheetPage() {
   const isBalanced = Math.abs(bs.difference) < 1;
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold text-neutral-900">Balance Sheet</h1>
         <p className="text-sm text-neutral-500">As of {asOf}</p>
       </div>
 
-      <p className="text-sm text-neutral-500">
+      <p className="text-base font-semibold text-neutral-600">
         Assembled from Cash Entry, Milk Sales, Assets and the Capital Ledger — not an independent double-entry
         system, so treat this as a working snapshot rather than an audited statement. Equity below is scoped to the{" "}
         <Link href="/admin/capital?venture=Dairy" className="link-btn">
@@ -33,6 +33,7 @@ export default async function BalanceSheetPage() {
         of this app.
       </p>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
         <h2 className="font-semibold text-neutral-900 mb-2">Assets</h2>
         <Line label="Cash & Bank" value={formatRs(bs.cashAndBank)} indent />
@@ -60,6 +61,7 @@ export default async function BalanceSheetPage() {
         <Line label="Capital Ledger — Dairy venture only" value={formatRs(bs.capitalLedger)} indent />
         <Line label="Retained Earnings (cumulative net income)" value={formatRs(bs.retainedEarnings)} indent />
         <Line label="Total Equity" value={formatRs(bs.totalEquity)} bold />
+      </div>
       </div>
 
       <div className={`rounded-lg p-4 border ${isBalanced ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}`}>

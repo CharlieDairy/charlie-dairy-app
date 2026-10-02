@@ -153,7 +153,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const periodRangeLabel = `${d.range.start.toISOString().slice(0, 10)} to ${new Date(d.range.end.getTime() - 86400000).toISOString().slice(0, 10)}`;
 
   return (
-    <div className="flex flex-col gap-5 text-slate-900">
+    <div className="flex flex-col gap-6 text-slate-900">
       <div className="rounded-2xl bg-gradient-to-br from-green-900 to-green-700 px-6 py-6 flex flex-wrap items-center justify-between gap-6">
         <div className="flex flex-col gap-3 max-w-xl">
           {operations && (
@@ -174,7 +174,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         <div className="flex items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">{IconCalendar}</span>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-green-200">Today · Pakistan time</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-green-200">Today · Pakistan time</p>
             <p className="text-sm font-bold text-white">{d.today}</p>
           </div>
         </div>

@@ -21,7 +21,7 @@ export default async function MilkProductionByCowPage({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Milk Production by Cow" />
-      <div className="grid grid-cols-2 gap-4 max-w-lg">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <TrendStat
           label="Litres This Month"
           value={monthComparison.totalLitres.current.toLocaleString(undefined, { maximumFractionDigits: 0 })}

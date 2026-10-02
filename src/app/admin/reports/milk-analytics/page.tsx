@@ -124,7 +124,7 @@ export default async function MilkAnalyticsPage({ searchParams }: { searchParams
             return (
               <div key={m.month} className="flex flex-col items-center gap-1 h-full justify-end">
                 <div className="w-full bg-primary/80 rounded-t" style={{ height: `${(m.litres / max) * 100}%`, minHeight: m.litres > 0 ? "2px" : 0 }} title={`${m.monthLabel}: ${m.litres} L`} />
-                <span className="text-[10px] text-neutral-400">{m.monthLabel}</span>
+                <span className="text-xs text-neutral-400">{m.monthLabel}</span>
               </div>
             );
           })}

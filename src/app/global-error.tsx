@@ -5,7 +5,7 @@
 export default function GlobalError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
   return (
     <html lang="en">
-      <body style={{ fontFamily: "system-ui, sans-serif", background: "#fafafa", margin: 0 }}>
+      <body style={{ fontFamily: "'Open Sans', system-ui, sans-serif", background: "#fafafa", margin: 0 }}>
         <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div style={{ maxWidth: 420, background: "#fff", border: "1px solid #e5e5e5", borderRadius: 8, padding: 24, textAlign: "center" }}>
             <h1 style={{ fontSize: 20, margin: "0 0 12px" }}>Something went wrong</h1>

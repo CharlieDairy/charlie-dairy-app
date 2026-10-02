@@ -13,7 +13,7 @@ export default async function ReproductionEntryPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold text-neutral-900">Reproduction Entry</h1>
+      <h1 className="text-2xl font-semibold text-neutral-900">Reproduction Entry</h1>
       <p className="text-sm text-neutral-500 -mt-4">
         Heat, insemination and pregnancy check — recorded on the same cow at different points in her cycle, kept
         on one page so you don&apos;t have to navigate between them.

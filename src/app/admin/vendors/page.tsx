@@ -54,7 +54,7 @@ export default async function VendorsPage({
       </div>
       <PeriodBar period={period} from={from} to={to} extraParams={{ status }} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Vendors" value={rows.length.toString()} />
         <StatCard label="Total Spent" value={formatRs(totalSpent)} />
         <StatCard label="Transactions" value={totalTxns.toString()} />

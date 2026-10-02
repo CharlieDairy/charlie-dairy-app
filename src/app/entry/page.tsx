@@ -18,8 +18,8 @@ export default async function EntryHome() {
   const visible = tiles.filter((t) => isFullAdmin || hasPermission(user, t.module, "VIEW"));
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold text-neutral-900">What would you like to record?</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-neutral-900">What would you like to record?</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {visible.map((t) => (
           <Link

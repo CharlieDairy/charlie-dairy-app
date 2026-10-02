@@ -12,7 +12,7 @@ export default function AddEmployeeForm() {
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">Add New Employee</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900">Add New Employee</h1>
           <p className="text-sm text-neutral-500">Keep staff records tidy with a compact, structured form.</p>
         </div>
         <div className="flex items-center gap-3">

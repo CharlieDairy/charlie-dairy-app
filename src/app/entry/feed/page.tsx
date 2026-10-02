@@ -9,8 +9,8 @@ export default async function FeedEntryPage() {
   const feedTypes = Array.from(new Set([...master.map((m) => m.name), ...historical.map((h) => h.feedType)])).sort();
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold text-neutral-900">Feed Entry</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-neutral-900">Feed Entry</h1>
       <FeedForm feedTypes={feedTypes} />
     </div>
   );

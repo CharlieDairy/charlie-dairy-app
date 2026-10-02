@@ -4,7 +4,7 @@ export default function WithdrawalWarningBanner({ withdrawals }: { withdrawals: 
   if (withdrawals.length === 0) return null;
 
   return (
-    <div className="max-w-md rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
+    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
       <p className="font-medium text-red-700">
         ⚠ {withdrawals.length} animal{withdrawals.length === 1 ? " is" : "s are"} in milk withdrawal — verify their milk was excluded from this sale.
       </p>

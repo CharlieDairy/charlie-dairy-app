@@ -16,7 +16,7 @@ export default function MarkAbsenceForm({ employees }: { employees: { id: string
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-4 bg-white border border-neutral-200 rounded-lg p-4 max-w-sm">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-4 bg-white border border-neutral-200 rounded-lg p-4">
       <div className="flex flex-col gap-1">
         <label htmlFor="employeeId" className="text-sm font-medium text-neutral-700">Employee</label>
         <select id="employeeId" name="employeeId" required className="border border-neutral-300 rounded-md px-3 py-2 text-base">

@@ -14,8 +14,8 @@ export default async function CashEntryPage() {
   const vendorNames = vendors.map((v) => v.name);
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold text-neutral-900">Cash Entry</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-neutral-900">Cash Entry</h1>
       <CashForm categories={categories} vendorNames={vendorNames} />
     </div>
   );

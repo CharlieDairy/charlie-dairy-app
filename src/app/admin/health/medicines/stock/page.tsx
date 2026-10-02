@@ -31,7 +31,7 @@ export default async function MedicineStockPage() {
         recorded — this page is only for restocking.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Medicines Tracked" value={overview.balances.length.toString()} />
         <StatCard label="Low Stock" value={overview.lowStockCount.toString()} tone={overview.lowStockCount > 0 ? "negative" : "positive"} />
       </div>

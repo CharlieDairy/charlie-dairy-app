@@ -22,7 +22,7 @@ export default async function ExpenseBreakdownPage({
       </p>
       <PeriodBar period={period} from={from} to={to} />
 
-      <div className="max-w-xs">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Expense" value={formatRs(total)} />
       </div>
 

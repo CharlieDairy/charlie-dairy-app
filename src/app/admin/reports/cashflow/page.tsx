@@ -16,7 +16,7 @@ export default async function CashFlowPage() {
         the P&amp;L Statement, but only shows up here once it&apos;s actually paid.
       </p>
       {current && previous && (
-        <div className="grid grid-cols-2 gap-4 max-w-lg">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <TrendStat label={`Net Cash Flow (${current.month})`} value={formatRs(current.netCashFlow)} comparison={compare(current.netCashFlow, previous.netCashFlow)} />
           <TrendStat label="Cumulative Cash Position" value={formatRs(current.cumulativeCash)} comparison={compare(current.cumulativeCash, previous.cumulativeCash)} />
         </div>

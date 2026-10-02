@@ -12,7 +12,7 @@ export default async function PnlPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">P&L Statement</h1>
       {current && previous && (
-        <div className="grid grid-cols-3 gap-4 max-w-2xl">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <TrendStat label={`Revenue (${current.month})`} value={formatRs(current.revenue)} comparison={compare(current.revenue, previous.revenue)} />
           <TrendStat label={`Expense (${current.month})`} value={formatRs(current.expense)} comparison={compare(current.expense, previous.expense)} invertTone />
           <TrendStat label={`Net (${current.month})`} value={formatRs(current.net)} comparison={compare(current.net, previous.net)} />

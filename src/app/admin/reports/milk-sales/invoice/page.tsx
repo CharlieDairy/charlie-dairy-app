@@ -43,7 +43,7 @@ export default async function CustomerInvoicePage({
       <div className="bg-white border border-neutral-200 rounded-lg p-8 print:border-0 print:shadow-none">
         <div className="flex items-start justify-between border-b border-neutral-200 pb-4 mb-4">
           <div>
-            <h1 className="text-xl font-semibold text-neutral-900">Charlie Dairy Farm</h1>
+            <h1 className="text-2xl font-semibold text-neutral-900">Charlie Dairy Farm</h1>
             <p className="text-sm text-neutral-500">Milk Sales Statement</p>
           </div>
           <div className="text-right text-sm text-neutral-500">

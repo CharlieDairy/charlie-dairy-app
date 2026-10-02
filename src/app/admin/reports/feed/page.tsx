@@ -31,7 +31,7 @@ export default async function FeedOverviewPage() {
         reorder level set in Feed Master.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 max-w-3xl">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Stock on Hand" value={overview.totalBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })} />
         <StatCard label="Low Stock Items" value={overview.lowStockCount.toString()} tone={overview.lowStockCount > 0 ? "negative" : "positive"} />
         <TrendStat

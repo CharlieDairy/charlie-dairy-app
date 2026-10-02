@@ -9,8 +9,8 @@ export default async function WeightEntryPage() {
   const sortedCows = cows.sort((a, b) => Number(a.tag) - Number(b.tag) || a.tag.localeCompare(b.tag));
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold text-neutral-900">Weight Entry</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-neutral-900">Weight Entry</h1>
       <WeightEntryForm cows={sortedCows} />
     </div>
   );

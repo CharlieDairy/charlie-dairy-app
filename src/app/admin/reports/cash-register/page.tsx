@@ -56,7 +56,7 @@ export default async function CashRegisterPage({
       </p>
       <PeriodBar period={period} from={from} to={to} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total In" value={formatRs(totalIn)} tone="positive" />
         <StatCard label="Total Out" value={formatRs(totalOut)} tone="negative" />
         <StatCard label="Net" value={formatRs(totalIn - totalOut)} />

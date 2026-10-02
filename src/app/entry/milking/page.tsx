@@ -88,7 +88,7 @@ export default async function MilkingEntryPage({
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="rounded-2xl bg-gradient-to-br from-green-900 to-green-700 px-6 py-6 flex flex-wrap items-center justify-between gap-6">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-green-200">Milk Production and Sale</p>

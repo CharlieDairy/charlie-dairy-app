@@ -97,7 +97,7 @@ export default async function AuditLogPage({
                   </span>
                 </td>
                 <td className="px-3 py-2">{r.entity}</td>
-                <td className="px-3 py-2 font-mono text-xs text-neutral-500">{r.entityId ?? "—"}</td>
+                <td className="px-3 py-2 text-xs text-neutral-500">{r.entityId ?? "—"}</td>
                 <td className="px-3 py-2">
                   {(r.oldValue || r.newValue) ? (
                     <details>

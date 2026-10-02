@@ -10,8 +10,8 @@ export default async function MarkAbsencePage() {
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold text-neutral-900">Mark Absence</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-neutral-900">Mark Absence</h1>
       <p className="text-sm text-neutral-500">
         Quickly flag one employee as absent, without opening the full daily attendance form.{" "}
         <Link href="/entry/team/attendance" className="link-btn">Mark the whole team instead</Link>

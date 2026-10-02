@@ -16,7 +16,7 @@ export default function WeightEntryForm({ cows }: { cows: { id: string; tag: str
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-4 bg-white border border-neutral-200 rounded-lg p-4 max-w-md">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-4 bg-white border border-neutral-200 rounded-lg p-4">
       <div className="flex flex-col gap-1">
         <label htmlFor="date" className="text-sm font-medium text-neutral-700">Date</label>
         <input id="date" name="date" type="date" required defaultValue={todayIso()} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
