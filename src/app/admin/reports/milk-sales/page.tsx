@@ -78,17 +78,36 @@ export default async function MilkSalesPage({
       </div>
       <p className="text-sm font-semibold text-neutral-500 -mt-4">Sales are recorded on Milk Sale Entry — this page is a browsable report of what&apos;s already been recorded.</p>
 
-      <PeriodBar period={period} from={from} to={to} extraParams={params.buyer ? { buyer: params.buyer } : undefined} />
-
-      {params.buyer && (
-        <div className="flex items-center gap-3 text-sm bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-          <span>Viewing: <strong>{params.buyer}</strong></span>
-          <Link href="/admin/reports/milk-sales" className="link-btn">Clear filter</Link>
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-white p-3">
+        <span className="text-xs font-semibold text-text-muted">CUSTOMER</span>
+        {[{ key: "", label: "All" }, ...buyers.map((b) => ({ key: b, label: b }))].map((c) => {
+          const qs = new URLSearchParams({ period });
+          if (period === "custom" && from && to) {
+            qs.set("from", from);
+            qs.set("to", to);
+          }
+          if (c.key) qs.set("buyer", c.key);
+          const active = (params.buyer ?? "") === c.key;
+          return (
+            <Link
+              key={c.key || "all"}
+              href={`?${qs.toString()}`}
+              className={`rounded-full border px-3 py-2 text-xs ${
+                active ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-primary-light"
+              }`}
+            >
+              {c.label}
+            </Link>
+          );
+        })}
+        {params.buyer && (
           <Link href={`/admin/reports/milk-sales/invoice?buyer=${encodeURIComponent(params.buyer)}`} className="link-btn ml-auto">
             Print Statement
           </Link>
-        </div>
-      )}
+        )}
+      </div>
+
+      <PeriodBar period={period} from={from} to={to} extraParams={params.buyer ? { buyer: params.buyer } : undefined} />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="1st Sale" value={`${morning.toLocaleString()} L`} />
