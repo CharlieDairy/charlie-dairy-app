@@ -5,6 +5,7 @@ import { requirePermission, requireAccess, assertNotBackdated, runAction } from 
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, reqNum, reqText, optEnum, SHIFTS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
+import { INTERNAL_USE_OPTIONS } from "./internalUse";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -62,8 +63,32 @@ export async function submitMilkSale(_prev: FormState, formData: FormData): Prom
   return runAction(() => submitMilkSaleImpl(formData));
 }
 
+async function submitInternalUse(formData: FormData, user: { name: string }, option: (typeof INTERNAL_USE_OPTIONS)[number]) {
+  const date = reqDate(formData, "date", "Date");
+  const litres = reqNum(formData, "litres", "Litres", { positive: true, max: 100_000 });
+
+  const duplicate = await prisma.milkUsageRecord.findFirst({
+    where: { date, type: option.type, litres, createdAt: { gte: new Date(Date.now() - 120_000) } },
+    select: { id: true },
+  });
+  if (duplicate) throw new ValidationError("This looks identical to an entry saved moments ago, so it wasn't saved twice.");
+
+  await prisma.milkUsageRecord.create({ data: { date, type: option.type, litres, enteredBy: user.name } });
+  return { date, litres };
+}
+
 async function submitMilkSaleImpl(formData: FormData): Promise<FormState> {
   const user = await requirePermission("milk", "CREATE");
+
+  const typedBuyer = reqText(formData, "buyer", "Customer", { max: 100 });
+  const internal = INTERNAL_USE_OPTIONS.find((o) => o.label.toLowerCase() === typedBuyer.toLowerCase());
+  if (internal) {
+    assertNotBackdated(reqDate(formData, "date", "Date"), user, "Date");
+    const { litres } = await submitInternalUse(formData, user, internal);
+    refresh();
+    return { success: true, message: `${internal.label}: ${litres} L recorded.` };
+  }
+
   const sale = await readSale(formData);
   assertNotBackdated(sale.date, user, "Sale date");
 

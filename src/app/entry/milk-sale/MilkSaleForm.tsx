@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useEffect, useMemo, useState } from "react";
 import { submitMilkSale, type FormState } from "./actions";
+import { INTERNAL_USE_OPTIONS } from "./internalUse";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -22,7 +23,8 @@ export default function MilkSaleForm({ customers }: { customers: CustomerOption[
   }, [state]);
 
   const selected = useMemo(() => customers.find((c) => c.name === buyer) ?? null, [customers, buyer]);
-  const canSubmit = selected !== null && selected.agreedRate !== null;
+  const isInternal = INTERNAL_USE_OPTIONS.some((o) => o.label === buyer);
+  const canSubmit = isInternal || (selected !== null && selected.agreedRate !== null);
 
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4 bg-white border border-neutral-200 rounded-lg p-4">
@@ -40,10 +42,17 @@ export default function MilkSaleForm({ customers }: { customers: CustomerOption[
           onChange={(e) => setBuyer(e.target.value)}
           className="border border-neutral-300 rounded-md px-3 py-2 text-base"
         >
-          <option value="">Select a customer…</option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.name}>{c.name}</option>
-          ))}
+          <option value="">Select a customer or use…</option>
+          <optgroup label="Customers">
+            {customers.map((c) => (
+              <option key={c.id} value={c.name}>{c.name}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Internal use (no charge)">
+            {INTERNAL_USE_OPTIONS.map((o) => (
+              <option key={o.type} value={o.label}>{o.label}</option>
+            ))}
+          </optgroup>
         </select>
         <p className="text-xs text-neutral-400">
           Only registered customers can be sold to here. An Admin adds new customers and sets their rate on the Customers page.
@@ -72,7 +81,9 @@ export default function MilkSaleForm({ customers }: { customers: CustomerOption[
       </div>
 
       <div className="rounded-md bg-neutral-50 border border-neutral-200 px-3 py-2 text-sm">
-        {selected ? (
+        {isInternal ? (
+          <span className="text-neutral-700">Internal use — no rate, no charge. Counted in Production Reconciliation.</span>
+        ) : selected ? (
           selected.agreedRate !== null ? (
             <span className="text-neutral-700">
               Rate (fixed): <strong>Rs {selected.agreedRate.toFixed(2)}/L</strong> — managed on the Customers page.

@@ -10,8 +10,6 @@ import StatCard from "@/components/StatCard";
 import WithdrawalWarningBanner from "@/components/WithdrawalWarningBanner";
 import MilkSaleForm from "./MilkSaleForm";
 import MilkSalesLedger, { type LedgerSaleRow } from "./MilkSalesLedger";
-import MilkUsageForm from "@/app/entry/milk-usage/MilkUsageForm";
-import EntryModeTabs from "./EntryModeTabs";
 import { formatRs } from "@/lib/format";
 import PeriodBar from "@/components/PeriodBar";
 
@@ -60,7 +58,7 @@ export default async function MilkSaleEntryPage({
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold text-neutral-900">Milk Sale Entry</h1>
       <p className="text-xs text-neutral-400 -mt-2">
-        The only place milk leaving the farm gets recorded — a customer sale, or internal use (calf/farm/employee).
+        The only place milk leaving the farm gets recorded — pick a customer, or Calf Use / Farm Use / Farm Employee.
       </p>
       <WithdrawalWarningBanner withdrawals={activeWithdrawals} />
       <div className="flex flex-wrap gap-3">
@@ -103,10 +101,10 @@ export default async function MilkSaleEntryPage({
         )}
       </div>
 
-      <EntryModeTabs
-        sale={<MilkSaleForm customers={customers} />}
-        use={<MilkUsageForm />}
-      />
+      <div className="flex flex-col gap-2">
+        <h2 className="text-sm font-semibold text-neutral-700">Record daily sale</h2>
+        <MilkSaleForm customers={customers} />
+      </div>
 
       <div className="flex items-center justify-between flex-wrap gap-3 mt-4">
         <h2 className="text-sm font-semibold text-neutral-700">Recent Sales</h2>
