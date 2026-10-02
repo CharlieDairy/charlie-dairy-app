@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { parseCsv } from "./csv";
 import { getBulkTypeMeta } from "./registry";
 import type { BulkTypeKey, ImportResult } from "./types";
+import { INTERNAL_USE_OPTIONS } from "@/app/entry/milk-sale/internalUse";
 
 function cell(cells: string[], idx: number): string {
   return (cells[idx] ?? "").trim();
@@ -189,12 +190,30 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
 
     case "milkSales": {
       const parsed: Prisma.MilkSaleCreateManyInput[] = [];
+      const usageParsed: Prisma.MilkUsageRecordCreateManyInput[] = [];
       const seenSales = new Set<string>();
+      const seenUsage = new Set<string>();
       dataRows.forEach((cells, i) => {
         const rowNum = i + 2;
         const date = parseDate(cells, 0, "date", rowNum, errors, true);
         const buyer = req(cells, 1, "buyer", rowNum, errors);
         const litres = parseNum(cells, 2, "litres", rowNum, errors, true);
+
+        // Calf Use / Farm Use / Farm Employee rows are internal use, not
+        // sales -- same as the Milk Sale Entry dropdown. They go to
+        // MilkUsageRecord (rate and amount ignored, amount not required).
+        const internal = INTERNAL_USE_OPTIONS.find((o) => o.label.toLowerCase() === buyer.toLowerCase());
+        if (internal) {
+          range(errors, rowNum, "litres", litres, 0, 100_000, true);
+          if (date) {
+            const dupKey = `${date.toISOString().slice(0, 10)}|${internal.type}|${litres}`;
+            if (seenUsage.has(dupKey)) errors.push(`Row ${rowNum}: an identical ${internal.label} entry already appears earlier in this file.`);
+            seenUsage.add(dupKey);
+            usageParsed.push({ date, type: internal.type, litres, enteredBy: cell(cells, 7) || enteredBy });
+          }
+          return;
+        }
+
         const rate = parseOptNum(cells, 3, "rate", rowNum, errors);
         const fatPct = parseOptNum(cells, 4, "fatPct", rowNum, errors);
         const snf = parseOptNum(cells, 5, "snf", rowNum, errors);
@@ -217,6 +236,23 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
       });
       if (errors.length > 0) return FAIL("Fix the errors below and re-upload. Nothing was imported.", errors);
 
+      // Re-uploading the same file must not silently double milk used.
+      if (usageParsed.length > 0) {
+        const times = usageParsed.map((r) => (r.date as Date).getTime());
+        const existingUsage = await prisma.milkUsageRecord.findMany({
+          where: { date: { gte: new Date(Math.min(...times)), lte: new Date(Math.max(...times)) } },
+          select: { date: true, type: true, litres: true },
+        });
+        const existingUsageKeys = new Set(existingUsage.map((r) => `${r.date.toISOString().slice(0, 10)}|${r.type}|${r.litres}`));
+        const usageClashes = usageParsed.filter((r) => existingUsageKeys.has(`${(r.date as Date).toISOString().slice(0, 10)}|${r.type}|${r.litres}`));
+        if (usageClashes.length > 0) {
+          return FAIL(
+            `${usageClashes.length} row${usageClashes.length === 1 ? "" : "s"} match internal-use entries that already exist — nothing was imported (was this file uploaded before?).`,
+            usageClashes.slice(0, 20).map((r) => `${(r.date as Date).toISOString().slice(0, 10)} ${r.type} ${r.litres} L already recorded.`)
+          );
+        }
+      }
+
       // Re-uploading the same file must not silently double revenue.
       if (parsed.length > 0) {
         const times = parsed.map((r) => (r.date as Date).getTime());
@@ -233,8 +269,17 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
           );
         }
       }
-      const result = await prisma.milkSale.createMany({ data: parsed });
-      return { success: true, message: `Imported ${result.count} milk sales.`, errors: [], insertedCount: result.count };
+      const [salesResult, usageResult] = await prisma.$transaction([
+        prisma.milkSale.createMany({ data: parsed }),
+        prisma.milkUsageRecord.createMany({ data: usageParsed }),
+      ]);
+      const total = salesResult.count + usageResult.count;
+      return {
+        success: true,
+        message: `Imported ${salesResult.count} milk sale${salesResult.count === 1 ? "" : "s"} and ${usageResult.count} internal-use entr${usageResult.count === 1 ? "y" : "ies"} (Calf/Farm/Employee Use).`,
+        errors: [],
+        insertedCount: total,
+      };
     }
 
     case "feed": {

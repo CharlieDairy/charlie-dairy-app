@@ -19,6 +19,8 @@ export interface BulkTypeMeta {
   hasDateFilter: boolean;
   /** false = export/download only; bulk upload isn't offered (multi-table business rules make raw import unsafe). */
   importable: boolean;
+  /** Optional extra guidance shown under the upload form. */
+  note?: string;
 }
 
 export interface ImportResult {

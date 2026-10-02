@@ -31,6 +31,9 @@ export async function uploadBulkData(_prev: ImportResult | undefined, formData: 
       revalidatePath("/admin/capital");
       revalidatePath("/admin/reports/herd");
       revalidatePath("/admin/reports/breeding");
+      revalidatePath("/admin/reports/milk-sales");
+      revalidatePath("/admin/reports/reconciliation");
+      revalidatePath("/admin/customers");
     }
 
     return result;

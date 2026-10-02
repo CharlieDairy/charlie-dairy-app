@@ -65,6 +65,7 @@ export default function BulkTypeSection({ meta }: { meta: BulkTypeMeta }) {
               Columns must match the template: {meta.headers.join(", ")}. Nothing is imported if any row has an error —
               you&apos;ll get a full error list to fix and re-upload.
             </p>
+            {meta.note && <p className="text-xs font-semibold text-neutral-600 mt-1">{meta.note}</p>}
             {state && (
               <div className={`mt-2 text-sm ${state.success ? "text-green-700" : "text-red-600"}`}>
                 <p>{state.message}</p>

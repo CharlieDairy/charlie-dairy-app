@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { stringifyCsv } from "./csv";
 import { getBulkTypeMeta } from "./registry";
 import type { BulkTypeKey } from "./types";
+import { INTERNAL_USE_OPTIONS } from "@/app/entry/milk-sale/internalUse";
 
 function dateOnly(d: Date | null | undefined): string {
   return d ? d.toISOString().slice(0, 10) : "";
@@ -58,6 +59,12 @@ export async function exportCsv(
         const data = await prisma.milkSale.findMany({ where: dateWhere(opts.from, opts.to), orderBy: { date: "asc" } });
         rows.push(
           ...data.map((r) => [dateOnly(r.date), r.buyer, num(r.litres), num(r.rate), num(r.fatPct), num(r.snf), num(r.amount), r.enteredBy ?? ""])
+        );
+        // Internal use rides in the same file (buyer = Calf Use / Farm Use /
+        // Farm Employee) so an export re-imports as-is.
+        const usage = await prisma.milkUsageRecord.findMany({ where: dateWhere(opts.from, opts.to), orderBy: { date: "asc" } });
+        rows.push(
+          ...usage.map((r) => [dateOnly(r.date), INTERNAL_USE_OPTIONS.find((o) => o.type === r.type)?.label ?? r.type, num(r.litres), "", "", "", "0", r.enteredBy ?? ""])
         );
         break;
       }

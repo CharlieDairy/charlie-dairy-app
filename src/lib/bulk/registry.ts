@@ -20,10 +20,11 @@ export const BULK_TYPES: BulkTypeMeta[] = [
   },
   {
     key: "milkSales",
-    label: "Milk Sales",
+    label: "Milk Sales & Internal Use",
     hasDateFilter: true,
     importable: true,
     headers: ["date", "buyer", "litres", "rate", "fatPct", "snf", "amount", "enteredBy"],
+    note: 'To record milk usage, put "Calf Use", "Farm Use" or "Farm Employee" in the buyer column — those rows are saved as internal use (rate and amount ignored, leave them blank). Any other buyer is a normal sale and needs an amount.',
   },
   {
     key: "feed",
