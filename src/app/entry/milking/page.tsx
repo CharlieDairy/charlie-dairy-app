@@ -1,29 +1,23 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getMilkingWorklist, getMilkingLog } from "@/lib/reports/milkingWorklist";
-import { periodRange, type PeriodKey } from "@/lib/reports/herd";
+import { periodRange } from "@/lib/reports/herd";
+import { resolvePeriod } from "@/lib/period";
+import PeriodBar from "@/components/PeriodBar";
 import MilkEntryPanel, { type DisplayRow } from "./MilkEntryPanel";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-const PERIODS: { key: PeriodKey; label: string }[] = [
-  { key: "day", label: "Today" },
-  { key: "week", label: "This Week" },
-  { key: "month", label: "This Month" },
-  { key: "year", label: "This Year" },
-  { key: "all", label: "All Time" },
-];
-
 export default async function MilkingEntryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string; period?: string }>;
+  searchParams: Promise<{ date?: string; period?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
   const today = todayIso();
-  const period: PeriodKey = PERIODS.some((p) => p.key === params.period) ? (params.period as PeriodKey) : "day";
+  const { period, from, to } = await resolvePeriod(params, "day");
   const date = params.date ?? today;
 
   const cows = await prisma.cow
@@ -54,7 +48,7 @@ export default async function MilkingEntryPage({
     sessionTotals = dayWorklist.sessionTotals;
     groupTotalLitres = dayWorklist.groupTotalLitres;
   } else {
-    const { rows: log, truncated } = await getMilkingLog(periodRange(period));
+    const { rows: log, truncated } = await getMilkingLog(periodRange(period, new Date(), from, to));
     logTruncated = truncated;
     displayRows = log.map((r) => ({
       key: r.key,
@@ -111,20 +105,7 @@ export default async function MilkingEntryPage({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center rounded-xl border border-border bg-white p-3">
-        <span className="text-xs font-bold text-text-muted">PERIOD</span>
-        {PERIODS.map((p) => (
-          <Link
-            key={p.key}
-            href={`?period=${p.key}`}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-              period === p.key ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-primary-light"
-            }`}
-          >
-            {p.label}
-          </Link>
-        ))}
-      </div>
+      <PeriodBar period={period} from={from} to={to} />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {statCards.map((c) => (

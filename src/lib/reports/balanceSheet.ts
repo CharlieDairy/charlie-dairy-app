@@ -33,7 +33,10 @@ export async function getBalanceSheet(): Promise<BalanceSheet> {
     // only, matching the Capital Ledger page's own "Charlie Dairy-specific
     // entries" filter.
     prisma.capitalEntry.findMany({ where: { venture: "Dairy" }, select: { credit: true, debit: true } }),
-    getCustomerSalesSummary("all"),
+    // outstandingBalance is always a lifetime figure regardless of which
+    // period is passed here (see getCustomerSalesSummary) -- any valid key
+    // works, this just needs to be a real PeriodKey now that "all" is gone.
+    getCustomerSalesSummary("month"),
     getMonthlyPnl(),
   ]);
 

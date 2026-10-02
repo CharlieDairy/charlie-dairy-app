@@ -89,13 +89,13 @@ export type AttendanceReportRow = {
 // Same scoring convention as getTeamOverview's attendanceRateThisMonth
 // (PRESENT=1, HALF_DAY=0.5, ABSENT/LEAVE=0), just period-selectable and
 // broken out per employee instead of one farm-wide number.
-export async function getAttendanceReport(period: PeriodKey = "month"): Promise<AttendanceReportRow[]> {
-  const range = periodRange(period);
+export async function getAttendanceReport(period: PeriodKey = "month", from?: string, to?: string): Promise<AttendanceReportRow[]> {
+  const range = periodRange(period, new Date(), from, to);
   const [employees, records] = await Promise.all([
     prisma.employee.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     prisma.attendanceRecord.groupBy({
       by: ["employeeId", "status"],
-      where: range ? { date: { gte: range.start, lt: range.end } } : undefined,
+      where: { date: { gte: range.start, lt: range.end } },
       _count: { _all: true },
     }),
   ]);

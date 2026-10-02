@@ -2,6 +2,9 @@ import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { moduleForPath } from "@/lib/modules";
 import { authConfig } from "@/auth.config";
+import { PERIOD_COOKIE, PERIOD_FROM_COOKIE, PERIOD_TO_COOKIE, isPeriodKey } from "@/lib/periodOptions";
+
+const PERIOD_COOKIE_OPTS = { path: "/", maxAge: 60 * 60 * 24 * 30, sameSite: "lax" as const };
 
 // Deliberately a separate, edge-safe NextAuth instance (not the one from
 // @/auth) -- importing @/auth here would pull the full Prisma client and
@@ -53,7 +56,31 @@ export default auth((req) => {
   // token.
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-pathname", pathname);
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
+
+  // The single standard period control (src/lib/periodOptions.ts, src/
+  // components/PeriodBar.tsx) is a plain Link/form -- no client JS -- so the
+  // "last period picked carries over between pages" behavior (src/lib/
+  // period.ts resolvePeriod) is implemented here instead of per-component:
+  // whenever a request to a gated page carries a `period` query param, mirror
+  // it into a cookie so the next page without its own ?period= falls back to
+  // it. Only touched when `period` is actually present, so a plain nav never
+  // clears a previously chosen period.
+  const periodParam = req.nextUrl.searchParams.get("period");
+  if (isPeriodKey(periodParam)) {
+    res.cookies.set(PERIOD_COOKIE, periodParam, PERIOD_COOKIE_OPTS);
+    const from = req.nextUrl.searchParams.get("from");
+    const to = req.nextUrl.searchParams.get("to");
+    if (periodParam === "custom" && from && to) {
+      res.cookies.set(PERIOD_FROM_COOKIE, from, PERIOD_COOKIE_OPTS);
+      res.cookies.set(PERIOD_TO_COOKIE, to, PERIOD_COOKIE_OPTS);
+    } else {
+      res.cookies.delete(PERIOD_FROM_COOKIE);
+      res.cookies.delete(PERIOD_TO_COOKIE);
+    }
+  }
+
+  return res;
 });
 
 export const config = {

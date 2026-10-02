@@ -1,30 +1,26 @@
 import StatCard from "@/components/StatCard";
 import { formatRs } from "@/lib/format";
 import { getExpenseBreakdown } from "@/lib/reports/expenses";
-import type { PeriodKey } from "@/lib/reports/herd";
-import PeriodSelect from "./PeriodSelect";
+import { resolvePeriod } from "@/lib/period";
+import PeriodBar from "@/components/PeriodBar";
 
 export default async function ExpenseBreakdownPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
-  const period: PeriodKey = (["day", "week", "month", "year", "all"] as const).includes(params.period as PeriodKey)
-    ? (params.period as PeriodKey)
-    : "month";
+  const { period, from, to } = await resolvePeriod(params, "month");
 
-  const { total, categories } = await getExpenseBreakdown(period);
+  const { total, categories } = await getExpenseBreakdown(period, from, to);
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-semibold text-neutral-900">Expense Breakdown</h1>
-        <PeriodSelect period={period} />
-      </div>
+      <h1 className="text-2xl font-semibold text-neutral-900">Expense Breakdown</h1>
       <p className="text-sm text-neutral-500 max-w-2xl">
         Cash spent out, grouped by category — the same categories used on Cash Entry.
       </p>
+      <PeriodBar period={period} from={from} to={to} />
 
       <div className="max-w-xs">
         <StatCard label="Total Expense" value={formatRs(total)} />

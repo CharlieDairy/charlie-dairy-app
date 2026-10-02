@@ -1,19 +1,17 @@
 import StatCard from "@/components/StatCard";
 import { getAttendanceReport } from "@/lib/reports/team";
-import type { PeriodKey } from "@/lib/reports/herd";
-import PeriodSelect from "./PeriodSelect";
+import { resolvePeriod } from "@/lib/period";
+import PeriodBar from "@/components/PeriodBar";
 
 export default async function AttendanceReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
-  const period: PeriodKey = (["day", "week", "month", "year", "all"] as const).includes(params.period as PeriodKey)
-    ? (params.period as PeriodKey)
-    : "month";
+  const { period, from, to } = await resolvePeriod(params, "month");
 
-  const rows = await getAttendanceReport(period);
+  const rows = await getAttendanceReport(period, from, to);
 
   const totalPresent = rows.reduce((n, r) => n + r.present, 0);
   const totalAbsent = rows.reduce((n, r) => n + r.absent, 0);
@@ -24,10 +22,8 @@ export default async function AttendanceReportsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-semibold text-neutral-900">Attendance Reports</h1>
-        <PeriodSelect period={period} />
-      </div>
+      <h1 className="text-2xl font-semibold text-neutral-900">Attendance Reports</h1>
+      <PeriodBar period={period} from={from} to={to} />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Present (days)" value={totalPresent.toString()} />

@@ -31,8 +31,8 @@ async function getAvgSaleRate(): Promise<number> {
   return result._avg.rate ?? 0;
 }
 
-export async function getProductionReconciliation(period: PeriodKey = "all"): Promise<ReconciliationRow[]> {
-  const range = periodRange(period);
+export async function getProductionReconciliation(period: PeriodKey = "month", from?: string, to?: string): Promise<ReconciliationRow[]> {
+  const range = periodRange(period, new Date(), from, to);
 
   // Opening/closing balance needs the FULL history in chronological order --
   // a period filter only trims which rows are RETURNED below, never what's
@@ -85,14 +85,12 @@ export async function getProductionReconciliation(period: PeriodKey = "all"): Pr
     };
   });
 
-  // "All time" still caps what's displayed (same 60-row cap as before) --
-  // only the balance computation above needed the unbounded history.
-  const inPeriod = range
-    ? chronological.filter((r) => {
-        const d = new Date(`${r.date}T00:00:00.000Z`);
-        return d >= range.start && d < range.end;
-      })
-    : chronological.slice(-60);
+  // Only the balance computation above needed the unbounded history -- what's
+  // actually displayed is always trimmed to the selected period.
+  const inPeriod = chronological.filter((r) => {
+    const d = new Date(`${r.date}T00:00:00.000Z`);
+    return d >= range.start && d < range.end;
+  });
 
   return inPeriod.sort((a, b) => b.date.localeCompare(a.date));
 }

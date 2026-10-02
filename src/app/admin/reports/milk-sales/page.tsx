@@ -10,7 +10,7 @@ import { resolvePeriod } from "@/lib/period";
 import type { LedgerSaleRow } from "@/app/entry/milk-sale/MilkSalesLedger";
 import MilkSalesLedger from "@/app/entry/milk-sale/MilkSalesLedger";
 import WithdrawalWarningBanner from "@/components/WithdrawalWarningBanner";
-import PeriodSelect from "./PeriodSelect";
+import PeriodBar from "@/components/PeriodBar";
 import AddSaleToggle from "./AddSaleToggle";
 import RecordPaymentForm from "./RecordPaymentForm";
 
@@ -21,18 +21,18 @@ function fmtDate(d: Date): string {
 export default async function MilkSalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ buyer?: string; period?: string }>;
+  searchParams: Promise<{ buyer?: string; period?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
-  const period = await resolvePeriod(params.period, "all");
-  const range = periodRange(period);
+  const { period, from, to } = await resolvePeriod(params, "month");
+  const range = periodRange(period, new Date(), from, to);
 
   const [customers, buyers, sales, detail, activeWithdrawals] = await Promise.all([
     prisma.customer.findMany({ where: { active: true }, select: { name: true, agreedRate: true } }),
     getDistinctBuyers(),
     prisma.milkSale.findMany({
       where: {
-        ...(range ? { date: { gte: range.start, lt: range.end } } : {}),
+        date: { gte: range.start, lt: range.end },
         ...(params.buyer ? { buyer: params.buyer } : {}),
       },
       orderBy: { date: "desc" },
@@ -64,13 +64,12 @@ export default async function MilkSalesPage({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900">Milk Sales</h1>
-        <div className="flex items-center gap-2">
-          <PeriodSelect period={period} />
-          <a href="/api/bulk/export?type=milkSales" className="bg-neutral-800 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-neutral-900">
-            Download CSV
-          </a>
-        </div>
+        <a href="/api/bulk/export?type=milkSales" className="bg-neutral-800 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-neutral-900">
+          Download CSV
+        </a>
       </div>
+
+      <PeriodBar period={period} from={from} to={to} extraParams={params.buyer ? { buyer: params.buyer } : undefined} />
 
       {params.buyer && (
         <div className="flex items-center gap-3 text-sm bg-amber-50 border border-amber-200 rounded-md px-3 py-2">

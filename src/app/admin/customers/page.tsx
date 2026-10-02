@@ -4,19 +4,25 @@ import { formatRs } from "@/lib/format";
 import { getCustomersWithSales } from "@/lib/reports/milkSalesByCustomer";
 import { resolvePeriod } from "@/lib/period";
 import CustomersTable from "./CustomersTable";
-import FilterBar from "./FilterBar";
 import AddCustomerToggle from "./AddCustomerToggle";
+import PeriodBar from "@/components/PeriodBar";
+
+const STATUS_OPTIONS = [
+  { key: "active", label: "Active" },
+  { key: "hidden", label: "Hidden" },
+  { key: "all", label: "All" },
+];
 
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; period?: string }>;
+  searchParams: Promise<{ status?: string; period?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
   const status = params.status === "hidden" || params.status === "all" ? params.status : "active";
-  const period = await resolvePeriod(params.period, "month");
+  const { period, from, to } = await resolvePeriod(params, "month");
 
-  const all = await getCustomersWithSales(period);
+  const all = await getCustomersWithSales(period, from, to);
   const rows = status === "all" ? all : all.filter((c) => (status === "active" ? c.active : !c.active));
 
   const totalLitres = rows.reduce((n, r) => n + r.totalLitres, 0);
@@ -37,7 +43,20 @@ export default async function CustomersPage({
         name against Milk Sale Entry&apos;s buyer field — the agreed rate there auto-fills when it recognizes a customer.
       </p>
 
-      <FilterBar status={status} period={period} />
+      <div className="flex gap-1.5 flex-wrap">
+        {STATUS_OPTIONS.map((s) => (
+          <Link
+            key={s.key}
+            href={`?status=${s.key}&period=${period}`}
+            className={`text-xs rounded-full px-3 py-1.5 border ${
+              status === s.key ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-neutral-100"
+            }`}
+          >
+            {s.label}
+          </Link>
+        ))}
+      </div>
+      <PeriodBar period={period} from={from} to={to} extraParams={{ status }} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
         <StatCard label="Customers" value={rows.length.toString()} />

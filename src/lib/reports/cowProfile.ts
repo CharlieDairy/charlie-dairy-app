@@ -1,11 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { periodRange, type PeriodKey } from "@/lib/reports/herd";
 
-// "all" has no natural cutoff for a per-day chart, so it falls back to the
-// same lookback the fixed 180-day lactation curve always used.
-const ALL_TIME_LOOKBACK_DAYS = 180;
-
-export async function getCowProfile(id: string, period: PeriodKey = "month") {
+export async function getCowProfile(id: string, period: PeriodKey = "month", from?: string, to?: string) {
   const cow = await prisma.cow.findUnique({
     where: { id },
     include: {
@@ -58,10 +54,7 @@ export async function getCowProfile(id: string, period: PeriodKey = "month") {
   // stacked bar chart and the daily table (Morning/Afternoon/Evening + avg),
   // the way Channab's per-animal milking log shows a full day at a glance
   // instead of a flat list of the most recent shift entries.
-  const range = periodRange(period) ?? {
-    start: new Date(Date.now() - ALL_TIME_LOOKBACK_DAYS * 86_400_000),
-    end: new Date(Date.now() + 86_400_000),
-  };
+  const range = periodRange(period, new Date(), from, to);
   const shiftRows = await prisma.$queryRaw<{ date: Date; shift: string; litres: number }[]>`
     SELECT date, shift, CAST(litres AS REAL) as litres
     FROM "MilkingRecord"

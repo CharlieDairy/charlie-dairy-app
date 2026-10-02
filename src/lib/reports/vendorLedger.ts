@@ -12,14 +12,14 @@ export type VendorSpendSummary = {
 // convention as Customer/MilkSale.buyer) -- so a vendor's spend history
 // exists the moment a matching party name appears in the cash ledger,
 // nothing needs to be re-entered.
-export async function getVendorSpendSummary(period: PeriodKey = "all"): Promise<VendorSpendSummary[]> {
-  const range = periodRange(period);
+export async function getVendorSpendSummary(period: PeriodKey = "month", from?: string, to?: string): Promise<VendorSpendSummary[]> {
+  const range = periodRange(period, new Date(), from, to);
   const rows = await prisma.cashTransaction.groupBy({
     by: ["party"],
     where: {
       amountOut: { gt: 0 },
       party: { not: null },
-      ...(range ? { date: { gte: range.start, lt: range.end } } : {}),
+      date: { gte: range.start, lt: range.end },
     },
     _sum: { amountOut: true },
     _count: { _all: true },
@@ -48,10 +48,10 @@ export type VendorWithSpend = {
   lastTxnDate: Date | null;
 };
 
-export async function getVendorsWithSpend(period: PeriodKey = "all"): Promise<VendorWithSpend[]> {
+export async function getVendorsWithSpend(period: PeriodKey = "month", from?: string, to?: string): Promise<VendorWithSpend[]> {
   const [vendors, spend] = await Promise.all([
     prisma.vendor.findMany({ orderBy: { name: "asc" } }),
-    getVendorSpendSummary(period),
+    getVendorSpendSummary(period, from, to),
   ]);
   const spendMap = new Map(spend.map((s) => [s.vendor.toLowerCase(), s]));
 

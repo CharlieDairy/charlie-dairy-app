@@ -4,11 +4,11 @@ import { periodRange, type PeriodKey } from "./herd";
 export type ExpenseCategoryRow = { category: string; amount: number; pctOfTotal: number };
 export type ExpenseBreakdown = { total: number; categories: ExpenseCategoryRow[] };
 
-export async function getExpenseBreakdown(period: PeriodKey = "month"): Promise<ExpenseBreakdown> {
-  const range = periodRange(period);
+export async function getExpenseBreakdown(period: PeriodKey = "month", from?: string, to?: string): Promise<ExpenseBreakdown> {
+  const range = periodRange(period, new Date(), from, to);
   const rows = await prisma.cashTransaction.groupBy({
     by: ["category"],
-    where: range ? { date: { gte: range.start, lt: range.end } } : undefined,
+    where: { date: { gte: range.start, lt: range.end } },
     _sum: { amountOut: true },
   });
 

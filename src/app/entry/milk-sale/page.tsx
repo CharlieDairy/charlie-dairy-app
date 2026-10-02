@@ -10,16 +10,16 @@ import WithdrawalWarningBanner from "@/components/WithdrawalWarningBanner";
 import MilkSaleForm from "./MilkSaleForm";
 import MilkSalesLedger, { type LedgerSaleRow } from "./MilkSalesLedger";
 import { formatRs } from "@/lib/format";
-import PeriodPills from "@/components/PeriodPills";
+import PeriodBar from "@/components/PeriodBar";
 
 export default async function MilkSaleEntryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
-  const period = await resolvePeriod(params.period, "week");
-  const range = periodRange(period);
+  const { period, from, to } = await resolvePeriod(params, "week");
+  const range = periodRange(period, new Date(), from, to);
 
   const [rows, customers, balance, sales, activeWithdrawals, todayReconciliation, customerBalances] = await Promise.all([
     prisma.milkSale.findMany({
@@ -30,13 +30,13 @@ export default async function MilkSaleEntryPage({
     prisma.customer.findMany({ where: { active: true }, select: { name: true, agreedRate: true } }),
     getTodaysSellableBalance(),
     prisma.milkSale.findMany({
-      where: range ? { date: { gte: range.start, lt: range.end } } : undefined,
+      where: { date: { gte: range.start, lt: range.end } },
       orderBy: { date: "desc" },
       select: { id: true, date: true, buyer: true, shift: true, litres: true, rate: true, amount: true },
     }),
     getActiveWithdrawals(),
     getProductionReconciliation("day"),
-    getCustomerSalesSummary("all"),
+    getCustomerSalesSummary("month"),
   ]);
   const todayRow = todayReconciliation[0];
   const outstandingCustomers = customerBalances.filter((c) => c.outstandingBalance > 0.5).slice(0, 8);
@@ -97,7 +97,7 @@ export default async function MilkSaleEntryPage({
 
       <div className="flex items-center justify-between flex-wrap gap-3 mt-4">
         <h2 className="text-sm font-semibold text-neutral-700">Recent Sales</h2>
-        <PeriodPills period={period} />
+        <PeriodBar period={period} from={from} to={to} />
       </div>
       <div className="grid grid-cols-2 gap-3 max-w-md">
         <StatCard label="Litres Sold" value={totalLitres.toLocaleString()} />

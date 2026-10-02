@@ -4,17 +4,13 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import DataTable, { type DataTableColumn } from "@/components/DataTable";
 import type { HerdRow, PeriodKey } from "@/lib/reports/herd";
+import { PERIOD_OPTIONS } from "@/lib/periodOptions";
 import { deleteMilkProductionForCows, type BulkDeleteState } from "./actions";
 
-const PERIOD_LABELS: Record<PeriodKey, string> = {
-  day: "Today",
-  week: "This Week",
-  month: "This Month",
-  year: "This Year",
-  all: "All Time",
-};
+const PERIOD_LABELS: Record<PeriodKey, string> = Object.fromEntries(PERIOD_OPTIONS.map((p) => [p.key, p.label])) as Record<PeriodKey, string>;
+PERIOD_LABELS.custom = "the custom range";
 
-export default function MilkProductionTable({ rows, isAdmin = false, period }: { rows: HerdRow[]; isAdmin?: boolean; period: PeriodKey }) {
+export default function MilkProductionTable({ rows, isAdmin = false, period, from, to }: { rows: HerdRow[]; isAdmin?: boolean; period: PeriodKey; from?: string; to?: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [state, formAction, isPending] = useActionState<BulkDeleteState, FormData>(deleteMilkProductionForCows, undefined);
@@ -95,6 +91,8 @@ export default function MilkProductionTable({ rows, isAdmin = false, period }: {
           className="flex items-center gap-3"
         >
           <input type="hidden" name="period" value={period} />
+          {from && <input type="hidden" name="from" value={from} />}
+          {to && <input type="hidden" name="to" value={to} />}
           {Array.from(selected).map((id) => (
             <input key={id} type="hidden" name="cowIds" value={id} />
           ))}

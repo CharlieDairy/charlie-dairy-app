@@ -12,17 +12,16 @@ export type CustomerSalesSummary = {
   avgRate: number | null;
 };
 
-export async function getCustomerSalesSummary(period: PeriodKey = "all"): Promise<CustomerSalesSummary[]> {
-  const range = periodRange(period);
-  const dateFilter = range ? { gte: range.start, lt: range.end } : undefined;
+export async function getCustomerSalesSummary(period: PeriodKey = "month", from?: string, to?: string): Promise<CustomerSalesSummary[]> {
+  const range = periodRange(period, new Date(), from, to);
+  const dateFilter = { gte: range.start, lt: range.end };
 
-  const [sales, pricedSales, lifetimeSales, payments] = await Promise.all([
+  const [periodSales, pricedSales, lifetimeSales, payments] = await Promise.all([
     prisma.milkSale.groupBy({
       by: ["buyer"],
-      where: dateFilter ? { date: dateFilter } : undefined,
+      where: { date: dateFilter },
       _sum: { litres: true, amount: true },
       _count: { _all: true },
-      _max: { date: true },
     }),
     // Avg rate must come from the SAME subset of rows for both amount and
     // litres. Some backfilled historical rows have real revenue but
@@ -33,41 +32,50 @@ export async function getCustomerSalesSummary(period: PeriodKey = "all"): Promis
     // this shipped (an "Avg Rate: Rs 2816/L" for milk is obviously wrong).
     prisma.milkSale.groupBy({
       by: ["buyer"],
-      where: { litres: { gt: 0 }, ...(dateFilter ? { date: dateFilter } : {}) },
+      where: { litres: { gt: 0 }, date: dateFilter },
       _sum: { litres: true, amount: true },
     }),
-    // Outstanding balance is a lifetime debt figure, not "owed for this
-    // period" -- it needs lifetime sales regardless of which period the
-    // Sales/Revenue columns are currently scoped to (matches Channab: its
-    // Balance column doesn't move when you switch the period filter).
-    dateFilter ? prisma.milkSale.groupBy({ by: ["buyer"], _sum: { amount: true } }) : null,
+    // Always the FULL lifetime list, never date-filtered -- outstandingBalance
+    // is a lifetime debt figure, not "owed for this period" (matches Channab:
+    // its Balance column doesn't move when you switch the period filter).
+    // Previously this was only fetched when a period filter was active, and
+    // the returned rows were built by mapping over the PERIOD-scoped `sales`
+    // query above -- so a buyer with a real lifetime balance but no sale
+    // inside the selected period (e.g. "This Month" when their last sale was
+    // last month) vanished from the result entirely instead of showing their
+    // real balance. The union below fixes that.
+    prisma.milkSale.groupBy({ by: ["buyer"], _sum: { amount: true }, _max: { date: true } }),
     prisma.customerPayment.groupBy({
       by: ["buyer"],
       _sum: { amount: true },
     }),
   ]);
 
-  const paidMap = new Map(payments.map((p) => [p.buyer, p._sum.amount ?? 0]));
+  const periodMap = new Map(periodSales.map((s) => [s.buyer, s]));
   const pricedMap = new Map(pricedSales.map((p) => [p.buyer, { litres: p._sum.litres ?? 0, amount: p._sum.amount ?? 0 }]));
-  const lifetimeAmountMap = lifetimeSales
-    ? new Map(lifetimeSales.map((s) => [s.buyer, s._sum.amount ?? 0]))
-    : null;
+  const lifetimeMap = new Map(lifetimeSales.map((s) => [s.buyer, s]));
+  const paidMap = new Map(payments.map((p) => [p.buyer, p._sum.amount ?? 0]));
 
-  return sales
-    .map((s) => {
-      const totalLitres = s._sum.litres ?? 0;
-      const totalSaleAmount = s._sum.amount ?? 0;
-      const totalPaid = paidMap.get(s.buyer) ?? 0;
-      const priced = pricedMap.get(s.buyer);
-      const lifetimeAmount = lifetimeAmountMap ? lifetimeAmountMap.get(s.buyer) ?? 0 : totalSaleAmount;
+  // Union of every buyer with a lifetime sale or a payment on file -- a
+  // buyer with zero sales in the selected period but a real lifetime
+  // balance must still appear, not just buyers active within the period.
+  const allBuyers = new Set<string>([...lifetimeMap.keys(), ...paidMap.keys()]);
+
+  return Array.from(allBuyers)
+    .map((buyer) => {
+      const period = periodMap.get(buyer);
+      const lifetime = lifetimeMap.get(buyer);
+      const priced = pricedMap.get(buyer);
+      const totalPaid = paidMap.get(buyer) ?? 0;
+      const lifetimeAmount = lifetime?._sum.amount ?? 0;
       return {
-        buyer: s.buyer,
-        totalLitres,
-        totalSaleAmount,
+        buyer,
+        totalLitres: period?._sum.litres ?? 0,
+        totalSaleAmount: period?._sum.amount ?? 0,
         totalPaid,
         outstandingBalance: lifetimeAmount - totalPaid,
-        saleCount: s._count._all,
-        lastSaleDate: s._max.date,
+        saleCount: period?._count._all ?? 0,
+        lastSaleDate: lifetime?._max.date ?? null,
         avgRate: priced && priced.litres > 0 ? priced.amount / priced.litres : null,
       };
     })
@@ -179,10 +187,10 @@ export async function getArAging(asOf: Date = new Date()): Promise<ArAgingRow[]>
   return rows.sort((a, b) => b.total - a.total);
 }
 
-export async function getCustomersWithSales(period: PeriodKey = "all"): Promise<CustomerWithSales[]> {
+export async function getCustomersWithSales(period: PeriodKey = "month", from?: string, to?: string): Promise<CustomerWithSales[]> {
   const [customers, sales] = await Promise.all([
     prisma.customer.findMany({ orderBy: { name: "asc" } }),
-    getCustomerSalesSummary(period),
+    getCustomerSalesSummary(period, from, to),
   ]);
   const salesMap = new Map(sales.map((s) => [s.buyer.toLowerCase(), s]));
 

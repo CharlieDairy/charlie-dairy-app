@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getCowProfile } from "@/lib/reports/cowProfile";
 import { getLabelMap, labelFor } from "@/lib/masterData";
 import { prisma } from "@/lib/prisma";
-import type { PeriodKey } from "@/lib/reports/herd";
+import { resolvePeriod } from "@/lib/period";
 import { getCowScore, type ScoreCategory } from "@/lib/reports/scoring";
 import CowEditForm from "../CowEditForm";
 import WeightForm from "../WeightForm";
@@ -11,7 +11,7 @@ import MovementForm from "../MovementForm";
 import LactationChart from "../LactationChart";
 import WeightChart from "../WeightChart";
 import CowCustomFieldsForm from "../CowCustomFieldsForm";
-import PeriodSelect from "./PeriodSelect";
+import PeriodBar from "@/components/PeriodBar";
 
 // This page's Milking Summary reads the "period" search param on every
 // request (day/week/month/year/all) -- force-dynamic guarantees a fresh
@@ -43,14 +43,13 @@ export default async function CowProfilePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ period?: string; edit?: string }>;
+  searchParams: Promise<{ period?: string; from?: string; to?: string; edit?: string }>;
 }) {
   const { id } = await params;
-  const { period: periodParam, edit } = await searchParams;
-  const period: PeriodKey = (["day", "week", "month", "year", "all"] as const).includes(periodParam as PeriodKey)
-    ? (periodParam as PeriodKey)
-    : "month";
-  const profile = await getCowProfile(id, period);
+  const searchParamsResolved = await searchParams;
+  const { edit } = searchParamsResolved;
+  const { period, from, to } = await resolvePeriod(searchParamsResolved, "month");
+  const profile = await getCowProfile(id, period, from, to);
   if (!profile) notFound();
   const { cow, milking, dailyBreakdown, customFields, health } = profile;
 
@@ -301,9 +300,9 @@ export default async function CowProfilePage({
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+        <div className="flex flex-col gap-2 mb-1">
           <h2 className="font-semibold text-neutral-900">Milking Summary</h2>
-          <PeriodSelect period={period} />
+          <PeriodBar period={period} from={from} to={to} />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mt-2">
           <div><span className="text-neutral-500">Total Litres:</span> {milking.totalLitres.toLocaleString()} L</div>
