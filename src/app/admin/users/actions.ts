@@ -8,8 +8,10 @@ import { requireAccess, requirePermission, runAction } from "@/lib/access";
 import { AccessError, ValidationError } from "@/lib/errors";
 import { reqText, reqEnum, reqId, optId, optText } from "@/lib/validate";
 import { PERMISSION_ACTIONS, PERMISSION_MODULES } from "@/lib/permissions";
+import { randomBytes } from "node:crypto";
+import { issuePasswordToken, passwordLink, INVITE_HOURS, RESET_HOURS } from "@/lib/passwordTokens";
 
-export type FormState = { success: boolean; message: string } | undefined;
+export type FormState = { success: boolean; message: string; link?: string } | undefined;
 
 const ROLES = ["ADMIN", "ENTRY"] as const;
 
@@ -31,25 +33,20 @@ export async function createUser(_prev: FormState, formData: FormData): Promise<
   return runAction(() => createUserImpl(formData));
 }
 
+// The app is invite-only: only an Admin creates an account, and the person
+// sets their own password by opening a one-time link the Admin shares. No
+// password is ever typed in by (or known to) the Admin.
 async function createUserImpl(formData: FormData): Promise<FormState> {
-  const caller = await requirePermission("admin", "CREATE");
+  await requireAccess({ admin: true });
 
   const name = reqText(formData, "name", "Name", { max: 100 });
   const username = reqText(formData, "username", "Username", { max: 32 });
   const role = reqEnum(formData, "role", "Role", ROLES);
-  const password = formData.get("password");
   const accessRoleId = optId(formData, "accessRoleId", "Role");
 
-  if (role === "ADMIN" && caller.role !== "ADMIN") {
-    throw new AccessError("Only an Admin can create another Admin account.");
-  }
   if (!isValidUsername(username)) {
     return { success: false, message: "Username must be 3-32 characters: letters, numbers, dots, dashes or underscores." };
   }
-  if (typeof password !== "string" || password.length < 8) {
-    return { success: false, message: "Password must be at least 8 characters." };
-  }
-  if (password.length > 128) return { success: false, message: "Password must be 128 characters or fewer." };
 
   const existing = await prisma.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } } });
   if (existing) {
@@ -61,13 +58,39 @@ async function createUserImpl(formData: FormData): Promise<FormState> {
     if (!role_) return { success: false, message: "Role not found." };
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.create({
+  // A random, never-disclosed password until they set their own via the link.
+  const passwordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 10);
+  const user = await prisma.user.create({
     data: { name, username, passwordHash, role, accessRoleId: role === "ADMIN" ? null : accessRoleId },
   });
 
+  const link = await passwordLink(await issuePasswordToken(user.id, "INVITE"));
   revalidatePath("/admin/users");
-  return { success: true, message: `User "${username}" created.` };
+  return {
+    success: true,
+    message: `Invite created for "${username}". Send them this link — it works once and expires in ${INVITE_HOURS} hours:`,
+    link,
+  };
+}
+
+// New one-time link for someone who forgot their password (or whose invite
+// expired). Admin only; replaces any earlier unused link for that person.
+export async function createResetLink(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => createResetLinkImpl(formData));
+}
+
+async function createResetLinkImpl(formData: FormData): Promise<FormState> {
+  await requireAccess({ admin: true });
+  const userId = reqId(formData, "userId", "User");
+
+  const target = await prisma.user.findUnique({ where: { id: userId }, select: { username: true, active: true } });
+  if (!target) return { success: false, message: "User not found." };
+  if (!target.active) return { success: false, message: "That account is deactivated. Reactivate it first." };
+
+  const link = await passwordLink(await issuePasswordToken(userId, "RESET"));
+  await prisma.user.update({ where: { id: userId }, data: { resetRequestedAt: null } });
+  revalidatePath("/admin/users");
+  return { success: true, message: `Reset link for ${target.username} (works once, expires in ${RESET_HOURS} hours):`, link };
 }
 
 export async function setUserRole(formData: FormData): Promise<void> {

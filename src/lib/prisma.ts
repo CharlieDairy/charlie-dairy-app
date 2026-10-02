@@ -7,7 +7,7 @@ import { after } from "next/server";
 // covered by construction, not by convention.
 const WRITE_OPS = new Set(["create", "update", "upsert", "delete", "createMany", "updateMany", "deleteMany"]);
 const BULK_OPS = new Set(["createMany", "updateMany", "deleteMany"]);
-const SENSITIVE_KEYS = new Set(["passwordHash"]);
+const SENSITIVE_KEYS = new Set(["passwordHash", "tokenHash"]);
 
 function redact(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { authenticate } from "./actions";
 
@@ -45,6 +46,9 @@ export default function LoginForm() {
       >
         {isPending ? "Signing in..." : "Sign in"}
       </button>
+      <Link href="/forgot-password" className="text-sm text-neutral-500 underline text-center">
+        Forgot password?
+      </Link>
     </form>
   );
 }

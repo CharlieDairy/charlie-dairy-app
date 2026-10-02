@@ -23,6 +23,28 @@ model User {
 
   accessRoleId String?
   accessRole   AccessRole? @relation(fields: [accessRoleId], references: [id])
+
+  // Set when the user used "Forgot password?" on the login page, so an Admin
+  // sees the request on Users & Access and can issue a reset link.
+  resetRequestedAt DateTime?
+  passwordTokens   PasswordToken[]
+}
+
+// One-time invite / password-reset links. The app is invite-only: only an
+// Admin creates users, and a user sets their own password by opening a link
+// the Admin shares (no email service in this app). Only a SHA-256 hash of
+// the token is stored, so a database read can't be turned into a login.
+model PasswordToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  purpose   String // "INVITE" | "RESET"
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 enum PermissionAction {
