@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requirePermission, runAction } from "@/lib/access";
+import { requireAccess, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqId, reqText, optText, optNum } from "@/lib/validate";
 
@@ -24,7 +24,10 @@ export async function addCustomer(_prev: FormState, formData: FormData): Promise
 }
 
 async function addCustomerImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("milk", "CREATE");
+  // Only an Admin can create a customer -- the agreed rate set here becomes
+  // the fixed, non-negotiable rate the Milk Sale Entry form uses, so letting
+  // any role mint new customers (and rates) would bypass that control entirely.
+  await requireAccess({ admin: true });
   const data = readCustomer(formData);
 
   const existing = await prisma.customer.findFirst({ where: { name: { equals: data.name, mode: "insensitive" } } });
@@ -42,7 +45,7 @@ export async function updateCustomer(_prev: FormState, formData: FormData): Prom
 }
 
 async function updateCustomerImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("milk", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Customer");
   const data = readCustomer(formData);
 
@@ -89,7 +92,7 @@ async function updateCustomerImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleCustomerActive(formData: FormData): Promise<void> {
-  await requirePermission("milk", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Customer");
   const active = formData.get("active") === "true";
   await prisma.customer.updateMany({ where: { id }, data: { active } });
@@ -105,7 +108,7 @@ export async function deleteCustomer(_prev: FormState, formData: FormData): Prom
 }
 
 async function deleteCustomerImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("milk", "DELETE");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Customer");
 
   const customer = await prisma.customer.findUnique({ where: { id } });

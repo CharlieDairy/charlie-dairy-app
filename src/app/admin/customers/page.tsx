@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import StatCard from "@/components/StatCard";
 import { formatRs } from "@/lib/format";
 import { getCustomersWithSales } from "@/lib/reports/milkSalesByCustomer";
@@ -22,6 +23,9 @@ export default async function CustomersPage({
   const status = params.status === "hidden" || params.status === "all" ? params.status : "active";
   const { period, from, to } = await resolvePeriod(params, "month");
 
+  const session = await auth();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
+
   const all = await getCustomersWithSales(period, from, to);
   const rows = status === "all" ? all : all.filter((c) => (status === "active" ? c.active : !c.active));
 
@@ -34,13 +38,14 @@ export default async function CustomersPage({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900">Customers</h1>
         <div className="flex items-center gap-3">
-          <Link href="/entry/milk-sale" className="text-sm text-primary underline">+ Add Sale</Link>
-          <AddCustomerToggle />
+          <Link href="/entry/milk-sale" className="text-sm text-primary underline">+ Record a Sale</Link>
+          {isAdmin && <AddCustomerToggle />}
         </div>
       </div>
       <p className="text-sm text-neutral-500 max-w-2xl">
         Milk buyers with contact details, payment terms, agreed rate and their sales summary in one place. Matched by
-        name against Milk Sale Entry&apos;s buyer field — the agreed rate there auto-fills when it recognizes a customer.
+        name against Milk Sale Entry&apos;s buyer field. Only an Admin can add a customer or change their agreed rate —
+        that rate is the fixed price Milk Sale Entry uses, so every sale is priced exactly as approved.
       </p>
 
       <div className="flex gap-1.5 flex-wrap">
@@ -64,7 +69,7 @@ export default async function CustomersPage({
         <StatCard label="Outstanding" value={formatRs(totalOutstanding)} tone={totalOutstanding > 0 ? "negative" : "positive"} />
       </div>
 
-      <CustomersTable rows={rows} />
+      <CustomersTable rows={rows} isAdmin={isAdmin} />
     </div>
   );
 }

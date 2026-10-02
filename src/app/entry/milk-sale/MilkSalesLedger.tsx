@@ -1,13 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { formatRs } from "@/lib/format";
 import { updateMilkSale, deleteMilkSale, type FormState } from "./actions";
+import type { CustomerOption } from "./MilkSaleForm";
 
 export type LedgerSaleRow = {
   id: string;
   date: string; // ISO date, yyyy-mm-dd
   buyer: string;
+  customerId: string | null;
   shift: "MORNING" | "AFTERNOON" | "EVENING" | null;
   litres: number;
   rate: number | null;
@@ -30,7 +33,19 @@ function DeleteButton({ id }: { id: string }) {
   );
 }
 
-function EditRow({ sale, onCancel, colSpan, showSessions }: { sale: LedgerSaleRow; onCancel: () => void; colSpan: number; showSessions: boolean }) {
+function EditRow({
+  sale,
+  customers,
+  onCancel,
+  colSpan,
+  showSessions,
+}: {
+  sale: LedgerSaleRow;
+  customers: CustomerOption[];
+  onCancel: () => void;
+  colSpan: number;
+  showSessions: boolean;
+}) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(updateMilkSale, undefined);
 
   if (state?.success) onCancel();
@@ -62,21 +77,18 @@ function EditRow({ sale, onCancel, colSpan, showSessions }: { sale: LedgerSaleRo
             <input name="date" type="date" defaultValue={sale.date} required className="border border-neutral-300 rounded px-2 py-1 text-sm" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-neutral-500">Buyer</label>
-            <input name="buyer" defaultValue={sale.buyer} required className="border border-neutral-300 rounded px-2 py-1 text-sm" />
+            <label className="text-xs text-neutral-500">Customer</label>
+            <select name="buyer" defaultValue={sale.buyer} required className="border border-neutral-300 rounded px-2 py-1 text-sm">
+              {customers.map((c) => (
+                <option key={c.id} value={c.name}>{c.name}</option>
+              ))}
+            </select>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-neutral-500">Litres</label>
             <input name="litres" type="number" step="0.1" min="0" defaultValue={sale.litres} required className="border border-neutral-300 rounded px-2 py-1 text-sm w-24" />
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-neutral-500">Rate</label>
-            <input name="rate" type="number" step="0.01" min="0" defaultValue={sale.rate ?? ""} className="border border-neutral-300 rounded px-2 py-1 text-sm w-24" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-neutral-500">Amount</label>
-            <input name="amount" type="number" step="1" min="0" defaultValue={sale.amount} className="border border-neutral-300 rounded px-2 py-1 text-sm w-28" />
-          </div>
+          <span className="text-xs text-neutral-400 pb-1.5">Rate and amount are recomputed from the customer&apos;s current agreed rate on save.</span>
           <button type="submit" disabled={isPending} className="bg-green-700 text-white rounded px-3 py-1.5 text-xs font-medium disabled:opacity-60">
             {isPending ? "Saving…" : "Save"}
           </button>
@@ -94,7 +106,17 @@ function shiftLitres(s: LedgerSaleRow, shift: "MORNING" | "AFTERNOON" | "EVENING
   return s.shift === shift ? s.litres.toFixed(1) : "0.0";
 }
 
-export default function MilkSalesLedger({ sales, showSessions = false }: { sales: LedgerSaleRow[]; showSessions?: boolean }) {
+export default function MilkSalesLedger({
+  sales,
+  showSessions = false,
+  customers = [],
+  isAdmin = false,
+}: {
+  sales: LedgerSaleRow[];
+  showSessions?: boolean;
+  customers?: CustomerOption[];
+  isAdmin?: boolean;
+}) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const colCount = showSessions ? 9 : 6;
 
@@ -117,17 +139,25 @@ export default function MilkSalesLedger({ sales, showSessions = false }: { sales
             )}
             <th className="text-right px-3 py-2">Rate</th>
             <th className="text-right px-3 py-2">Amount</th>
-            <th className="text-left px-3 py-2">Actions</th>
+            {isAdmin && <th className="text-left px-3 py-2">Actions</th>}
           </tr>
         </thead>
         <tbody>
           {sales.map((s) =>
             editingId === s.id ? (
-              <EditRow key={s.id} sale={s} onCancel={() => setEditingId(null)} colSpan={colCount} showSessions={showSessions} />
+              <EditRow key={s.id} sale={s} customers={customers} onCancel={() => setEditingId(null)} colSpan={colCount} showSessions={showSessions} />
             ) : (
               <tr key={s.id} className="border-t border-neutral-100">
                 <td className="px-3 py-2">{s.date}</td>
-                <td className="px-3 py-2 font-medium">{s.buyer}</td>
+                <td className="px-3 py-2 font-medium">
+                  {s.customerId ? (
+                    <Link href={`/admin/customers/${s.customerId}`} className="text-primary hover:underline">
+                      {s.buyer}
+                    </Link>
+                  ) : (
+                    s.buyer
+                  )}
+                </td>
                 {showSessions ? (
                   <>
                     <td className="px-3 py-2 text-right">{shiftLitres(s, "MORNING")}</td>
@@ -140,20 +170,22 @@ export default function MilkSalesLedger({ sales, showSessions = false }: { sales
                 )}
                 <td className="px-3 py-2 text-right">{s.rate !== null ? `Rs ${s.rate.toFixed(2)}` : "—"}</td>
                 <td className="px-3 py-2 text-right">{formatRs(s.amount)}</td>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setEditingId(s.id)} className="text-xs rounded px-2 py-1 border border-neutral-300 text-neutral-700 hover:bg-neutral-100">
-                      Edit
-                    </button>
-                    <DeleteButton id={s.id} />
-                  </div>
-                </td>
+                {isAdmin && (
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setEditingId(s.id)} className="text-xs rounded px-2 py-1 border border-neutral-300 text-neutral-700 hover:bg-neutral-100">
+                        Edit
+                      </button>
+                      <DeleteButton id={s.id} />
+                    </div>
+                  </td>
+                )}
               </tr>
             )
           )}
           {sales.length === 0 && (
             <tr>
-              <td colSpan={colCount} className="px-3 py-6 text-center text-neutral-400">No sales recorded in this period.</td>
+              <td colSpan={isAdmin ? colCount : colCount - 1} className="px-3 py-6 text-center text-neutral-400">No sales recorded in this period.</td>
             </tr>
           )}
         </tbody>

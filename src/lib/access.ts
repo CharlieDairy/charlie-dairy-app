@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AccessError, ValidationError } from "@/lib/errors";
 import { permKey, type PermissionActionKey, type PermissionModuleKey } from "@/lib/permissions";
+import { farmDateKey } from "@/lib/reports/dashboardMetrics";
 
 // ---------------------------------------------------------------------------
 // Live authorization for server actions.
@@ -82,6 +83,20 @@ export async function requireAccess(rule: AccessRule = {}): Promise<LiveUser> {
   if (!user) throw new AccessError("Your session has expired or your account is disabled. Please sign in again.");
   if (rule.admin && user.role !== "ADMIN") throw new AccessError("Only an Admin can do that.");
   return user;
+}
+
+/**
+ * Non-Admin roles may only add information with today's date (farm-local,
+ * Asia/Karachi) -- a past date on a new entry is an Admin-only override.
+ * Admin is always exempt. Call this after reading a `date` field in any
+ * CREATE action a non-Admin role can reach.
+ */
+export function assertNotBackdated(date: Date, user: LiveUser, label = "Date"): void {
+  if (user.role === "ADMIN") return;
+  const entryKey = date.toISOString().slice(0, 10);
+  if (entryKey < farmDateKey()) {
+    throw new ValidationError(`${label} can't be backdated. Only an Admin can enter a past date.`);
+  }
 }
 
 // ---------------------------------------------------------------------------

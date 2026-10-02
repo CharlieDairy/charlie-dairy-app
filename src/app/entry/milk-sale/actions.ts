@@ -1,9 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission, runAction } from "@/lib/access";
+import { requirePermission, requireAccess, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
-import { reqDate, reqId, reqNum, reqText, optEnum, optNum, SHIFTS } from "@/lib/validate";
+import { reqDate, reqId, reqNum, reqText, optEnum, SHIFTS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
 
 export type FormState = { success: boolean; message: string } | undefined;
@@ -13,39 +13,49 @@ type SaleFields = {
   buyer: string;
   shift: (typeof SHIFTS)[number] | null;
   litres: number;
-  rate: number | null;
+  rate: number;
   amount: number;
 };
+
+function refresh() {
+  revalidatePath("/entry/milk-sale");
+  revalidatePath("/admin/reports/milk-sales");
+  revalidatePath("/admin/customers");
+  revalidatePath("/admin/reports/reconciliation");
+}
+
+// The customer's agreed rate is the ONLY source of truth for what a sale is
+// priced at -- it's managed on the Customers page (Admin-only), not typed in
+// on the sale itself, so a sale can never be recorded at a rate nobody
+// approved. Buyer must match a real, active Customer; free-text buyers are
+// no longer accepted here (Milk Sale Entry is now the only place milk
+// disposition gets recorded, so every "buyer" is either a real customer or
+// an internal-use entry on the same page, never an ad hoc name).
+async function resolveCustomer(buyerName: string) {
+  const customer = await prisma.customer.findFirst({
+    where: { name: { equals: buyerName, mode: "insensitive" } },
+    select: { id: true, name: true, agreedRate: true, active: true },
+  });
+  if (!customer) throw new ValidationError("Select a registered customer — that name isn't in the Customers list.");
+  if (!customer.active) throw new ValidationError(`"${customer.name}" is hidden. Reactivate them on the Customers page first.`);
+  if (customer.agreedRate === null) {
+    throw new ValidationError(`"${customer.name}" has no agreed rate set. Add one on the Customers page before recording a sale.`);
+  }
+  return customer as { id: string; name: string; agreedRate: number; active: boolean };
+}
 
 // Shared by create and update so both apply the exact same rules.
 async function readSale(formData: FormData): Promise<SaleFields> {
   const date = reqDate(formData, "date", "Date");
-  const typedBuyer = reqText(formData, "buyer", "Buyer", { max: 100 });
+  const typedBuyer = reqText(formData, "buyer", "Customer", { max: 100 });
   const shift = optEnum(formData, "shift", "Shift", SHIFTS);
   const litres = reqNum(formData, "litres", "Litres", { positive: true, max: 100_000 });
-  const rate = optNum(formData, "rate", "Rate", { positive: true, max: 10_000 });
-  let amount = optNum(formData, "amount", "Amount", { max: 1_000_000_000 });
 
-  if (amount === null) {
-    if (rate === null) throw new ValidationError("Enter either a rate or an amount.");
-    amount = Math.round(rate * litres * 100) / 100;
-  } else if (rate !== null) {
-    // Catches the classic extra-zero typo without blocking small negotiated rounding.
-    const expected = rate * litres;
-    if (Math.abs(amount - expected) > Math.max(5, expected * 0.05)) {
-      throw new ValidationError(
-        `Amount (Rs ${amount.toLocaleString("en-PK")}) doesn't match litres × rate (Rs ${Math.round(expected).toLocaleString("en-PK")}). Please check.`
-      );
-    }
-  }
+  const customer = await resolveCustomer(typedBuyer);
+  const rate = customer.agreedRate;
+  const amount = Math.round(rate * litres * 100) / 100;
 
-  // Use the customer's canonical spelling so reports don't split one buyer into two.
-  const customer = await prisma.customer.findFirst({
-    where: { name: { equals: typedBuyer, mode: "insensitive" } },
-    select: { name: true },
-  });
-
-  return { date, buyer: customer?.name ?? typedBuyer, shift, litres, rate, amount };
+  return { date, buyer: customer.name, shift, litres, rate, amount };
 }
 
 export async function submitMilkSale(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -55,6 +65,7 @@ export async function submitMilkSale(_prev: FormState, formData: FormData): Prom
 async function submitMilkSaleImpl(formData: FormData): Promise<FormState> {
   const user = await requirePermission("milk", "CREATE");
   const sale = await readSale(formData);
+  assertNotBackdated(sale.date, user, "Sale date");
 
   const duplicate = await prisma.milkSale.findFirst({
     where: {
@@ -77,23 +88,25 @@ async function submitMilkSaleImpl(formData: FormData): Promise<FormState> {
       buyer: sale.buyer,
       shift: sale.shift,
       litres: sale.litres,
-      rate: sale.rate ?? undefined,
+      rate: sale.rate,
       amount: sale.amount,
       enteredBy: user.name,
     },
   });
 
-  revalidatePath("/entry/milk-sale");
-  revalidatePath("/admin/reports/milk-sales");
+  refresh();
   return { success: true, message: "Milk sale entry saved." };
 }
 
+// Editing a sale changes the farm's books after the fact -- only an Admin
+// can override information already recorded (see access.ts assertNotBackdated
+// for the matching rule on new entries).
 export async function updateMilkSale(_prev: FormState, formData: FormData): Promise<FormState> {
   return runAction(() => updateMilkSaleImpl(formData));
 }
 
 async function updateMilkSaleImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("milk", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Sale");
   const sale = await readSale(formData);
 
@@ -107,22 +120,19 @@ async function updateMilkSaleImpl(formData: FormData): Promise<FormState> {
       buyer: sale.buyer,
       shift: sale.shift,
       litres: sale.litres,
-      rate: sale.rate ?? undefined,
+      rate: sale.rate,
       amount: sale.amount,
     },
   });
 
-  revalidatePath("/entry/milk-sale");
-  revalidatePath("/admin/reports/milk-sales");
+  refresh();
   return { success: true, message: "Sale updated." };
 }
 
 export async function deleteMilkSale(formData: FormData): Promise<void> {
-  await requirePermission("milk", "DELETE");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Sale");
   // deleteMany: deleting a sale someone else already removed is a no-op, not a crash.
   await prisma.milkSale.deleteMany({ where: { id } });
-  revalidatePath("/entry/milk-sale");
-  revalidatePath("/admin/reports/milk-sales");
+  refresh();
 }
-

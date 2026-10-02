@@ -27,7 +27,7 @@ function avatarColor(name: string): string {
   return colors[hash];
 }
 
-export default function CustomersTable({ rows }: { rows: CustomerWithSales[] }) {
+export default function CustomersTable({ rows, isAdmin = false }: { rows: CustomerWithSales[]; isAdmin?: boolean }) {
   const columns: DataTableColumn<CustomerWithSales>[] = [
     {
       key: "name",
@@ -67,22 +67,26 @@ export default function CustomersTable({ rows }: { rows: CustomerWithSales[] }) 
           <Link href={`/admin/reports/milk-sales?buyer=${encodeURIComponent(r.name)}`} title="View sales" className="p-1.5 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
             {IconEye}
           </Link>
-          <Link href={`/admin/customers/${r.id}`} title="Edit" className="p-1.5 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
+          <Link href={`/admin/customers/${r.id}`} title={isAdmin ? "Edit" : "View"} className="p-1.5 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
             {IconEdit}
           </Link>
-          <form action={toggleCustomerActive}>
-            <input type="hidden" name="id" value={r.id} />
-            <input type="hidden" name="active" value={(!r.active).toString()} />
-            <button type="submit" title={r.active ? "Deactivate" : "Activate"} className="p-1.5 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
-              {IconBan}
-            </button>
-          </form>
-          <DeleteRowButton
-            action={deleteCustomer}
-            hiddenFields={{ id: r.id }}
-            confirmMessage={`Delete customer "${r.name}"? This can't be undone.`}
-            icon={IconTrash}
-          />
+          {isAdmin && (
+            <>
+              <form action={toggleCustomerActive}>
+                <input type="hidden" name="id" value={r.id} />
+                <input type="hidden" name="active" value={(!r.active).toString()} />
+                <button type="submit" title={r.active ? "Deactivate" : "Activate"} className="p-1.5 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
+                  {IconBan}
+                </button>
+              </form>
+              <DeleteRowButton
+                action={deleteCustomer}
+                hiddenFields={{ id: r.id }}
+                confirmMessage={`Delete customer "${r.name}"? This can't be undone.`}
+                icon={IconTrash}
+              />
+            </>
+          )}
         </div>
       ),
     },

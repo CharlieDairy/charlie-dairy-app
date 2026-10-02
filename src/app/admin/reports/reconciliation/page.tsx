@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getProductionReconciliation } from "@/lib/reports/reconciliation";
 import { formatRs } from "@/lib/format";
 import { resolvePeriod } from "@/lib/period";
-import MilkUsageForm from "@/app/entry/milk-usage/MilkUsageForm";
 import ReconciliationChart from "./ReconciliationChart";
 import PeriodBar from "@/components/PeriodBar";
 
@@ -33,7 +32,7 @@ export default async function ReconciliationPage({
       </p>
 
       <div className="flex gap-3 text-xs">
-        <Link href="/entry/milk-sale" className="text-primary underline">Milk Sale Entry →</Link>
+        <Link href="/entry/milk-sale" className="text-primary underline">Record a Sale / Calf-Farm-Employee Use →</Link>
         <Link href="/admin/reports/ar-aging" className="text-primary underline">Customer / AR Aging →</Link>
       </div>
 
@@ -42,11 +41,6 @@ export default async function ReconciliationPage({
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
         <h2 className="text-sm font-semibold text-neutral-700 mb-3">Produced vs Used vs Sold</h2>
         <ReconciliationChart rows={rows} />
-      </div>
-
-      <div id="record-use" className="flex flex-col gap-2 scroll-mt-4">
-        <h2 className="text-sm font-semibold text-neutral-700">Record Calf / Farm / Employee Use</h2>
-        <MilkUsageForm />
       </div>
 
       <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">

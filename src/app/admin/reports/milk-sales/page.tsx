@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import Card from "@/components/Card";
 import StatCard from "@/components/StatCard";
 import { formatRs } from "@/lib/format";
@@ -11,7 +12,6 @@ import type { LedgerSaleRow } from "@/app/entry/milk-sale/MilkSalesLedger";
 import MilkSalesLedger from "@/app/entry/milk-sale/MilkSalesLedger";
 import WithdrawalWarningBanner from "@/components/WithdrawalWarningBanner";
 import PeriodBar from "@/components/PeriodBar";
-import AddSaleToggle from "./AddSaleToggle";
 import RecordPaymentForm from "./RecordPaymentForm";
 
 function fmtDate(d: Date): string {
@@ -27,8 +27,11 @@ export default async function MilkSalesPage({
   const { period, from, to } = await resolvePeriod(params, "month");
   const range = periodRange(period, new Date(), from, to);
 
+  const session = await auth();
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
+
   const [customers, buyers, sales, detail, activeWithdrawals] = await Promise.all([
-    prisma.customer.findMany({ where: { active: true }, select: { name: true, agreedRate: true } }),
+    prisma.customer.findMany({ where: { active: true }, select: { id: true, name: true, agreedRate: true }, orderBy: { name: "asc" } }),
     getDistinctBuyers(),
     prisma.milkSale.findMany({
       where: {
@@ -42,10 +45,12 @@ export default async function MilkSalesPage({
     getActiveWithdrawals(),
   ]);
 
+  const customerIdByName = new Map(customers.map((c) => [c.name, c.id]));
   const ledgerRows: LedgerSaleRow[] = sales.map((s) => ({
     id: s.id,
     date: s.date.toISOString().slice(0, 10),
     buyer: s.buyer,
+    customerId: customerIdByName.get(s.buyer) ?? null,
     shift: s.shift,
     litres: s.litres,
     rate: s.rate,
@@ -64,10 +69,14 @@ export default async function MilkSalesPage({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900">Milk Sales</h1>
-        <a href="/api/bulk/export?type=milkSales" className="bg-neutral-800 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-neutral-900">
-          Download CSV
-        </a>
+        <div className="flex items-center gap-2">
+          <Link href="/entry/milk-sale" className="text-primary underline text-sm">+ Record a sale →</Link>
+          <a href="/api/bulk/export?type=milkSales" className="bg-neutral-800 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-neutral-900">
+            Download CSV
+          </a>
+        </div>
       </div>
+      <p className="text-xs text-neutral-400 -mt-4">Sales are recorded on Milk Sale Entry — this page is a browsable report of what&apos;s already been recorded.</p>
 
       <PeriodBar period={period} from={from} to={to} extraParams={params.buyer ? { buyer: params.buyer } : undefined} />
 
@@ -90,12 +99,7 @@ export default async function MilkSalesPage({
 
       <WithdrawalWarningBanner withdrawals={activeWithdrawals} />
 
-      <AddSaleToggle
-        buyers={buyers}
-        customerRates={customers.filter((c) => c.agreedRate !== null).map((c) => ({ name: c.name, agreedRate: c.agreedRate as number }))}
-      />
-
-      <MilkSalesLedger sales={ledgerRows} showSessions />
+      <MilkSalesLedger sales={ledgerRows} showSessions customers={customers} isAdmin={isAdmin} />
 
       <Card>
         <h2 className="font-semibold text-text mb-2">Record a Payment</h2>
