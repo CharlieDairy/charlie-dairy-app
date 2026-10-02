@@ -71,10 +71,19 @@ async function buildAuditEntry(
     // Dynamic import (not a top-level one) so this module never statically
     // depends on auth.ts, which itself imports { prisma } from here — a
     // top-level import would be a circular dependency.
-    const { auth } = await import("@/auth");
-    const session = await auth();
-    const userId = (session?.user as { id?: string } | undefined)?.id ?? null;
-    const userName = session?.user?.name ?? null;
+    // Outside a request (scripts, backfills) there is no session to read;
+    // that used to throw and silently drop the entry. Log it as a System
+    // write instead so those changes still leave a trail.
+    let userId: string | null = null;
+    let userName: string | null = null;
+    try {
+      const { auth } = await import("@/auth");
+      const session = await auth();
+      userId = (session?.user as { id?: string } | undefined)?.id ?? null;
+      userName = session?.user?.name ?? null;
+    } catch {
+      /* no request context */
+    }
 
     const typedArgs = args as { where?: { id?: string }; data?: unknown };
     const whereId = typedArgs.where?.id ?? null;
@@ -103,11 +112,21 @@ async function buildAuditEntry(
   }
 }
 
+// Retried because the usual failure is a transient "too many connections"
+// from the database; losing the entry there is exactly how the log ended up
+// with gaps.
 async function writeAuditEntry(base: PrismaClient, entry: AuditEntry) {
-  try {
-    await base.auditLog.create({ data: entry });
-  } catch (e) {
-    console.error("[audit] failed to record log entry", e);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await base.auditLog.create({ data: entry });
+      return;
+    } catch (e) {
+      if (attempt === 3) {
+        console.error("[audit] failed to record log entry", e);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 400 * attempt));
+    }
   }
 }
 
@@ -126,8 +145,24 @@ function scheduleAuditWrite(base: PrismaClient, entry: AuditEntry) {
   }
 }
 
+// The database allows 45 connections for this role in total, and every
+// serverless instance (each route can be its own) used to keep a default-size
+// pool of idle connections open -- ~20 were idle at low traffic, and a few
+// extra instances during a deploy or a burst hit "too many connections"
+// (P2037), which broke pages like the Audit Log and dropped audit writes.
+// A small per-instance pool keeps the total well under the cap.
+function databaseUrl(): string | undefined {
+  const raw = process.env.DATABASE_URL;
+  if (!raw || !/^postgres(ql)?:/.test(raw)) return raw;
+  const url = new URL(raw);
+  if (!url.searchParams.has("connection_limit")) url.searchParams.set("connection_limit", "2");
+  if (!url.searchParams.has("pool_timeout")) url.searchParams.set("pool_timeout", "20");
+  return url.toString();
+}
+
 function buildClient() {
-  const base = new PrismaClient();
+  const url = databaseUrl();
+  const base = url ? new PrismaClient({ datasources: { db: { url } } }) : new PrismaClient();
 
   return base.$extends({
     name: "auditLog",

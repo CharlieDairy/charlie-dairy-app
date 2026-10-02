@@ -1,8 +1,21 @@
 import { getAuditLogPage, getAuditLogFilters } from "@/lib/reports/auditLog";
 import Link from "next/link";
 
+// Farm time (Pakistan), not UTC -- an entry made at 11pm used to show as the
+// previous afternoon.
 function fmtDateTime(d: Date): string {
-  return d.toISOString().slice(0, 19).replace("T", " ");
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Karachi",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  })
+    .format(d)
+    .replace(",", "");
 }
 
 function buildHref(params: Record<string, string | number | undefined>): string {
