@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqNum, optText, MILK_USE_TYPES } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -16,6 +16,7 @@ async function submitMilkUsageImpl(formData: FormData): Promise<FormState> {
   const user = await requirePermission("milk", "CREATE");
 
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
   const type = reqEnum(formData, "type", "Use type", MILK_USE_TYPES);
   const litres = reqNum(formData, "litres", "Quantity", { positive: true, max: 100_000 });
   const notes = optText(formData, "notes", "Notes", { max: 500 });

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requirePermission, runAction } from "@/lib/access";
+import { requirePermission, requireAccess, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, reqNum, reqText, optDate, optNum, optText } from "@/lib/validate";
 
@@ -27,7 +27,7 @@ async function addVaccineDefImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleVaccineActive(formData: FormData): Promise<void> {
-  await requirePermission("health", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Vaccine");
   const active = formData.get("active") === "true";
   await prisma.vaccineDef.updateMany({ where: { id }, data: { active } });
@@ -54,7 +54,7 @@ async function addMedicineDefImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleMedicineActive(formData: FormData): Promise<void> {
-  await requirePermission("health", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Medicine");
   const active = formData.get("active") === "true";
   await prisma.medicineDef.updateMany({ where: { id }, data: { active } });
@@ -66,7 +66,7 @@ export async function updateMedicineDef(_prev: FormState, formData: FormData): P
 }
 
 async function updateMedicineDefImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("health", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Medicine");
   const unit = optText(formData, "unit", "Unit", { max: 20 });
   const withdrawalDays = optNum(formData, "withdrawalDays", "Withdrawal days", { min: 0, max: 365, decimals: 0 });
@@ -89,6 +89,7 @@ async function recordVaccinationImpl(formData: FormData): Promise<FormState> {
   const cowId = reqId(formData, "cowId", "Animal");
   const vaccineName = reqText(formData, "vaccineName", "Vaccine", { max: 100 });
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
   const nextDueDate = optDate(formData, "nextDueDate", "Next due date", { futureDays: 3650 });
   const cost = optNum(formData, "cost", "Cost", { max: 10_000_000 });
   const administeredBy = optText(formData, "administeredBy", "Administered by", { max: 100 });
@@ -143,6 +144,7 @@ async function recordTreatmentImpl(formData: FormData): Promise<FormState> {
   const cowId = reqId(formData, "cowId", "Animal");
   const medicineName = reqText(formData, "medicineName", "Medicine", { max: 100 });
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
   const dosage = optText(formData, "dosage", "Dosage", { max: 100 });
   const quantityUsed = optNum(formData, "quantityUsed", "Quantity used", { positive: true, max: 1_000_000 });
   // For a multi-day course, withdrawal should count from the LAST dose, not
@@ -244,6 +246,7 @@ async function restockMedicineImpl(formData: FormData): Promise<FormState> {
   const user = await requirePermission("health", "CREATE");
   const medicineDefId = reqId(formData, "medicineDefId", "Medicine");
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
   const quantity = reqNum(formData, "quantity", "Quantity", { positive: true, max: 1_000_000 });
   const cost = optNum(formData, "cost", "Cost", { max: 10_000_000 });
   const notes = optText(formData, "notes", "Notes", { max: 500 });

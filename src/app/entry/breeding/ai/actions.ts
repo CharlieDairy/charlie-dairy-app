@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, optId, optEnum, optNum, optText } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -19,6 +19,7 @@ async function recordInseminationImpl(formData: FormData): Promise<FormState> {
 
   const cowId = reqId(formData, "cowId", "Cow");
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
   const method = optEnum(formData, "method", "Method", METHODS) ?? "AI";
   const semenBatch = optText(formData, "semenBatch", "Semen batch", { max: 100 });
   const bullTag = optText(formData, "bullTag", "Bull tag", { max: 50 });

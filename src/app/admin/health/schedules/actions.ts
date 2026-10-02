@@ -26,7 +26,7 @@ async function addHealthScheduleImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleHealthScheduleActive(formData: FormData): Promise<void> {
-  await requirePermission("health", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Schedule");
   const active = formData.get("active") === "true";
   await prisma.healthSchedule.updateMany({ where: { id }, data: { active } });

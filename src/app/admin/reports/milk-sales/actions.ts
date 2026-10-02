@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requirePermission, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqNum, reqText, optEnum, optText, CASH_MODES } from "@/lib/validate";
 
@@ -20,6 +20,7 @@ async function recordCustomerPaymentImpl(formData: FormData): Promise<FormState>
   const user = await requirePermission("milk", "CREATE");
   const typedBuyer = reqText(formData, "buyer", "Buyer", { max: 100 });
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
   const amount = reqNum(formData, "amount", "Amount", { positive: true, max: 1_000_000_000 });
   const mode = optEnum(formData, "mode", "Payment mode", CASH_MODES) ?? "CASH";
   const notes = optText(formData, "notes", "Notes", { max: 500 });

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requireAccess, requirePermission, runAction } from "@/lib/access";
+import { requireAccess, requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optText } from "@/lib/validate";
 
@@ -15,9 +15,10 @@ export async function addCapitalEntry(_prev: FormState, formData: FormData): Pro
 }
 
 async function addCapitalEntryImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("financial", "CREATE");
+  const user = await requirePermission("financial", "CREATE");
 
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
   const partner = reqText(formData, "partner", "Partner", { max: 100 });
   const description = reqText(formData, "description", "Description", { max: 300 });
   const direction = reqEnum(formData, "direction", "Direction", DIRECTIONS);
@@ -48,7 +49,7 @@ export async function updateCapitalEntry(_prev: FormState, formData: FormData): 
 }
 
 async function updateCapitalEntryImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("financial", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Entry");
   const date = reqDate(formData, "date", "Date");
   const partner = reqText(formData, "partner", "Partner", { max: 100 });
@@ -77,7 +78,7 @@ export async function deleteCapitalEntry(_prev: FormState, formData: FormData): 
 }
 
 async function deleteCapitalEntryImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("financial", "DELETE");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Entry");
 
   const existing = await prisma.capitalEntry.findUnique({ where: { id } });

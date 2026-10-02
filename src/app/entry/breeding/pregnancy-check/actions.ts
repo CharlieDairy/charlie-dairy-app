@@ -20,6 +20,11 @@ async function recordPregnancyCheckImpl(formData: FormData): Promise<FormState> 
   const user = await requirePermission("breeding", "CREATE");
 
   const cowId = reqId(formData, "cowId", "Cow");
+  // Deliberately NOT subject to the app-wide no-backdating-for-non-admin rule
+  // (see access.ts assertNotBackdated) -- this module already has a purpose-
+  // built isLatest guard below specifically so a backdated/out-of-order check
+  // can never corrupt the dam's current expectedCalving/dryDate, which is the
+  // actual risk that rule exists to prevent elsewhere.
   const date = reqDate(formData, "date", "Date");
   const method = optEnum(formData, "method", "Method", METHODS) ?? "PALPATION";
   const result = reqEnum(formData, "result", "Result", RESULTS);

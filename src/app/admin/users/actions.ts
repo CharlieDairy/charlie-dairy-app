@@ -90,7 +90,7 @@ export async function setUserRole(formData: FormData): Promise<void> {
 }
 
 export async function setUserActive(formData: FormData): Promise<void> {
-  const caller = await requirePermission("admin", "EDIT");
+  const caller = await requireAccess({ admin: true });
   const userId = reqId(formData, "userId", "User");
   const active = formData.get("active") === "true";
 
@@ -99,7 +99,6 @@ export async function setUserActive(formData: FormData): Promise<void> {
   const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, active: true } });
   if (!target) return;
   if (target.role === "ADMIN") {
-    if (caller.role !== "ADMIN") throw new AccessError("Only an Admin can change an Admin account.");
     if (!active && target.active && !(await otherActiveAdminExists(userId))) {
       throw new AccessError("You can't deactivate the last active Admin.");
     }
@@ -114,7 +113,7 @@ export async function setUserActive(formData: FormData): Promise<void> {
 // admin:CREATE) -- assigning a pre-existing role to someone is an admin:EDIT
 // action, not a fresh grant of whatever the caller happens to hold.
 export async function setUserAccessRole(formData: FormData): Promise<void> {
-  await requirePermission("admin", "EDIT");
+  await requireAccess({ admin: true });
   const userId = reqId(formData, "userId", "User");
   const accessRoleId = optId(formData, "accessRoleId", "Role");
 
@@ -135,7 +134,7 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
 }
 
 async function resetPasswordImpl(formData: FormData): Promise<FormState> {
-  const caller = await requirePermission("admin", "EDIT");
+  await requireAccess({ admin: true });
   const userId = reqId(formData, "userId", "User");
   const newPassword = formData.get("newPassword");
 
@@ -146,9 +145,6 @@ async function resetPasswordImpl(formData: FormData): Promise<FormState> {
 
   const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, username: true } });
   if (!target) return { success: false, message: "User not found." };
-  if (target.role === "ADMIN" && caller.role !== "ADMIN") {
-    throw new AccessError("Only an Admin can reset an Admin's password.");
-  }
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } });

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, optText } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -19,6 +19,7 @@ async function recordHeatImpl(formData: FormData): Promise<FormState> {
 
   const cowId = reqId(formData, "cowId", "Cow");
   const detectedAt = reqDate(formData, "detectedAt", "Date/time");
+  assertNotBackdated(detectedAt, user, "Date/time");
   const detectionMethod = reqEnum(formData, "detectionMethod", "Detection method", DETECTION_METHODS);
   const intensity = optText(formData, "intensity", "Intensity", { max: 50 });
   const notes = optText(formData, "notes", "Notes", { max: 1000 });

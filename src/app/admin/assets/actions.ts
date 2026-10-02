@@ -50,7 +50,7 @@ export async function updateAsset(_prev: FormState, formData: FormData): Promise
 }
 
 async function updateAssetImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requirePermission("financial", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Asset");
   const assetClass = reqText(formData, "assetClass", "Asset class", { max: 100 });
   const details = reqText(formData, "details", "Details", { max: 200 });
@@ -101,7 +101,7 @@ async function updateAssetImpl(_prev: FormState, formData: FormData): Promise<Fo
 }
 
 export async function deleteAsset(formData: FormData): Promise<void> {
-  await requirePermission("financial", "DELETE");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Asset");
   const asset = await prisma.asset.findUnique({ where: { id } });
   if (asset) {
@@ -120,7 +120,7 @@ export async function deleteAssetInline(_prev: FormState, formData: FormData): P
 }
 
 async function deleteAssetInlineImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requirePermission("financial", "DELETE");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Asset");
 
   const asset = await prisma.asset.findUnique({ where: { id } });

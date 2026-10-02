@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqNum, reqText, optNum, DIRECTIONS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -13,9 +13,10 @@ export async function submitFeed(_prev: FormState, formData: FormData): Promise<
 }
 
 async function submitFeedImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("feed", "CREATE");
+  const user = await requirePermission("feed", "CREATE");
 
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
   const feedType = reqText(formData, "feedType", "Feed type", { max: 100 });
   const direction = reqEnum(formData, "direction", "Direction", DIRECTIONS); // "IN" | "OUT"
   const quantity = reqNum(formData, "quantity", "Quantity", { positive: true, max: 10_000_000 });

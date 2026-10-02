@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAccess, requirePermission, runAction } from "@/lib/access";
+import { requireAccess, requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optEnum, optText, CASH_MODES, DIRECTIONS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -24,6 +24,7 @@ async function submitCashImpl(formData: FormData): Promise<FormState> {
   const user = await requirePermission("financial", "CREATE");
 
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
   const direction = reqEnum(formData, "direction", "Direction", DIRECTIONS); // "IN" | "OUT"
   const amount = reqNum(formData, "amount", "Amount", { positive: true });
   const category = reqText(formData, "category", "Category", { max: 100 });
@@ -56,7 +57,7 @@ export async function updateCashEntry(_prev: FormState, formData: FormData): Pro
 }
 
 async function updateCashEntryImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("financial", "EDIT");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Entry");
   const date = reqDate(formData, "date", "Date");
   const direction = reqEnum(formData, "direction", "Direction", DIRECTIONS);
@@ -109,7 +110,7 @@ export async function deleteCashEntry(_prev: FormState, formData: FormData): Pro
 }
 
 async function deleteCashEntryImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("financial", "DELETE");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Entry");
 
   const existing = await prisma.cashTransaction.findUnique({ where: { id } });

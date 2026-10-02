@@ -26,6 +26,11 @@ async function recordCalvingImpl(formData: FormData): Promise<FormState> {
   const user = await requirePermission("breeding", "CREATE");
 
   const damId = reqId(formData, "damId", "Dam");
+  // Deliberately NOT subject to the app-wide no-backdating-for-non-admin rule
+  // (see access.ts assertNotBackdated) -- same reasoning as pregnancy-check/
+  // actions.ts: the isLatest guard below already makes a backdated/out-of-
+  // order calving safe, so blocking it here would only remove a legitimate
+  // catch-up path without preventing any real risk.
   const date = reqDate(formData, "date", "Calving date");
   const sireTag = optText(formData, "sireTag", "Sire tag", { max: 50 });
   const difficulty = optEnum(formData, "difficulty", "Difficulty", DIFFICULTIES) ?? "UNASSISTED";
