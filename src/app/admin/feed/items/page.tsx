@@ -9,7 +9,7 @@ export default async function FeedItemsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Feed Master" />
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         The feed type catalog used by Feed Entry and Feed Overview. Set a reorder level to have Feed Overview flag a
         feed type as low stock once its balance on hand drops to or below it.
       </p>

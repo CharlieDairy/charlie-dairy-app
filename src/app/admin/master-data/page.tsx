@@ -16,7 +16,7 @@ export default async function MasterDataPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Master Data</h1>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Rename how statuses and categories are displayed across the app, hide ones you don&apos;t use, or
         add/delete entries in open lists. &ldquo;Fixed list&rdquo; categories can be renamed and hidden but not
         added to or deleted — their codes are tied to logic elsewhere (e.g. breeding rules check for the

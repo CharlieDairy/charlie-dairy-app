@@ -25,7 +25,7 @@ export default async function FeedOverviewPage() {
         <h1 className="text-2xl font-semibold text-neutral-900">Feed &amp; Inventory</h1>
         <Link href="/admin/feed/items" className="link-btn">Manage Feed Master</Link>
       </div>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Stock on hand per feed type (running total of every Feed Entry in/out), how fast it&apos;s being used, and a
         projection of how many days of stock remain at the current consumption rate. Low Stock is flagged against the
         reorder level set in Feed Master.

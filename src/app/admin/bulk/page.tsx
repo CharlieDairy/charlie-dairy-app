@@ -5,7 +5,7 @@ export default function BulkDataPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Bulk Data</h1>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Download any module&apos;s data as CSV (optionally filtered by date), or bulk-upload new
         records from a CSV in the same format. Uploads are all-or-nothing: if any row has a
         problem, nothing is imported and you get a full list of what to fix. Breeding events

@@ -14,7 +14,7 @@ export default async function MedicinesPage() {
         <PageHeader title="Medicines" />
         <Link href="/admin/health/medicines/stock" className="link-btn">Medicine Stock →</Link>
       </div>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         The medicine catalog used by Treatment Entry. Set Milk Withdrawal Days per medicine to flag cows at Milk
         Sale Entry while their milk is still within the withdrawal period.
       </p>

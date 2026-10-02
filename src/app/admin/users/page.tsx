@@ -66,7 +66,7 @@ export default async function UsersAdminPage() {
             <h2 className="font-semibold text-neutral-900">Users &amp; Permissions</h2>
           </div>
         </div>
-        <p className="px-5 pt-4 text-sm text-neutral-500 max-w-2xl">
+        <p className="px-5 pt-4 text-base font-semibold text-neutral-600">
           ADMIN can see and edit everything. ENTRY users are assigned a Role — a named, reusable bundle
           of granular View/Create/Edit/Delete/Export permissions per module, managed under{" "}
           <Link href="/admin/users/roles" className="text-green-700 underline">Roles</Link>. Deactivating

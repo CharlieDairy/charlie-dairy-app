@@ -32,7 +32,7 @@ export default async function AuditLogPage({
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Audit Log</h1>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Every create, update and delete made by any user, anywhere in the app, is recorded here automatically —
         admin-only. {total.toLocaleString()} entries total.
       </p>

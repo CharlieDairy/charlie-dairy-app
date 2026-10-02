@@ -10,7 +10,7 @@ export default async function ScoringSetupPage() {
       <div>
         <Link href="/admin/health/scoring" className="link-btn">← Back to Score Dashboard</Link>
         <h1 className="text-2xl font-semibold text-neutral-900 mt-1">Scoring Setup</h1>
-        <p className="text-sm text-neutral-500 max-w-2xl">
+        <p className="text-base font-semibold text-neutral-600">
           Customize how much each factor counts toward an animal&apos;s health score. Weights must add up to 100%.
         </p>
       </div>

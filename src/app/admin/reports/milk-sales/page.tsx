@@ -76,7 +76,7 @@ export default async function MilkSalesPage({
           </a>
         </div>
       </div>
-      <p className="text-xs text-neutral-400 -mt-4">Sales are recorded on Milk Sale Entry — this page is a browsable report of what&apos;s already been recorded.</p>
+      <p className="text-sm font-semibold text-neutral-500 -mt-4">Sales are recorded on Milk Sale Entry — this page is a browsable report of what&apos;s already been recorded.</p>
 
       <PeriodBar period={period} from={from} to={to} extraParams={params.buyer ? { buyer: params.buyer } : undefined} />
 

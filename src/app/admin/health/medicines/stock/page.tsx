@@ -25,7 +25,7 @@ export default async function MedicineStockPage() {
         <h1 className="text-2xl font-semibold text-neutral-900">Medicine Stock</h1>
         <Link href="/admin/health/medicines" className="link-btn">Manage Medicines →</Link>
       </div>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Stock on hand per medicine (running total of restocks in, treatments out), how fast it&apos;s being used, and
         a projection of days remaining. OUT entries come automatically from Treatment Entry when a quantity is
         recorded — this page is only for restocking.

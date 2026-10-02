@@ -47,7 +47,7 @@ export default async function ScoreDashboardPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-neutral-900">Score Dashboard</h1>
-          <p className="text-sm text-neutral-500 max-w-2xl">
+          <p className="text-base font-semibold text-neutral-600">
             A live health score (0-100) per active animal, computed from vaccination compliance, treatment
             frequency and how recently each was last checked. Nothing to recalculate — it&apos;s always current.
           </p>

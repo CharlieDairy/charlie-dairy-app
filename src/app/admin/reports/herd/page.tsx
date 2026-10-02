@@ -33,7 +33,7 @@ export default async function MilkProductionByCowPage({
           comparison={monthComparison.avgPerDay}
         />
       </div>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Milk production per animal for the selected period — days milked, total litres, and average litres/day.
         Search or sort any column, or filter by status below; click a tag to open that cow&apos;s full profile.
       </p>

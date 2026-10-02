@@ -17,7 +17,7 @@ export default async function ExpenseBreakdownPage({
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Expense Breakdown</h1>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Cash spent out, grouped by category — the same categories used on Cash Entry.
       </p>
       <PeriodBar period={period} from={from} to={to} />

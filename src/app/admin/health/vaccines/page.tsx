@@ -9,7 +9,7 @@ export default async function VaccinesPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Vaccines" />
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         The vaccine catalog used by Vaccination Entry. Set a repeat interval to have the next due date calculated
         automatically when a vaccination is recorded.
       </p>

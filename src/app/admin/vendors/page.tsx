@@ -34,7 +34,7 @@ export default async function VendorsPage({
         <h1 className="text-2xl font-semibold text-neutral-900">Vendor Ledger</h1>
         <AddVendorToggle />
       </div>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Suppliers with contact details and their spend summary in one place. Matched by name against Cash Entry&apos;s
         Party field, so any past payment to a matching name shows up here automatically.
       </p>

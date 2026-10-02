@@ -11,7 +11,7 @@ export default async function CustomFieldsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Custom Fields" />
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Define extra fields to capture whatever matters to your farm beyond the built-in ones — insurance policy
         number, breed registry ID, microchip number, anything. Once added, every field shows up on each cow&apos;s
         profile page to fill in. Hiding a field keeps its past values but stops it showing on profiles going forward.

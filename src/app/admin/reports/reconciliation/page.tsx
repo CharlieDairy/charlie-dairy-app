@@ -17,15 +17,15 @@ export default async function ReconciliationPage({
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Production Reconciliation</h1>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Full chain from daily production to what actually reached the market: Produced, minus Calf Use, Farm Use and
-        Employee Use (recorded below), minus Recorded Sales. What&apos;s left is the true unexplained variance — it
+        Employee Use (recorded on Milk Sale Entry), minus Recorded Sales. What&apos;s left is the true unexplained variance — it
         should trend to zero once use and sales are both logged day to day. Calf/Farm/Employee Use is valued at the
         farm&apos;s average sale rate as a notional cost (no cash actually moves, so it never creates a Cash Entry) —
         historical sale volumes weren&apos;t migrated from the old spreadsheets, so early-date variance will show as
         fully unaccounted for.
       </p>
-      <p className="text-xs text-neutral-400 max-w-2xl -mt-4">
+      <p className="text-sm font-semibold text-neutral-500 -mt-4">
         Opening/Closing Balance is a running total of each day&apos;s unexplained variance, carried from the very first
         production record on file — not a real counted tank reading. There&apos;s no opening-stock entry anywhere in
         the app yet, so this is a derived running total, not a verified physical balance.

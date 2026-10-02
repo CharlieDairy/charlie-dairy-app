@@ -42,7 +42,7 @@ export default async function CustomersPage({
           {isAdmin && <AddCustomerToggle />}
         </div>
       </div>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Milk buyers with contact details, payment terms, agreed rate and their sales summary in one place. Matched by
         name against Milk Sale Entry&apos;s buyer field. Only an Admin can add a customer or change their agreed rate —
         that rate is the fixed price Milk Sale Entry uses, so every sale is priced exactly as approved.

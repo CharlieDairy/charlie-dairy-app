@@ -8,7 +8,7 @@ export default function ImportAnimalsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Import Animals" />
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Bulk-register animals from a CSV file, or export the current register to edit offline and re-upload. Uploads
         are all-or-nothing — if any row has a problem, nothing is imported and you get a full list of what to fix.
       </p>

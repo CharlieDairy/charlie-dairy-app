@@ -50,7 +50,7 @@ export default async function CashRegisterPage({
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Cash Register</h1>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Every cash and bank transaction, in one place — book a new entry and search, edit or delete anything
         already recorded.
       </p>

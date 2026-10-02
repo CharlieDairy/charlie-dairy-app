@@ -30,7 +30,7 @@ export default async function HealthSchedulesPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold text-neutral-900">Health Schedules</h1>
-        <p className="text-sm text-neutral-500 max-w-2xl">
+        <p className="text-base font-semibold text-neutral-600">
           Define recurring vaccination, deworming and checkup schedules for the herd.
         </p>
       </div>

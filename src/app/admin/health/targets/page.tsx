@@ -62,7 +62,7 @@ export default async function ProductionTargetsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-neutral-900">Production Targets</h1>
-          <p className="text-sm text-neutral-500 max-w-2xl">Set and track milk and weight goals per animal.</p>
+          <p className="text-base font-semibold text-neutral-600">Set and track milk and weight goals per animal.</p>
         </div>
         <BulkSetTargetsForm />
       </div>

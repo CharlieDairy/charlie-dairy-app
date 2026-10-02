@@ -9,7 +9,7 @@ export default async function WeightStandardsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Weight Standards" />
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Target weight ranges by age (optionally per breed). The Weight Dashboard uses these to flag an animal as
         under, on-target, or over for its age — leave breed blank for a standard that applies to every breed.
       </p>

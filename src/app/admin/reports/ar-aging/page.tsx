@@ -19,7 +19,7 @@ export default async function ArAgingPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">AR Aging</h1>
-      <p className="text-sm text-neutral-500 max-w-2xl">
+      <p className="text-base font-semibold text-neutral-600">
         Customers&apos; unpaid milk sale balances, bucketed by how long each unpaid sale has been outstanding
         (oldest sales assumed paid first).
       </p>
