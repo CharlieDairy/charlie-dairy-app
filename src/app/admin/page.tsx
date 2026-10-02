@@ -42,7 +42,7 @@ function Panel({ title, href, icon, tone = "teal", children, className = "" }: {
           {icon && <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${ICON_TONE[tone]}`}>{icon}</span>}
           {title}
         </h2>
-        {href && <Link className="text-sm text-teal-700 hover:underline" href={href}>Open →</Link>}
+        {href && <Link className="link-btn" href={href}>Open →</Link>}
       </div>
       <div className="p-5">{children}</div>
     </section>
@@ -284,7 +284,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
               <Row label="Cash net recorded · all dates to today" value={formatRs(d.cash.cash)} />
               <Row label="Bank net recorded · all dates to today" value={formatRs(d.cash.bank)} />
               <p className="text-xs text-slate-500">Receipts less payments across recorded accounts. Opening balances and reconciliation must be confirmed; these are not verified available balances.</p>
-              <Link className="text-sm text-teal-700 underline" href="/admin/capital">Partner capital by venture →</Link>
+              <Link className="link-btn" href="/admin/capital">Partner capital by venture →</Link>
             </div>
           </Panel>
         )}

@@ -26,7 +26,7 @@ export default async function BalanceSheetPage() {
       <p className="text-sm text-neutral-500">
         Assembled from Cash Entry, Milk Sales, Assets and the Capital Ledger — not an independent double-entry
         system, so treat this as a working snapshot rather than an audited statement. Equity below is scoped to the{" "}
-        <Link href="/admin/capital?venture=Dairy" className="text-primary underline">
+        <Link href="/admin/capital?venture=Dairy" className="link-btn">
           Dairy venture
         </Link>{" "}
         only — the Capital Ledger also tracks Fattening, loan tranches and construction phases that aren&apos;t part

@@ -25,7 +25,7 @@ export default function AddAnimalForm({
           <p className="text-sm text-neutral-500">Keep animal data tidy with a compact, structured form.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/admin/cows" className="text-sm text-neutral-500 underline">
+          <Link href="/admin/cows" className="link-btn">
             ← Back to Animals
           </Link>
           <button type="submit" disabled={isPending} className="bg-green-700 text-white rounded-md px-4 py-2 text-sm font-medium disabled:opacity-60">

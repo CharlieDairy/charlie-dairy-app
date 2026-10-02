@@ -23,7 +23,7 @@ export default async function MedicineStockPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900">Medicine Stock</h1>
-        <Link href="/admin/health/medicines" className="text-sm text-primary underline">Manage Medicines →</Link>
+        <Link href="/admin/health/medicines" className="link-btn">Manage Medicines →</Link>
       </div>
       <p className="text-sm text-neutral-500 max-w-2xl">
         Stock on hand per medicine (running total of restocks in, treatments out), how fast it&apos;s being used, and

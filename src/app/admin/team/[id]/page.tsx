@@ -37,7 +37,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
             </p>
           </div>
         </div>
-        <Link href="/admin/team" className="text-sm text-neutral-500 underline">← Back to Team</Link>
+        <Link href="/admin/team" className="link-btn">← Back to Team</Link>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -66,7 +66,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-semibold text-neutral-900">Salary Payments</h2>
-          <Link href="/entry/team/salary" className="text-xs text-primary underline">+ Record Payment</Link>
+          <Link href="/entry/team/salary" className="link-btn link-btn-primary">+ Record Payment</Link>
         </div>
         {employee.salaryPayments.length === 0 ? (
           <p className="text-sm text-neutral-400">No payments recorded yet.</p>
@@ -97,7 +97,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-semibold text-neutral-900">Attendance (recent 30)</h2>
-          <Link href="/entry/team/attendance" className="text-xs text-primary underline">+ Mark Attendance</Link>
+          <Link href="/entry/team/attendance" className="link-btn link-btn-primary">+ Mark Attendance</Link>
         </div>
         <p className="text-sm text-neutral-600 mb-2">
           {presentDays} present · {absentDays} absent (of {employee.attendanceRecords.length} recorded)

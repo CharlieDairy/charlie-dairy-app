@@ -14,7 +14,7 @@ export default async function MarkAbsencePage() {
       <h1 className="text-xl font-semibold text-neutral-900">Mark Absence</h1>
       <p className="text-sm text-neutral-500">
         Quickly flag one employee as absent, without opening the full daily attendance form.{" "}
-        <Link href="/entry/team/attendance" className="text-primary underline">Mark the whole team instead</Link>
+        <Link href="/entry/team/attendance" className="link-btn">Mark the whole team instead</Link>
       </p>
       <MarkAbsenceForm employees={employees} />
     </div>

@@ -32,8 +32,8 @@ export default async function ReconciliationPage({
       </p>
 
       <div className="flex gap-3 text-xs">
-        <Link href="/entry/milk-sale" className="text-primary underline">Record a Sale / Calf-Farm-Employee Use →</Link>
-        <Link href="/admin/reports/ar-aging" className="text-primary underline">Customer / AR Aging →</Link>
+        <Link href="/entry/milk-sale" className="link-btn link-btn-primary">Record a Sale / Calf-Farm-Employee Use →</Link>
+        <Link href="/admin/reports/ar-aging" className="link-btn">Customer / AR Aging →</Link>
       </div>
 
       <PeriodBar period={period} from={from} to={to} />

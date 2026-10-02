@@ -12,7 +12,7 @@ export default async function EditAssetPage({ params }: { params: Promise<{ id: 
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-neutral-900">Edit Asset</h1>
-        <Link href="/admin/assets" className="text-sm text-neutral-500 underline">
+        <Link href="/admin/assets" className="link-btn">
           ← Back to Assets
         </Link>
       </div>

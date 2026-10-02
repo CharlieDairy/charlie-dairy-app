@@ -25,8 +25,8 @@ export default async function WeightDashboardPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900">Weight</h1>
         <div className="flex items-center gap-3">
-          <Link href="/entry/weight" className="text-sm text-primary underline">+ Add Weight</Link>
-          <Link href="/admin/weight/standards" className="text-sm text-neutral-500 underline">Manage Standards</Link>
+          <Link href="/entry/weight" className="link-btn link-btn-primary">+ Add Weight</Link>
+          <Link href="/admin/weight/standards" className="link-btn">Manage Standards</Link>
         </div>
       </div>
 

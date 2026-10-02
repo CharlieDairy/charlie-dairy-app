@@ -52,7 +52,7 @@ export default async function ScoreDashboardPage() {
             frequency and how recently each was last checked. Nothing to recalculate — it&apos;s always current.
           </p>
         </div>
-        <Link href="/admin/health/scoring/setup" className="text-sm text-primary underline whitespace-nowrap">
+        <Link href="/admin/health/scoring/setup" className="link-btn">
           Scoring Setup →
         </Link>
       </div>

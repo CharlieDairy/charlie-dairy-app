@@ -21,7 +21,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-neutral-900">{vendor.name}</h1>
-        <Link href="/admin/vendors" className="text-sm text-neutral-500 underline">
+        <Link href="/admin/vendors" className="link-btn">
           ← Back to Vendor Ledger
         </Link>
       </div>

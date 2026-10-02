@@ -100,7 +100,7 @@ export default async function MilkingEntryPage({
             <Link href={dayLink(-1)} className="px-2 text-white rounded hover:bg-white/10">‹</Link>
             <span className="text-sm font-semibold text-white">{date}</span>
             {date < today && <Link href={dayLink(1)} className="px-2 text-white rounded hover:bg-white/10">›</Link>}
-            {date !== today && <Link href="?period=day" className="text-xs text-green-100 underline ml-1">Today</Link>}
+            {date !== today && <Link href="?period=day" className="ml-1 rounded-lg border border-white/30 bg-white/10 px-3 py-1 text-xs font-medium text-white hover:bg-white/20">Today</Link>}
           </div>
         )}
       </div>

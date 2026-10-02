@@ -12,7 +12,7 @@ export default async function MedicinesPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <PageHeader title="Medicines" />
-        <Link href="/admin/health/medicines/stock" className="text-sm text-primary underline">Medicine Stock →</Link>
+        <Link href="/admin/health/medicines/stock" className="link-btn">Medicine Stock →</Link>
       </div>
       <p className="text-sm text-neutral-500 max-w-2xl">
         The medicine catalog used by Treatment Entry. Set Milk Withdrawal Days per medicine to flag cows at Milk

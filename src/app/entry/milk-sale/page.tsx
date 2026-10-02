@@ -77,7 +77,7 @@ export default async function MilkSaleEntryPage({
               ({todayRow.varianceLitres >= 0 ? "+" : ""}{todayRow.varianceLitres.toFixed(1)} L unexplained today)
             </p>
           )}
-          <Link href="/admin/reports/reconciliation" className="text-primary underline text-xs mt-2 inline-block">View full reconciliation →</Link>
+          <Link href="/admin/reports/reconciliation" className="link-btn mt-2">View full reconciliation →</Link>
         </div>
 
         {outstandingCustomers.length > 0 && (
@@ -98,7 +98,7 @@ export default async function MilkSaleEntryPage({
                 );
               })}
             </ul>
-            <Link href="/admin/reports/ar-aging" className="text-primary underline text-xs mt-2 inline-block">View full AR aging →</Link>
+            <Link href="/admin/reports/ar-aging" className="link-btn mt-2">View full AR aging →</Link>
           </div>
         )}
       </div>

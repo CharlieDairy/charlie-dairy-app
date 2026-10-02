@@ -24,7 +24,7 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-neutral-900">{customer.name}</h1>
-        <Link href="/admin/customers" className="text-sm text-neutral-500 underline">
+        <Link href="/admin/customers" className="link-btn">
           ← Back to Customers
         </Link>
       </div>
@@ -40,7 +40,7 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
             <span className={outstanding > 0 ? "text-danger font-medium" : "text-text"}>{formatRs(outstanding)}</span>
           </div>
         </div>
-        <Link href={`/admin/reports/milk-sales?buyer=${encodeURIComponent(customer.name)}`} className="text-primary underline text-xs mt-3 inline-block">
+        <Link href={`/admin/reports/milk-sales?buyer=${encodeURIComponent(customer.name)}`} className="link-btn mt-3">
           View full sales & payments ledger →
         </Link>
       </div>

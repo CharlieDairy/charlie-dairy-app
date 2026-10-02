@@ -60,7 +60,7 @@ export default async function AuditLogPage({
           Filter
         </button>
         {(entity || user) && (
-          <Link href="/admin/audit-log" className="text-sm text-neutral-500 underline">
+          <Link href="/admin/audit-log" className="link-btn">
             Clear
           </Link>
         )}
@@ -136,12 +136,12 @@ export default async function AuditLogPage({
         <span>Page {page} of {totalPages}</span>
         <div className="flex gap-2">
           {page > 1 && (
-            <Link href={buildHref({ page: page - 1, entity, user })} className="underline">
+            <Link href={buildHref({ page: page - 1, entity, user })} className="link-btn">
               ← Previous
             </Link>
           )}
           {page < totalPages && (
-            <Link href={buildHref({ page: page + 1, entity, user })} className="underline">
+            <Link href={buildHref({ page: page + 1, entity, user })} className="link-btn">
               Next →
             </Link>
           )}

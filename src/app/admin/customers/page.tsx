@@ -38,7 +38,7 @@ export default async function CustomersPage({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900">Customers</h1>
         <div className="flex items-center gap-3">
-          <Link href="/entry/milk-sale" className="text-sm text-primary underline">+ Record a Sale</Link>
+          <Link href="/entry/milk-sale" className="link-btn link-btn-primary">+ Record a Sale</Link>
           {isAdmin && <AddCustomerToggle />}
         </div>
       </div>

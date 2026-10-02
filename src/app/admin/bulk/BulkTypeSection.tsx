@@ -45,7 +45,7 @@ export default function BulkTypeSection({ meta }: { meta: BulkTypeMeta }) {
             <a href={downloadUrl} className="bg-green-700 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-green-800">
               Download CSV{meta.hasDateFilter && !from && !to ? " (all)" : ""}
             </a>
-            <a href={templateUrl} className="text-sm text-neutral-500 underline">
+            <a href={templateUrl} className="link-btn">
               Download blank template
             </a>
           </div>

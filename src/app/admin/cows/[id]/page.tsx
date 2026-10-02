@@ -94,7 +94,7 @@ export default async function CowProfilePage({
             </p>
           </div>
         </div>
-        <Link href="/admin/cows" className="text-sm text-neutral-500 underline">
+        <Link href="/admin/cows" className="link-btn">
           ← Back to Animals
         </Link>
       </div>
@@ -244,7 +244,7 @@ export default async function CowProfilePage({
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-semibold text-neutral-900">Custom Fields</h2>
-          <Link href="/admin/cows/custom-fields" className="text-xs text-neutral-500 underline">
+          <Link href="/admin/cows/custom-fields" className="link-btn">
             Manage Fields
           </Link>
         </div>
@@ -255,8 +255,8 @@ export default async function CowProfilePage({
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-semibold text-neutral-900">Health</h2>
           <div className="flex items-center gap-3">
-            <Link href="/entry/health/vaccination" className="text-xs text-primary underline">+ Vaccination</Link>
-            <Link href="/entry/health/treatment" className="text-xs text-primary underline">+ Treatment</Link>
+            <Link href="/entry/health/vaccination" className="link-btn link-btn-primary">+ Vaccination</Link>
+            <Link href="/entry/health/treatment" className="link-btn link-btn-primary">+ Treatment</Link>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

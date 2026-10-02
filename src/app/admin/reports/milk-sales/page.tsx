@@ -70,7 +70,7 @@ export default async function MilkSalesPage({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900">Milk Sales</h1>
         <div className="flex items-center gap-2">
-          <Link href="/entry/milk-sale" className="text-primary underline text-sm">+ Record a sale →</Link>
+          <Link href="/entry/milk-sale" className="link-btn link-btn-primary">+ Record a sale →</Link>
           <a href="/api/bulk/export?type=milkSales" className="bg-neutral-800 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-neutral-900">
             Download CSV
           </a>
@@ -83,8 +83,8 @@ export default async function MilkSalesPage({
       {params.buyer && (
         <div className="flex items-center gap-3 text-sm bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
           <span>Viewing: <strong>{params.buyer}</strong></span>
-          <Link href="/admin/reports/milk-sales" className="text-primary underline">Clear filter</Link>
-          <Link href={`/admin/reports/milk-sales/invoice?buyer=${encodeURIComponent(params.buyer)}`} className="text-primary underline ml-auto">
+          <Link href="/admin/reports/milk-sales" className="link-btn">Clear filter</Link>
+          <Link href={`/admin/reports/milk-sales/invoice?buyer=${encodeURIComponent(params.buyer)}`} className="link-btn ml-auto">
             Print Statement
           </Link>
         </div>
