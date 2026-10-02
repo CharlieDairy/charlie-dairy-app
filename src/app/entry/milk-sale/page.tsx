@@ -1,120 +1,22 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
-import { getTodaysSellableBalance, getProductionReconciliation } from "@/lib/reports/reconciliation";
 import { getActiveWithdrawals } from "@/lib/reports/withdrawal";
-import { getCustomerSalesSummary } from "@/lib/reports/milkSalesByCustomer";
-import { periodRange } from "@/lib/reports/herd";
-import { resolvePeriod } from "@/lib/period";
-import StatCard from "@/components/StatCard";
 import WithdrawalWarningBanner from "@/components/WithdrawalWarningBanner";
 import MilkSaleForm from "./MilkSaleForm";
-import MilkSalesLedger, { type LedgerSaleRow } from "./MilkSalesLedger";
-import { formatRs } from "@/lib/format";
-import PeriodBar from "@/components/PeriodBar";
 
-export default async function MilkSaleEntryPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ period?: string; from?: string; to?: string }>;
-}) {
-  const params = await searchParams;
-  const { period, from, to } = await resolvePeriod(params, "week");
-  const range = periodRange(period, new Date(), from, to);
-
-  const session = await auth();
-  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
-
-  const [customers, balance, sales, activeWithdrawals, todayReconciliation, customerBalances] = await Promise.all([
+// Recording only: the sales ledger, reconciliation and customer balances
+// live on their own report pages (Milk Sales, Production Reconciliation,
+// Customers), not here.
+export default async function MilkSaleEntryPage() {
+  const [customers, activeWithdrawals] = await Promise.all([
     prisma.customer.findMany({ where: { active: true }, select: { id: true, name: true, agreedRate: true }, orderBy: { name: "asc" } }),
-    getTodaysSellableBalance(),
-    prisma.milkSale.findMany({
-      where: { date: { gte: range.start, lt: range.end } },
-      orderBy: { date: "desc" },
-      select: { id: true, date: true, buyer: true, shift: true, litres: true, rate: true, amount: true },
-    }),
     getActiveWithdrawals(),
-    getProductionReconciliation("day"),
-    getCustomerSalesSummary("month"),
   ]);
-  const todayRow = todayReconciliation[0];
-  const outstandingCustomers = customerBalances.filter((c) => c.outstandingBalance > 0.5).slice(0, 8);
-  const customerIdByName = new Map(customers.map((c) => [c.name, c.id]));
-
-  const ledgerRows: LedgerSaleRow[] = sales.map((s) => ({
-    id: s.id,
-    date: s.date.toISOString().slice(0, 10),
-    buyer: s.buyer,
-    customerId: customerIdByName.get(s.buyer) ?? null,
-    shift: s.shift,
-    litres: s.litres,
-    rate: s.rate,
-    amount: s.amount,
-  }));
-  const totalLitres = sales.reduce((n, s) => n + s.litres, 0);
-  const totalRevenue = sales.reduce((n, s) => n + s.amount, 0);
 
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold text-neutral-900">Milk Sale Entry</h1>
-      <p className="text-xs text-neutral-400 -mt-2">
-        The only place milk leaving the farm gets recorded — pick a customer, or Calf Use / Farm Use / Farm Employee.
-      </p>
       <WithdrawalWarningBanner withdrawals={activeWithdrawals} />
-      <div className="flex flex-wrap gap-3">
-        <div className="max-w-md rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm flex-1 min-w-[260px]">
-          <p className="font-medium text-neutral-700">Available to sell today: {balance.available.toFixed(1)} L</p>
-          <p className="text-xs text-neutral-500 mt-1">
-            {balance.produced.toFixed(1)} L produced − {(balance.calfUse + balance.farmUse + balance.employeeUse).toFixed(1)} L
-            calf/farm/employee use − {balance.sold.toFixed(1)} L already sold today. Guidance only, not enforced — opening
-            stock or multi-day carryover isn&apos;t reflected here.
-          </p>
-          {todayRow && (
-            <p className="text-xs text-neutral-500 mt-2 border-t border-neutral-200 pt-2">
-              Reconciliation: opening {todayRow.openingBalanceLitres.toFixed(1)} L → closing {todayRow.closingBalanceLitres.toFixed(1)} L
-              ({todayRow.varianceLitres >= 0 ? "+" : ""}{todayRow.varianceLitres.toFixed(1)} L unexplained today)
-            </p>
-          )}
-          <Link href="/admin/reports/reconciliation" className="link-btn mt-2">View full reconciliation →</Link>
-        </div>
-
-        {outstandingCustomers.length > 0 && (
-          <div className="max-w-md rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm flex-1 min-w-[260px]">
-            <p className="font-medium text-neutral-700">Customer outstanding</p>
-            <ul className="mt-1 flex flex-col gap-1">
-              {outstandingCustomers.map((c) => {
-                const id = customerIdByName.get(c.buyer);
-                return (
-                  <li key={c.buyer} className="flex items-center justify-between text-xs text-neutral-600">
-                    {id ? (
-                      <Link href={`/admin/customers/${id}`} className="text-primary hover:underline">{c.buyer}</Link>
-                    ) : (
-                      <span>{c.buyer}</span>
-                    )}
-                    <span className="font-medium text-neutral-800">{formatRs(c.outstandingBalance)}</span>
-                  </li>
-                );
-              })}
-            </ul>
-            <Link href="/admin/reports/ar-aging" className="link-btn mt-2">View full AR aging →</Link>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold text-neutral-700">Record daily sale</h2>
-        <MilkSaleForm customers={customers} />
-      </div>
-
-      <div className="flex items-center justify-between flex-wrap gap-3 mt-4">
-        <h2 className="text-sm font-semibold text-neutral-700">Recent Sales</h2>
-        <PeriodBar period={period} from={from} to={to} />
-      </div>
-      <div className="grid grid-cols-2 gap-3 max-w-md">
-        <StatCard label="Litres Sold" value={totalLitres.toLocaleString()} />
-        <StatCard label="Revenue" value={`Rs ${totalRevenue.toLocaleString()}`} />
-      </div>
-      <MilkSalesLedger sales={ledgerRows} customers={customers} isAdmin={isAdmin} />
+      <MilkSaleForm customers={customers} />
     </div>
   );
 }
