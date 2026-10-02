@@ -75,8 +75,6 @@ export default function AssetsTable({ assets, isAdmin = false }: { assets: Asset
     },
   ];
 
-  const total = assets.reduce((s, a) => s + a.currentValue, 0);
-
   return (
     <div className="flex flex-col gap-3">
       {isAdmin && (
@@ -112,7 +110,6 @@ export default function AssetsTable({ assets, isAdmin = false }: { assets: Asset
         selectedKeys={selected}
         onToggleSelect={toggleSelect}
       />
-      <p className="text-sm font-medium text-neutral-700">Total current value: {formatRs(total)}</p>
     </div>
   );
 }

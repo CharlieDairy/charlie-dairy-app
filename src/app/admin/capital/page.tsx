@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { formatRs } from "@/lib/format";
+import StatCard from "@/components/StatCard";
 import AddCapitalForm from "./AddCapitalForm";
 import CapitalLedgerTable from "./CapitalLedgerTable";
 
@@ -26,6 +27,9 @@ export default async function CapitalAdminPage({
   const ventures = ventureRows.map((v) => v.venture).filter((v): v is string => !!v).sort();
   const partners = partnerRows.map((p) => p.partner).sort();
 
+  const totalCredit = entries.reduce((n, e) => n + e.credit, 0);
+  const totalDebit = entries.reduce((n, e) => n + e.debit, 0);
+
   const byPartner = new Map<string, number>();
   for (const e of entries) {
     byPartner.set(e.partner, (byPartner.get(e.partner) ?? 0) + e.credit - e.debit);
@@ -48,6 +52,13 @@ export default async function CapitalAdminPage({
             {v}
           </Link>
         ))}
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Entries" value={entries.length.toLocaleString()} />
+        <StatCard label="Total Credit (in)" value={formatRs(totalCredit)} />
+        <StatCard label="Total Debit (out)" value={formatRs(totalDebit)} />
+        <StatCard label={`Capital Ledger Total${ventureFilter ? ` — ${ventureFilter}` : ""}`} value={formatRs(totalCredit - totalDebit)} />
       </div>
 
       <AddCapitalForm partners={partners} ventures={ventures} />

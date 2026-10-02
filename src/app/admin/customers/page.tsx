@@ -63,9 +63,10 @@ export default async function CustomersPage({
       </div>
       <PeriodBar period={period} from={from} to={to} extraParams={{ status }} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Customers" value={rows.length.toString()} />
-        <StatCard label="Total Sales" value={`${totalLitres.toLocaleString()} L · ${formatRs(totalRevenue)}`} />
+        <StatCard label="Total Sales (Litres)" value={`${totalLitres.toLocaleString()} L`} />
+        <StatCard label="Total Sales (Rs)" value={formatRs(totalRevenue)} />
         <StatCard label="Outstanding" value={formatRs(totalOutstanding)} tone={totalOutstanding > 0 ? "negative" : "positive"} />
       </div>
 

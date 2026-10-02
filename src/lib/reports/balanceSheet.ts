@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getMonthlyPnl } from "./pnl";
+import { getMonthlyPnl, getMilkSalesCutover, MILK_CASH_CATEGORY } from "./pnl";
 import { getCustomerSalesSummary } from "./milkSalesByCustomer";
 
 export type BalanceSheet = {
@@ -23,7 +23,8 @@ export type BalanceSheet = {
 // rather than hidden/forced to zero, since Liabilities aren't tracked at
 // all yet (see [1]) -- an honest gap is more useful than a fake balance.
 export async function getBalanceSheet(): Promise<BalanceSheet> {
-  const [cashAgg, assetsAgg, capitalEntries, customerSales, monthlyPnl] = await Promise.all([
+  const cutover = await getMilkSalesCutover();
+  const [cashAgg, assetsAgg, capitalEntries, customerSales, monthlyPnl, unappliedMilkReceipts] = await Promise.all([
     prisma.cashTransaction.aggregate({ _sum: { amountIn: true, amountOut: true } }),
     prisma.asset.aggregate({ _sum: { currentValue: true } }),
     // Capital Ledger spans multiple ventures on this farm (Dairy, Fattening,
@@ -38,13 +39,25 @@ export async function getBalanceSheet(): Promise<BalanceSheet> {
     // works, this just needs to be a real PeriodKey now that "all" is gone.
     getCustomerSalesSummary("month"),
     getMonthlyPnl(),
+    // Cash received for milk since itemized sales began, booked as lump-sum
+    // receipts rather than per-customer payments -- real money already in
+    // Cash & Bank that settles part of those sales (see pnl.ts cut-over note).
+    cutover
+      ? prisma.cashTransaction.aggregate({
+          where: { category: MILK_CASH_CATEGORY, date: { gte: cutover } },
+          _sum: { amountIn: true },
+        })
+      : Promise.resolve(null),
   ]);
 
   const cashAndBank = (cashAgg._sum.amountIn ?? 0) - (cashAgg._sum.amountOut ?? 0);
   const fixedAssets = assetsAgg._sum.currentValue ?? 0;
   // Only unpaid balances count as a receivable asset -- a customer who has
   // overpaid (negative outstanding) isn't a liability we track here.
-  const accountsReceivable = customerSales.reduce((n, c) => n + Math.max(0, c.outstandingBalance), 0);
+  const unpaidSales = customerSales.reduce((n, c) => n + Math.max(0, c.outstandingBalance), 0);
+  // Net the lump-sum milk receipts off the unpaid sales so the same cash isn't
+  // counted as both cash on hand AND a receivable still owed.
+  const accountsReceivable = Math.max(0, unpaidSales - (unappliedMilkReceipts?._sum.amountIn ?? 0));
   const totalAssets = cashAndBank + accountsReceivable + fixedAssets;
 
   // [1] No Vendor Bill / Accounts Payable model exists -- vendor spend is

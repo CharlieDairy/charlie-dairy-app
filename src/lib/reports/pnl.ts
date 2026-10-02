@@ -32,10 +32,30 @@ const BACKFILL_MARKER = "Backfill (cash ledger)";
 // still a real, queryable CashTransaction row everywhere else.
 const CUSTOMER_PAYMENT_CATEGORY = "Milk Sale Payment";
 
+// Before the app's Milk Sale Entry went live, milk revenue was booked only as
+// lump-sum cash receipts under this category. From the first itemized sale in
+// MilkSale onward, the same milk is in BOTH places -- the sale (accrual) and
+// the cash receipt for it -- so the receipt is a customer payment, not new
+// revenue. Without this, every month since cut-over counted its milk twice
+// (confirmed on real data: Sept had 550,030 of itemized sales plus 317,930 of
+// "Cash sale proceed for Milk" receipts dated Sept 1-18 for the same sales).
+export const MILK_CASH_CATEGORY = "Cash sale proceed for Milk";
+
+/** Date of the first itemized (non-backfill) milk sale, or null if none yet. */
+export async function getMilkSalesCutover(): Promise<Date | null> {
+  const first = await prisma.milkSale.findFirst({
+    where: { NOT: { enteredBy: BACKFILL_MARKER } },
+    orderBy: { date: "asc" },
+    select: { date: true },
+  });
+  return first?.date ?? null;
+}
+
 export async function getMonthlyPnl(): Promise<MonthlyPnl[]> {
-  const [cash, sales] = await Promise.all([
+  const [cash, sales, cutover] = await Promise.all([
     prisma.cashTransaction.findMany({ select: { date: true, category: true, amountIn: true, amountOut: true } }),
     prisma.milkSale.findMany({ where: { NOT: { enteredBy: BACKFILL_MARKER } }, select: { date: true, amount: true } }),
+    getMilkSalesCutover(),
   ]);
 
   const months = new Map<string, MonthlyPnl>();
@@ -49,7 +69,8 @@ export async function getMonthlyPnl(): Promise<MonthlyPnl[]> {
 
   for (const c of cash) {
     const m = bucket(c.date);
-    if (c.amountIn > 0 && c.category !== CUSTOMER_PAYMENT_CATEGORY) {
+    const isMilkReceiptOfTrackedSale = c.category === MILK_CASH_CATEGORY && cutover !== null && c.date >= cutover;
+    if (c.amountIn > 0 && c.category !== CUSTOMER_PAYMENT_CATEGORY && !isMilkReceiptOfTrackedSale) {
       m.revenue += c.amountIn;
       m.revenueByCategory[c.category] = (m.revenueByCategory[c.category] ?? 0) + c.amountIn;
     }

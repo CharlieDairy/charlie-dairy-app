@@ -39,6 +39,14 @@ export default async function BalanceSheetPage() {
         <Line label="Accounts Receivable (Customers)" value={formatRs(bs.accountsReceivable)} indent />
         <Line label="Fixed Assets" value={formatRs(bs.fixedAssets)} indent />
         <Line label="Total Assets" value={formatRs(bs.totalAssets)} bold />
+        <ul className="text-xs text-neutral-500 mt-3 list-disc list-inside flex flex-col gap-1">
+          <li>Cash &amp; Bank: every Cash Entry in minus out, all time.</li>
+          <li>
+            Accounts Receivable: Milk Sales not yet paid (sales minus recorded customer payments), less lump-sum milk
+            cash receipts booked since itemized sales began, so the same money isn&apos;t counted as both cash and a receivable.
+          </li>
+          <li>Fixed Assets: the sum of each line&apos;s Current Value on the Assets page (already the line total, not per unit).</li>
+        </ul>
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-lg p-4">
