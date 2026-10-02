@@ -25,13 +25,14 @@ async function recordCustomerPaymentImpl(formData: FormData): Promise<FormState>
   const mode = optEnum(formData, "mode", "Payment mode", CASH_MODES) ?? "CASH";
   const notes = optText(formData, "notes", "Notes", { max: 500 });
 
-  // Same canonical-spelling rule as recording a sale, so payments always
-  // land on the same customer their sales are under.
+  // Same rule as recording a sale: must be a registered customer, so
+  // payments always land on the same customer their sales are under.
   const customer = await prisma.customer.findFirst({
     where: { name: { equals: typedBuyer, mode: "insensitive" } },
     select: { name: true },
   });
-  const buyer = customer?.name ?? typedBuyer;
+  if (!customer) throw new ValidationError("Select a registered customer — that name isn't in the Customers list.");
+  const buyer = customer.name;
 
   const duplicate = await prisma.customerPayment.findFirst({
     where: { buyer, date, amount, createdAt: { gte: new Date(Date.now() - 120_000) } },

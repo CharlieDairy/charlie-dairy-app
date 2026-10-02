@@ -12,7 +12,7 @@ import type { LedgerSaleRow } from "@/app/entry/milk-sale/MilkSalesLedger";
 import MilkSalesLedger from "@/app/entry/milk-sale/MilkSalesLedger";
 import WithdrawalWarningBanner from "@/components/WithdrawalWarningBanner";
 import PeriodBar from "@/components/PeriodBar";
-import RecordPaymentForm from "./RecordPaymentForm";
+import RecordPaymentButton from "./RecordPaymentButton";
 
 function fmtDate(d: Date): string {
   return new Date(d).toISOString().slice(0, 10);
@@ -71,6 +71,7 @@ export default async function MilkSalesPage({
         <h1 className="text-2xl font-semibold text-neutral-900">Milk Sales</h1>
         <div className="flex items-center gap-2">
           <Link href="/entry/milk-sale" className="link-btn link-btn-primary">+ Record a sale →</Link>
+          <RecordPaymentButton customers={customers} defaultCustomer={params.buyer} />
           <a href="/api/bulk/export?type=milkSales" className="bg-neutral-800 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-neutral-900">
             Download CSV
           </a>
@@ -119,11 +120,6 @@ export default async function MilkSalesPage({
       <WithdrawalWarningBanner withdrawals={activeWithdrawals} />
 
       <MilkSalesLedger sales={ledgerRows} showSessions customers={customers} isAdmin={isAdmin} />
-
-      <Card>
-        <h2 className="font-semibold text-text mb-2">Record a Payment</h2>
-        <RecordPaymentForm buyers={buyers} defaultBuyer={params.buyer} />
-      </Card>
 
       {detail && params.buyer && (
         <Card>
