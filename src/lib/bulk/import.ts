@@ -297,10 +297,13 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         const direction = parseEnum(cells, 2, "direction", rowNum, errors, ["IN", "OUT"] as const, "IN", true);
         const quantity = parseNum(cells, 3, "quantity", rowNum, errors, true);
         const rate = parseOptNum(cells, 4, "rate", rowNum, errors);
-        const cost = parseOptNum(cells, 5, "cost", rowNum, errors);
+        const costCell = parseOptNum(cells, 5, "cost", rowNum, errors);
         range(errors, rowNum, "quantity", quantity, 0, 10_000_000, true);
         range(errors, rowNum, "rate", rate, 0, 1_000_000);
-        range(errors, rowNum, "cost", cost, 0, 10_000_000_000);
+        range(errors, rowNum, "cost", costCell, 0, 10_000_000_000);
+        // Same rule as the Feed Entry form: an issue (OUT) with a rate and no
+        // explicit cost costs rate x quantity. Receipts (IN) carry no cost.
+        const cost = costCell ?? (direction === "OUT" && rate ? Math.round(rate * quantity * 100) / 100 : null);
         const notes = cell(cells, 6) || null;
         const rowEnteredBy = cell(cells, 7) || enteredBy;
         if (date && feedType) {

@@ -34,6 +34,8 @@ export async function uploadBulkData(_prev: ImportResult | undefined, formData: 
       revalidatePath("/admin/reports/milk-sales");
       revalidatePath("/admin/reports/reconciliation");
       revalidatePath("/admin/customers");
+      revalidatePath("/admin/reports/feed");
+      revalidatePath("/entry/feed");
     }
 
     return result;

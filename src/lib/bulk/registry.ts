@@ -32,6 +32,7 @@ export const BULK_TYPES: BulkTypeMeta[] = [
     hasDateFilter: true,
     importable: true,
     headers: ["date", "feedType", "direction", "quantity", "rate", "cost", "notes", "enteredBy"],
+    note: 'feedType must be a feed already in Feed Master (any capitalisation). direction is IN (received) or OUT (issued). Dates are YYYY-MM-DD. For an OUT row, leave cost blank and it is worked out as rate × quantity. To load opening stock, add one IN row per feed dated before your first usage (notes: "Opening stock").',
   },
   {
     key: "cash",
