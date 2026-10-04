@@ -7,20 +7,10 @@ import { formatRs } from "@/lib/format";
 import StatCard from "@/components/StatCard";
 import Badge from "@/components/Badge";
 import PeriodBar from "@/components/PeriodBar";
-import DeleteRowButton from "@/components/DeleteRowButton";
-import { deleteFeedTransaction } from "@/app/entry/feed/actions";
+import FeedLedgerTable from "./FeedLedgerTable";
 
 const qty = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 const rs2 = (n: number) => `Rs ${n.toLocaleString("en-PK", { maximumFractionDigits: 2 })}`;
-
-const IconTrash = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-    <path d="M10 11v6M14 11v6" />
-    <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-  </svg>
-);
 
 function stockTone(closing: number, daysLeft: number | null): { tone: "danger" | "warning" | "success" | "neutral"; label: string } {
   // A negative balance means more was logged consumed than ever logged
@@ -43,6 +33,7 @@ export default async function FeedOverviewPage({
   const range = periodRange(period, new Date(), from, to);
   const user = await getLiveUser();
   const canEdit = canWrite(user);
+  const isAdmin = user?.role === "ADMIN"; // edit / delete / delete-all are Admin-only
 
   const report = await getFeedPeriodReport(range, params.feed);
   const rows = report.rows;
@@ -116,67 +107,19 @@ export default async function FeedOverviewPage({
             />
           </div>
 
-          <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
-            <table className="min-w-full text-sm">
-              <thead className="bg-neutral-100">
-                <tr>
-                  <th className="text-left px-3 py-2">Date</th>
-                  <th className="text-right px-3 py-2">In</th>
-                  <th className="text-right px-3 py-2">Out</th>
-                  <th className="text-right px-3 py-2">Balance</th>
-                  <th className="text-right px-3 py-2">Rate</th>
-                  <th className="text-right px-3 py-2">Amount</th>
-                  <th className="text-left px-3 py-2">Notes</th>
-                  <th className="text-left px-3 py-2">By</th>
-                  {canEdit && <th className="text-left px-3 py-2 w-10"></th>}
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="bg-neutral-50 font-medium">
-                  <td className="px-3 py-2">Opening balance</td>
-                  <td className="px-3 py-2" />
-                  <td className="px-3 py-2" />
-                  <td className="px-3 py-2 text-right">{qty(selectedRow.opening)}</td>
-                  <td colSpan={canEdit ? 5 : 4} />
-                </tr>
-                {(report.ledger ?? []).map((l) => (
-                  <tr key={l.id} className="border-t border-neutral-100">
-                    <td className="px-3 py-2 whitespace-nowrap">{l.date}</td>
-                    <td className="px-3 py-2 text-right text-green-700">{l.direction === "IN" ? qty(l.quantity) : ""}</td>
-                    <td className="px-3 py-2 text-right">{l.direction === "OUT" ? qty(l.quantity) : ""}</td>
-                    <td className={`px-3 py-2 text-right font-medium ${l.balance < 0 ? "text-danger" : ""}`}>{qty(l.balance)}</td>
-                    <td className="px-3 py-2 text-right">{l.rate !== null ? rs2(l.rate) : "—"}</td>
-                    <td className="px-3 py-2 text-right">{l.amount !== null ? formatRs(l.amount) : "—"}</td>
-                    <td className="px-3 py-2 text-neutral-600">{l.notes ?? ""}</td>
-                    <td className="px-3 py-2 text-neutral-500">{l.enteredBy ?? ""}</td>
-                    {canEdit && (
-                      <td className="px-3 py-2">
-                        <DeleteRowButton
-                          action={deleteFeedTransaction}
-                          hiddenFields={{ id: l.id }}
-                          confirmMessage={`Delete this ${l.direction === "IN" ? "inward" : "outward"} entry of ${qty(l.quantity)} ${unitLabel} on ${l.date}?`}
-                          icon={IconTrash}
-                        />
-                      </td>
-                    )}
-                  </tr>
-                ))}
-                {(report.ledger ?? []).length === 0 && (
-                  <tr>
-                    <td colSpan={canEdit ? 9 : 8} className="px-3 py-6 text-center text-neutral-500">No entries for this feed in the period.</td>
-                  </tr>
-                )}
-                <tr className="border-t-2 border-neutral-300 bg-neutral-50 font-semibold">
-                  <td className="px-3 py-2">Closing balance</td>
-                  <td className="px-3 py-2 text-right">{qty(selectedRow.inQty)}</td>
-                  <td className="px-3 py-2 text-right">{qty(selectedRow.outQty)}</td>
-                  <td className={`px-3 py-2 text-right ${selectedRow.closing < 0 ? "text-danger" : ""}`}>{qty(selectedRow.closing)}</td>
-                  <td colSpan={canEdit ? 5 : 4} />
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          {selectedRow.closing < 0 && (
+          <FeedLedgerTable
+            lines={report.ledger ?? []}
+            feedType={selectedRow.feedType}
+            feedNames={rows.filter((r) => r.inMaster).map((r) => r.feedType)}
+            unit={unitLabel}
+            opening={selectedRow.opening}
+            inQty={selectedRow.inQty}
+            outQty={selectedRow.outQty}
+            closing={selectedRow.closing}
+            from={range.start.toISOString().slice(0, 10)}
+            to={new Date(range.end.getTime() - 86_400_000).toISOString().slice(0, 10)}
+            isAdmin={isAdmin}
+          />          {selectedRow.closing < 0 && (
             <p className="text-xs text-danger">
               A negative balance means more was logged as issued (Out) than was ever recorded as received (In) — check
               for a missing purchase entry.

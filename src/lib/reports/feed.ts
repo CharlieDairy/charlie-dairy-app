@@ -125,6 +125,7 @@ export type FeedLedgerLine = {
   direction: "IN" | "OUT";
   quantity: number;
   rate: number | null;
+  cost: number | null; // cost as stored (OUT entries only)
   amount: number | null; // recorded cost, else rate x quantity when a rate was given
   notes: string | null;
   enteredBy: string | null;
@@ -219,6 +220,7 @@ export async function getFeedPeriodReport(range: { start: Date; end: Date }, fee
         direction: t.direction,
         quantity: t.quantity,
         rate: t.rate,
+        cost: t.cost,
         amount: t.cost ?? (t.rate !== null ? Math.round(t.rate * t.quantity * 100) / 100 : null),
         notes: t.notes,
         enteredBy: t.enteredBy,
