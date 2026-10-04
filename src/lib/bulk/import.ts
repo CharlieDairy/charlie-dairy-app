@@ -285,10 +285,15 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
     case "feed": {
       const parsed: Prisma.FeedTransactionCreateManyInput[] = [];
       const seenFeed = new Set<string>();
+      // Feed names must come from Feed Master (matched ignoring case, saved
+      // with the master's spelling) so every entry lands on a real feed.
+      const masterFeed = new Map((await prisma.feedItem.findMany({ select: { name: true } })).map((f) => [f.name.toLowerCase(), f.name]));
       dataRows.forEach((cells, i) => {
         const rowNum = i + 2;
         const date = parseDate(cells, 0, "date", rowNum, errors, true);
-        const feedType = req(cells, 1, "feedType", rowNum, errors);
+        const rawFeed = req(cells, 1, "feedType", rowNum, errors);
+        const feedType = rawFeed ? masterFeed.get(rawFeed.toLowerCase()) ?? "" : "";
+        if (rawFeed && !feedType) errors.push(`Row ${rowNum}: feed "${rawFeed}" is not in Feed Master. Add it there first.`);
         const direction = parseEnum(cells, 2, "direction", rowNum, errors, ["IN", "OUT"] as const, "IN", true);
         const quantity = parseNum(cells, 3, "quantity", rowNum, errors, true);
         const rate = parseOptNum(cells, 4, "rate", rowNum, errors);

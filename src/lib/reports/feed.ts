@@ -92,3 +92,140 @@ export async function getFeedOverview(referenceDate = new Date()): Promise<FeedO
     lowStockCount: balances.filter((b) => b.lowStock).length,
   };
 }
+
+
+// ---------------------------------------------------------------------------
+// Period report for the Feed Overview page: per feed, the opening balance
+// (everything before the period), what came IN and went OUT inside it, the
+// closing balance, and the averages -- plus, for one selected feed, the
+// transaction ledger with a running balance.
+// ---------------------------------------------------------------------------
+
+const DAY_MS = 86_400_000;
+
+export type FeedPeriodRow = {
+  feedType: string;
+  unit: string | null; // from Feed Master, null for a legacy name not in the master
+  inMaster: boolean;
+  opening: number;
+  inQty: number;
+  outQty: number;
+  closing: number;
+  avgDailyUse: number; // OUT quantity / days in the period
+  avgRate: number | null; // quantity-weighted average of the rates recorded in the period
+  outCost: number; // cost recorded on OUT entries in the period
+  daysLeft: number | null; // closing balance / trailing-30-day average use
+  reorderLevel: number | null;
+  lowStock: boolean;
+};
+
+export type FeedLedgerLine = {
+  id: string;
+  date: string;
+  direction: "IN" | "OUT";
+  quantity: number;
+  rate: number | null;
+  amount: number | null; // recorded cost, else rate x quantity when a rate was given
+  notes: string | null;
+  enteredBy: string | null;
+  balance: number; // running balance after this line
+};
+
+export type FeedPeriodReport = {
+  days: number;
+  rows: FeedPeriodRow[];
+  ledger: FeedLedgerLine[] | null; // only when a single feed is selected
+};
+
+export async function getFeedPeriodReport(range: { start: Date; end: Date }, feedType?: string): Promise<FeedPeriodReport> {
+  const [items, tx] = await Promise.all([
+    prisma.feedItem.findMany({ select: { name: true, unit: true, reorderLevel: true, active: true } }),
+    prisma.feedTransaction.findMany({
+      where: { date: { lt: range.end } },
+      orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+      select: { id: true, date: true, feedType: true, direction: true, quantity: true, rate: true, cost: true, notes: true, enteredBy: true },
+    }),
+  ]);
+
+  const now = Date.now();
+  const elapsedEnd = Math.min(range.end.getTime(), now + DAY_MS);
+  const days = Math.max(1, Math.round((elapsedEnd - range.start.getTime()) / DAY_MS));
+  const trailingStart = now - 30 * DAY_MS;
+
+  type Acc = { opening: number; inQty: number; outQty: number; outCost: number; rateQty: number; rateAmt: number; recentOut: number };
+  const acc = new Map<string, Acc>();
+  const get = (name: string): Acc => {
+    let a = acc.get(name);
+    if (!a) acc.set(name, (a = { opening: 0, inQty: 0, outQty: 0, outCost: 0, rateQty: 0, rateAmt: 0, recentOut: 0 }));
+    return a;
+  };
+  for (const item of items) if (item.active) get(item.name);
+
+  for (const t of tx) {
+    const a = get(t.feedType);
+    const delta = t.direction === "IN" ? t.quantity : -t.quantity;
+    if (t.date < range.start) {
+      a.opening += delta;
+    } else {
+      if (t.direction === "IN") a.inQty += t.quantity;
+      else {
+        a.outQty += t.quantity;
+        a.outCost += t.cost ?? 0;
+      }
+      if (t.rate !== null) {
+        a.rateQty += t.quantity;
+        a.rateAmt += t.rate * t.quantity;
+      }
+    }
+    if (t.direction === "OUT" && t.date.getTime() >= trailingStart) a.recentOut += t.quantity;
+  }
+
+  const itemByName = new Map(items.map((i) => [i.name, i]));
+  const rows: FeedPeriodRow[] = Array.from(acc.entries())
+    .map(([name, a]) => {
+      const item = itemByName.get(name);
+      const closing = a.opening + a.inQty - a.outQty;
+      const recentDaily = a.recentOut / 30;
+      const reorderLevel = item?.reorderLevel ?? null;
+      return {
+        feedType: name,
+        unit: item?.unit ?? null,
+        inMaster: !!item,
+        opening: a.opening,
+        inQty: a.inQty,
+        outQty: a.outQty,
+        closing,
+        avgDailyUse: a.outQty / days,
+        avgRate: a.rateQty > 0 ? a.rateAmt / a.rateQty : null,
+        outCost: a.outCost,
+        daysLeft: recentDaily > 0 && closing > 0 ? closing / recentDaily : null,
+        reorderLevel,
+        lowStock: reorderLevel !== null && closing <= reorderLevel,
+      };
+    })
+    .sort((x, y) => x.feedType.localeCompare(y.feedType));
+
+  let ledger: FeedLedgerLine[] | null = null;
+  if (feedType) {
+    const selected = rows.find((r) => r.feedType === feedType);
+    let balance = selected?.opening ?? 0;
+    ledger = [];
+    for (const t of tx) {
+      if (t.feedType !== feedType || t.date < range.start) continue;
+      balance += t.direction === "IN" ? t.quantity : -t.quantity;
+      ledger.push({
+        id: t.id,
+        date: t.date.toISOString().slice(0, 10),
+        direction: t.direction,
+        quantity: t.quantity,
+        rate: t.rate,
+        amount: t.cost ?? (t.rate !== null ? Math.round(t.rate * t.quantity * 100) / 100 : null),
+        notes: t.notes,
+        enteredBy: t.enteredBy,
+        balance,
+      });
+    }
+  }
+
+  return { days, rows, ledger };
+}
