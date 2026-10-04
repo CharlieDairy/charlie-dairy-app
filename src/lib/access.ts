@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AccessError, ValidationError } from "@/lib/errors";
-import { permKey, type PermissionActionKey, type PermissionModuleKey } from "@/lib/permissions";
+import type { PermissionActionKey, PermissionModuleKey } from "@/lib/permissions";
 import { farmDateKey } from "@/lib/reports/dashboardMetrics";
 
 // ---------------------------------------------------------------------------
@@ -12,17 +12,21 @@ import { farmDateKey } from "@/lib/reports/dashboardMetrics";
 // full access until their token expired, and a server action reachable by
 // URL was only as protected as the route it was posted from. Every action
 // now calls requirePermission() itself, which re-reads the user, their
-// active flag, role and AccessRole grants from the database on every call.
+// active flag and role from the database on every call.
 // ---------------------------------------------------------------------------
 
+// Three fixed roles:
+//   ADMIN   -- everything.
+//   EDITOR  -- read, add, edit and delete in every module EXCEPT the Admin
+//              panel. (The Admin-only reports -- P&L, Balance Sheet, Capital
+//              Ledger, Assets, Cash Flow -- and Customer / master-data
+//              changes are blocked by isAdminOnlyPath() and requireAccess().)
+//   VIEWER  -- read only, same exclusions as Editor.
 export type LiveUser = {
   id: string;
   name: string;
   username: string;
-  role: "ADMIN" | "ENTRY";
-  /** "module:ACTION" keys this user's AccessRole grants. Always empty for
-   *  ADMIN, who bypasses every check below regardless of this set. */
-  permissions: Set<string>;
+  role: "ADMIN" | "EDITOR" | "VIEWER";
 };
 
 export type AccessRule = { admin?: boolean };
@@ -35,38 +39,36 @@ export async function getLiveUser(): Promise<LiveUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, username: true, role: true, active: true, accessRoleId: true },
+    select: { id: true, name: true, username: true, role: true, active: true },
   });
   if (!user || !user.active) return null;
-
-  const permissions = new Set<string>();
-  if (user.role !== "ADMIN" && user.accessRoleId) {
-    const grants = await prisma.accessRolePermission.findMany({
-      where: { accessRoleId: user.accessRoleId },
-      select: { module: true, action: true },
-    });
-    for (const g of grants) permissions.add(permKey(g.module, g.action as PermissionActionKey));
-  }
 
   return {
     id: user.id,
     name: user.name,
     username: user.username,
-    role: user.role as "ADMIN" | "ENTRY",
-    permissions,
+    role: user.role as LiveUser["role"],
   };
 }
 
-/** True if this live user (ADMIN always, else via their AccessRole) holds `module:action`. */
+/** True if this live user may do `action` in `module` (see role rules above). */
 export function hasPermission(user: LiveUser, module: PermissionModuleKey | string, action: PermissionActionKey): boolean {
-  return user.role === "ADMIN" || user.permissions.has(permKey(module, action));
+  if (user.role === "ADMIN") return true;
+  if (module === "admin") return false;
+  if (user.role === "EDITOR") return true;
+  return action === "VIEW";
+}
+
+/** True if this user can add/edit/delete data anywhere (Admin or Editor). */
+export function canWrite(user: Pick<LiveUser, "role"> | null | undefined): boolean {
+  return user?.role === "ADMIN" || user?.role === "EDITOR";
 }
 
 /**
- * Throws AccessError unless the caller is an active user holding
- * `module:action` through their AccessRole (or is ADMIN, who bypasses every
- * check). Call this first in every server action that creates, edits,
- * deletes or exports something.
+ * Throws AccessError unless the caller is an active user whose role allows
+ * `module:action` (ADMIN everything; EDITOR everything outside the Admin
+ * module; VIEWER read-only). Call this first in every server action that
+ * creates, edits, deletes or exports something.
  */
 export async function requirePermission(module: PermissionModuleKey, action: PermissionActionKey): Promise<LiveUser> {
   const user = await getLiveUser();

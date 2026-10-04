@@ -51,6 +51,50 @@ const PATH_MODULES: { prefix: string; module: PermissionModuleKey }[] = [
   { prefix: "/admin/audit-log", module: "admin" },
 ];
 
+export type AppRole = "ADMIN" | "EDITOR" | "VIEWER";
+
+// Pages only an Admin may open. Editors and View-Only users get everything
+// else (read for View Only; read/write/edit/delete for Editors) but never the
+// Admin panel, P&L, Balance Sheet, Capital Ledger, Assets or Cash Flow.
+const ADMIN_ONLY_PREFIXES = [
+  "/admin/users",
+  "/admin/master-data",
+  "/admin/bulk",
+  "/admin/audit-log",
+  "/admin/reports/pl",
+  "/admin/reports/balance-sheet",
+  "/admin/reports/cashflow",
+  "/admin/capital",
+  "/admin/assets",
+];
+
+export function isAdminOnlyPath(pathname: string): boolean {
+  return ADMIN_ONLY_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
+// A View-Only user can't use any data-entry form or "add" page -- they read
+// the same information through the reports and lists instead.
+export function isWritePath(pathname: string): boolean {
+  return (
+    pathname === "/entry" ||
+    pathname.startsWith("/entry/") ||
+    ["/admin/cows/add", "/admin/cows/import", "/admin/team/add"].some((p) => pathname === p)
+  );
+}
+
+/** Where a user lands after sign-in: Editors work from the data-entry menu; Admin and View Only from the dashboard. */
+export function homeFor(role: string | undefined): string {
+  return role === "EDITOR" ? "/entry" : "/admin";
+}
+
+/** True if a signed-in user with this role may open this path at all. */
+export function roleCanOpenPath(role: string | undefined, pathname: string): boolean {
+  if (role === "ADMIN") return true;
+  if (isAdminOnlyPath(pathname)) return false;
+  if (role === "VIEWER" && isWritePath(pathname)) return false;
+  return role === "EDITOR" || role === "VIEWER";
+}
+
 /** Returns the permission module a given path requires VIEW on, or null if it needs none (e.g. the dashboard itself). */
 export function moduleForPath(pathname: string): PermissionModuleKey | null {
   const match = PATH_MODULES.find((p) => pathname === p.prefix || pathname.startsWith(p.prefix + "/"));

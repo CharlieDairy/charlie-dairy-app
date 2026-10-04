@@ -1,7 +1,7 @@
+import { roleCanOpenPath } from "@/lib/modules";
+
 export type NavItem = { href: string; label: string };
-// `key` doubles as the granular permission module (see src/lib/permissions.ts
-// PERMISSION_MODULES) -- a section is visible iff the signed-in user holds
-// VIEW on that key, so there's exactly one list to keep in sync, not two.
+// `key` is the section's permission module (src/lib/permissions.ts).
 export type NavSection = { key: string; label: string; items: NavItem[] };
 
 // Single source of truth for the app's navigation, grouped by subject (not
@@ -117,6 +117,10 @@ export const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-export function visibleSections(isFullAdmin: boolean, permissions: Set<string>): NavSection[] {
-  return NAV_SECTIONS.filter((s) => isFullAdmin || permissions.has(`${s.key}:VIEW`));
+// Sidebar for a role: every page the role may actually open (see
+// roleCanOpenPath in modules.ts), grouped as above; empty sections drop out.
+export function visibleSections(role: string): NavSection[] {
+  return NAV_SECTIONS.map((s) => ({ ...s, items: s.items.filter((i) => roleCanOpenPath(role, i.href)) })).filter(
+    (s) => s.items.length > 0,
+  );
 }

@@ -57,7 +57,7 @@ export async function updateCashEntry(_prev: FormState, formData: FormData): Pro
 }
 
 async function updateCashEntryImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  await requirePermission("financial", "EDIT");
   const id = reqId(formData, "id", "Entry");
   const date = reqDate(formData, "date", "Date");
   const direction = reqEnum(formData, "direction", "Direction", DIRECTIONS);
@@ -110,7 +110,7 @@ export async function deleteCashEntry(_prev: FormState, formData: FormData): Pro
 }
 
 async function deleteCashEntryImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  await requirePermission("financial", "DELETE");
   const id = reqId(formData, "id", "Entry");
 
   const existing = await prisma.cashTransaction.findUnique({ where: { id } });

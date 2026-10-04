@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqNum } from "@/lib/validate";
 
@@ -15,7 +15,7 @@ export async function updateScoringWeights(_prev: FormState, formData: FormData)
 }
 
 async function updateScoringWeightsImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  await requirePermission("health", "EDIT");
 
   const weights = FACTOR_KEYS.map((key) => ({
     key,
@@ -39,7 +39,7 @@ export async function resetScoringWeights(_prev: FormState, _formData: FormData)
 }
 
 async function resetScoringWeightsImpl(): Promise<FormState> {
-  await requireAccess({ admin: true });
+  await requirePermission("health", "EDIT");
   await prisma.$transaction([
     prisma.scoringFactor.update({ where: { key: "VACCINATION_COMPLIANCE" }, data: { weightPct: 40 } }),
     prisma.scoringFactor.update({ where: { key: "TREATMENT_FREQUENCY" }, data: { weightPct: 30 } }),

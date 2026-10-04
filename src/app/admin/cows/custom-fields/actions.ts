@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requirePermission, requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqEnum, reqId, reqText } from "@/lib/validate";
 
@@ -35,7 +35,7 @@ async function addCustomFieldDefImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleCustomFieldActive(formData: FormData): Promise<void> {
-  await requireAccess({ admin: true });
+  await requirePermission("herd", "EDIT");
   const id = reqId(formData, "id", "Field");
   const active = formData.get("active") === "true";
   await prisma.cowCustomFieldDef.updateMany({ where: { id }, data: { active } });
@@ -48,7 +48,7 @@ export async function updateCowCustomFields(_prev: FormState, formData: FormData
 }
 
 async function updateCowCustomFieldsImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  await requirePermission("herd", "EDIT");
   const cowId = reqId(formData, "cowId", "Cow");
 
   const cow = await prisma.cow.findUnique({ where: { id: cowId }, select: { id: true } });

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requireAccess, requirePermission, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { reqId, reqText, optText, optNum } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
@@ -30,7 +30,7 @@ async function addFeedItemImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleFeedItemActive(formData: FormData): Promise<void> {
-  await requireAccess({ admin: true });
+  await requirePermission("feed", "EDIT");
   const id = reqId(formData, "id", "Feed item");
   const active = formData.get("active") === "true";
   await prisma.feedItem.updateMany({ where: { id }, data: { active } });

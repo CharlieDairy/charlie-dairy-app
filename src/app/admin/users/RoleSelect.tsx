@@ -16,8 +16,9 @@ export default function RoleSelect({ userId, role, isSelf }: { userId: string; r
         title={isSelf ? "You can't change your own role." : undefined}
         className="border border-neutral-300 rounded px-2 py-1 text-sm disabled:bg-neutral-100 disabled:text-neutral-400"
       >
-        <option value="ADMIN">ADMIN</option>
-        <option value="ENTRY">ENTRY</option>
+        <option value="ADMIN">Admin</option>
+        <option value="EDITOR">Editor</option>
+        <option value="VIEWER">View Only</option>
       </select>
     </form>
   );

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requirePermission, requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { reqEnum, reqNum, reqText, reqId } from "@/lib/validate";
 
 export type FormState = { success: boolean; message: string } | undefined;
@@ -26,7 +26,7 @@ async function addHealthScheduleImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleHealthScheduleActive(formData: FormData): Promise<void> {
-  await requireAccess({ admin: true });
+  await requirePermission("health", "EDIT");
   const id = reqId(formData, "id", "Schedule");
   const active = formData.get("active") === "true";
   await prisma.healthSchedule.updateMany({ where: { id }, data: { active } });
@@ -39,7 +39,7 @@ export async function deleteHealthSchedule(_prev: FormState, formData: FormData)
 
 async function deleteHealthScheduleImpl(formData: FormData): Promise<FormState> {
   await requirePermission("health", "DELETE");
-  await requireAccess({ admin: true });
+  await requirePermission("health", "DELETE");
   const id = reqId(formData, "id", "Schedule");
   await prisma.healthSchedule.delete({ where: { id } });
   revalidatePath("/admin/health/schedules");

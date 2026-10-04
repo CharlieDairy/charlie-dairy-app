@@ -14,8 +14,7 @@ const tiles: { href: string; label: string; desc: string; module: PermissionModu
 export default async function EntryHome() {
   const user = await getLiveUser();
   if (!user) return null; // the layout already renders AccountBlocked in this case
-  const isFullAdmin = user.role === "ADMIN";
-  const visible = tiles.filter((t) => isFullAdmin || hasPermission(user, t.module, "VIEW"));
+  const visible = tiles.filter((t) => hasPermission(user, t.module, "CREATE"));
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,7 +31,7 @@ export default async function EntryHome() {
           </Link>
         ))}
         {visible.length === 0 && (
-          <p className="text-sm text-neutral-400">No data entry forms are enabled for your account yet — ask an admin to grant access under Users &amp; Access.</p>
+          <p className="text-sm text-neutral-400">Your account is View Only, so there are no data entry forms for it.</p>
         )}
       </div>
     </div>

@@ -4,7 +4,7 @@ import { useActionState, useRef, useEffect } from "react";
 import { createUser, type FormState } from "./actions";
 import LinkResult from "./LinkResult";
 
-export default function AddUserForm({ roles }: { roles: { id: string; name: string }[] }) {
+export default function AddUserForm() {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(createUser, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -24,18 +24,10 @@ export default function AddUserForm({ roles }: { roles: { id: string; name: stri
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="role" className="text-sm font-medium text-neutral-700">Role</label>
-        <select id="role" name="role" required defaultValue="ENTRY" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
-          <option value="ENTRY">ENTRY — data entry only</option>
-          <option value="ADMIN">ADMIN — full access</option>
-        </select>
-      </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="accessRoleId" className="text-sm font-medium text-neutral-700">Access Role</label>
-        <select id="accessRoleId" name="accessRoleId" defaultValue="" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
-          <option value="">No role (no access)</option>
-          {roles.map((r) => (
-            <option key={r.id} value={r.id}>{r.name}</option>
-          ))}
+        <select id="role" name="role" required defaultValue="VIEWER" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
+          <option value="VIEWER">View Only — can see everything except Admin &amp; finance statements</option>
+          <option value="EDITOR">Editor — can add, edit and delete (no Admin &amp; finance statements)</option>
+          <option value="ADMIN">Admin — full access</option>
         </select>
       </div>
       <button type="submit" disabled={isPending} className="link-btn link-btn-primary">

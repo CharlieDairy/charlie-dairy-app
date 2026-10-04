@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requirePermission, requireAccess, assertNotBackdated, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, reqNum, reqText, optDate, optNum, optText } from "@/lib/validate";
 
@@ -27,7 +27,7 @@ async function addVaccineDefImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleVaccineActive(formData: FormData): Promise<void> {
-  await requireAccess({ admin: true });
+  await requirePermission("health", "EDIT");
   const id = reqId(formData, "id", "Vaccine");
   const active = formData.get("active") === "true";
   await prisma.vaccineDef.updateMany({ where: { id }, data: { active } });
@@ -54,7 +54,7 @@ async function addMedicineDefImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function toggleMedicineActive(formData: FormData): Promise<void> {
-  await requireAccess({ admin: true });
+  await requirePermission("health", "EDIT");
   const id = reqId(formData, "id", "Medicine");
   const active = formData.get("active") === "true";
   await prisma.medicineDef.updateMany({ where: { id }, data: { active } });
@@ -66,7 +66,7 @@ export async function updateMedicineDef(_prev: FormState, formData: FormData): P
 }
 
 async function updateMedicineDefImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  await requirePermission("health", "EDIT");
   const id = reqId(formData, "id", "Medicine");
   const unit = optText(formData, "unit", "Unit", { max: 20 });
   const withdrawalDays = optNum(formData, "withdrawalDays", "Withdrawal days", { min: 0, max: 365, decimals: 0 });

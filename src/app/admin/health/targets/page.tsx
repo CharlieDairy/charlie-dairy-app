@@ -24,7 +24,8 @@ export default async function ProductionTargetsPage() {
     prisma.cow.findMany({ where: { status: { notIn: ["SOLD", "DEAD"] } }, select: { id: true, tag: true }, orderBy: { tag: "asc" } }),
     auth(),
   ]);
-  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const isAdmin = role === "ADMIN" || role === "EDITOR"; // can delete rows
 
   const milkTargets = targets.filter((t) => t.type === "MILK_DAILY");
   const weightTargets = targets.filter((t) => t.type === "WEIGHT");

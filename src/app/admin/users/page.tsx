@@ -6,7 +6,6 @@ import RoleSelect from "./RoleSelect";
 import ActiveToggle from "./ActiveToggle";
 import ResetPasswordForm from "./ResetPasswordForm";
 import ResetLinkButton from "./ResetLinkButton";
-import RoleAssignSelect from "./RoleAssignSelect";
 
 function Ic({ children }: { children: React.ReactNode }) {
   return (
@@ -23,10 +22,7 @@ export default async function UsersAdminPage() {
   const session = await auth();
   const currentUserId = (session?.user as { id?: string } | undefined)?.id;
 
-  const [users, roles] = await Promise.all([
-    prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.accessRole.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-  ]);
+  const users = await prisma.user.findMany({ orderBy: { createdAt: "asc" } });
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,12 +38,9 @@ export default async function UsersAdminPage() {
           </span>
           <div>
             <h1 className="text-2xl font-semibold text-neutral-900">Users &amp; Access</h1>
-            <p className="text-sm text-neutral-500">Invite people and control what each one can see and do.</p>
+            <p className="text-sm text-neutral-500">Invite people and choose their role: Admin, Editor or View Only.</p>
           </div>
         </div>
-        <Link href="/admin/users/roles" className="text-sm font-medium text-green-700 border border-green-200 rounded-md px-4 py-2 hover:bg-green-50">
-          Manage Roles →
-        </Link>
       </div>
 
       <section className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
@@ -57,7 +50,7 @@ export default async function UsersAdminPage() {
           <span className="text-xs text-neutral-400">Invite only — only an Admin can create accounts. You get a one-time link to send; they choose their own password.</span>
         </div>
         <div className="p-5">
-          <AddUserForm roles={roles} />
+          <AddUserForm />
         </div>
       </section>
 
@@ -69,12 +62,11 @@ export default async function UsersAdminPage() {
           </div>
         </div>
         <p className="px-5 pt-4 text-base font-semibold text-neutral-600">
-          ADMIN can see and edit everything. ENTRY users are assigned a Role — a named, reusable bundle
-          of granular View/Create/Edit/Delete/Export permissions per module, managed under{" "}
-          <Link href="/admin/users/roles" className="text-green-700 underline">Roles</Link>. Deactivating
-          an account blocks it immediately — every save and every page load re-checks the account — and
-          keeps their name on past records. Only an Admin can create or change Admin accounts, change
-          roles, or reset an Admin&apos;s password.
+          <b>Admin</b> can see and change everything. <b>Editor</b> can read, add, edit and delete, but
+          can&apos;t open the Admin panel, P&amp;L Statement, Balance Sheet, Capital Ledger, Assets or Cash
+          Flow, and can&apos;t create customers or set rates. <b>View Only</b> can read everything an Editor
+          can, but can&apos;t add, edit or delete anything. Editors and View Only users can&apos;t back-date
+          entries. Deactivating an account blocks it immediately and keeps their name on past records.
         </p>
         <div className="overflow-x-auto mt-4">
           <table className="min-w-full text-sm">
@@ -83,7 +75,6 @@ export default async function UsersAdminPage() {
                 <th className="text-left px-5 py-2.5 font-medium">Name</th>
                 <th className="text-left px-3 py-2.5 font-medium">Username</th>
                 <th className="text-left px-3 py-2.5 font-medium">Role</th>
-                <th className="text-left px-3 py-2.5 font-medium">Access Role</th>
                 <th className="text-left px-3 py-2.5 font-medium">Status</th>
                 <th className="text-left px-3 py-2.5 font-medium">Actions</th>
               </tr>
@@ -100,13 +91,6 @@ export default async function UsersAdminPage() {
                     <td className="px-3 py-3">{u.username}</td>
                     <td className="px-3 py-3">
                       <RoleSelect userId={u.id} role={u.role} isSelf={isSelf} />
-                    </td>
-                    <td className="px-3 py-3">
-                      {u.role === "ADMIN" ? (
-                        <span className="text-xs text-neutral-400">All (full admin)</span>
-                      ) : (
-                        <RoleAssignSelect userId={u.id} accessRoleId={u.accessRoleId} roles={roles} />
-                      )}
                     </td>
                     <td className="px-3 py-3">
                       <span

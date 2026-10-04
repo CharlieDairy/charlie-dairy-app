@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission, requireAccess, assertNotBackdated, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, reqNum, reqText, optEnum, SHIFTS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -131,7 +131,7 @@ export async function updateMilkSale(_prev: FormState, formData: FormData): Prom
 }
 
 async function updateMilkSaleImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  await requirePermission("milk", "EDIT");
   const id = reqId(formData, "id", "Sale");
   const sale = await readSale(formData);
 
@@ -155,7 +155,7 @@ async function updateMilkSaleImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function deleteMilkSale(formData: FormData): Promise<void> {
-  await requireAccess({ admin: true });
+  await requirePermission("milk", "DELETE");
   const id = reqId(formData, "id", "Sale");
   // deleteMany: deleting a sale someone else already removed is a no-op, not a crash.
   await prisma.milkSale.deleteMany({ where: { id } });

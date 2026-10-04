@@ -11,9 +11,8 @@ export const authConfig = {
   callbacks: {
     session({ session, token }) {
       if (session.user) {
-        (session.user as { role?: string; id?: string; modules?: string[] }).role = token.role as string;
-        (session.user as { role?: string; id?: string; modules?: string[] }).id = token.id as string;
-        (session.user as { role?: string; id?: string; modules?: string[] }).modules = (token.modules as string[]) ?? [];
+        (session.user as { role?: string; id?: string }).role = token.role as string;
+        (session.user as { role?: string; id?: string }).id = token.id as string;
       }
       return session;
     },

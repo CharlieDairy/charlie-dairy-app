@@ -129,7 +129,7 @@ export async function updateCowDetails(_prev: FormState, formData: FormData): Pr
 }
 
 async function updateCowDetailsImpl(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  await requirePermission("herd", "EDIT");
   const id = reqId(formData, "id", "Cow");
   const breed = optText(formData, "breed", "Breed", { max: 100 });
   const condition = optText(formData, "condition", "Condition", { max: 100 });
@@ -248,7 +248,7 @@ export async function updateCowStatus(_prev: FormState, formData: FormData): Pro
 }
 
 async function updateCowStatusImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  await requirePermission("herd", "EDIT");
   const cowId = reqId(formData, "cowId", "Cow");
   const status = reqEnum(formData, "status", "Status", STATUSES);
 
@@ -279,7 +279,7 @@ export async function deleteCow(_prev: DeleteState, formData: FormData): Promise
 }
 
 async function deleteCowImpl(_prev: DeleteState, formData: FormData): Promise<DeleteState> {
-  await requireAccess({ admin: true });
+  await requirePermission("herd", "DELETE");
   const cowId = formData.get("cowId") as string | null;
   if (!cowId) return { success: false, message: "Missing cow id." };
 

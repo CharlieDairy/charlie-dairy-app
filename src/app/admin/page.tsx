@@ -132,7 +132,9 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   // one of them, not literally every one.
   const operations =
     isAdmin || (user !== null && (["herd", "breeding", "health", "milk", "weight", "feed"] as const).some((m) => hasPermission(user, m, "VIEW")));
-  const finance = isAdmin || (user !== null && hasPermission(user, "financial", "VIEW"));
+  // P&L, capital and the finance summary are Admin-only (Editors and View Only users never see them).
+  const finance = isAdmin;
+  const canWrite = user?.role === "ADMIN" || user?.role === "EDITOR";
   const [d, feed] = await Promise.all([getFarmDashboard(params), getFeedOverview()]);
   const sum = (v: Record<string, number>) => Object.values(v).reduce((n, a) => n + a, 0);
   const income = sum(d.income), expense = sum(d.expenses), net = income - expense;
@@ -165,10 +167,10 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           <h1 className="text-2xl font-bold text-white">Charlie Dairy Farm</h1>
           <p className="text-sm text-green-100">Here&apos;s what&apos;s happening on the farm today.</p>
           <div className="flex flex-wrap gap-2 mt-1">
-            {operations && <Link href="/entry/milking" className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-green-800 hover:bg-green-50">Record milk</Link>}
-            {operations && <Link href="/admin/cows/add" className="rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20">+ Animal</Link>}
+            {operations && canWrite && <Link href="/entry/milking" className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-green-800 hover:bg-green-50">Record milk</Link>}
+            {operations && canWrite && <Link href="/admin/cows/add" className="rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20">+ Animal</Link>}
             {operations && <Link href="/admin/reports/breeding" className="rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20">Breeding</Link>}
-            {finance && <Link href="/entry/cash" className="rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20">Expense</Link>}
+            {canWrite && <Link href="/entry/cash" className="rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20">Expense</Link>}
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3">
@@ -328,7 +330,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </Panel>
         </div>
       )}
-      {!finance && !operations && <Panel title="Dashboard access"><p>Your account has no Operations or Financial access. Use your permitted sections from the menu.</p></Panel>}
+      {!finance && !operations && <Panel title="Dashboard access"><p>Your account has no dashboard access. Use the menu.</p></Panel>}
     </div>
   );
 }

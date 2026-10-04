@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requirePermission, requireAccess, assertNotBackdated, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, reqNum, reqText, optDate, optEnum, optNum, optText, CASH_MODES } from "@/lib/validate";
 
@@ -57,7 +57,7 @@ async function addEmployeeImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function updateEmployeeActive(formData: FormData): Promise<void> {
-  await requireAccess({ admin: true });
+  await requirePermission("team", "EDIT");
   const id = reqId(formData, "id", "Employee");
   const active = formData.get("active") === "true";
   await prisma.employee.updateMany({ where: { id }, data: { active } });

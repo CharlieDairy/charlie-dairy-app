@@ -28,7 +28,8 @@ export default async function MilkSalesPage({
   const range = periodRange(period, new Date(), from, to);
 
   const session = await auth();
-  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const canEdit = role === "ADMIN" || role === "EDITOR";
 
   const [customers, buyers, sales, detail, activeWithdrawals] = await Promise.all([
     prisma.customer.findMany({ where: { active: true }, select: { id: true, name: true, agreedRate: true }, orderBy: { name: "asc" } }),
@@ -119,7 +120,7 @@ export default async function MilkSalesPage({
 
       <WithdrawalWarningBanner withdrawals={activeWithdrawals} />
 
-      <MilkSalesLedger sales={ledgerRows} showSessions customers={customers} isAdmin={isAdmin} />
+      <MilkSalesLedger sales={ledgerRows} showSessions customers={customers} isAdmin={canEdit} />
 
       {detail && params.buyer && (
         <Card>

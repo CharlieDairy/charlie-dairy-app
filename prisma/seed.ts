@@ -65,7 +65,7 @@ type SeedAsset = {
 async function seedUsers() {
   const users = [
     { name: "Admin", username: "admin", password: "changeme-admin", role: "ADMIN" as const },
-    { name: "Farm Entry", username: "entry", password: "changeme-entry", role: "ENTRY" as const },
+    { name: "Farm Entry", username: "entry", password: "changeme-entry", role: "EDITOR" as const },
   ];
   for (const u of users) {
     const passwordHash = await bcrypt.hash(u.password, 10);

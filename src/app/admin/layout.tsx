@@ -2,8 +2,9 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import AppSidebar from "@/components/AppSidebar";
 import AccountBlocked from "@/components/AccountBlocked";
-import { getLiveUser, hasPermission } from "@/lib/access";
-import { moduleForPath } from "@/lib/modules";
+import ReadOnlyGuard from "@/components/ReadOnlyGuard";
+import { getLiveUser } from "@/lib/access";
+import { homeFor, roleCanOpenPath } from "@/lib/modules";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Live lookup (not the token): role and modules reflect the database right
@@ -12,20 +13,29 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const user = await getLiveUser();
   if (!user) return <AccountBlocked />;
 
-  // middleware.ts's own gate only sees the JWT's modules snapshot from
-  // sign-in, so a permission revoked mid-session would otherwise stay
-  // readable here until the token expires. Re-check this specific route
-  // against the SAME live permissions just read above for the sidebar.
+  // middleware.ts's own gate only sees the role in the JWT from sign-in, so
+  // a role changed mid-session would otherwise keep its old reach until the
+  // token expires. Re-check this specific route against the live role.
   const pathname = (await headers()).get("x-pathname") ?? "";
-  const requiredModule = moduleForPath(pathname);
-  if (requiredModule && !hasPermission(user, requiredModule, "VIEW")) {
-    redirect("/entry");
+  if (!roleCanOpenPath(user.role, pathname)) {
+    redirect(homeFor(user.role));
   }
 
   return (
     <div className="flex flex-col min-h-screen farm-bg md:flex-row">
-      <AppSidebar role={user.role} permissions={user.permissions} />
-      <main className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto">{children}</main>
+      <AppSidebar role={user.role} />
+      <main className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto">
+        {user.role === "VIEWER" ? (
+          <>
+            <p className="mb-4 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium text-text-muted">
+              View Only account — you can look at everything here but can&apos;t add, change or delete anything.
+            </p>
+            <ReadOnlyGuard>{children}</ReadOnlyGuard>
+          </>
+        ) : (
+          children
+        )}
+      </main>
     </div>
   );
 }

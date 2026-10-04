@@ -7,9 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ADMIN: everything. EDITOR: read/write/edit/delete everywhere except the
+// Admin panel, P&L, Balance Sheet, Capital Ledger, Assets and Cash Flow.
+// VIEWER: read-only on the same set of pages. (The old per-user AccessRole
+// permission matrix is no longer used for access decisions.)
 enum Role {
   ADMIN
-  ENTRY
+  EDITOR
+  VIEWER
 }
 
 model User {

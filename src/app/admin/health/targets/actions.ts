@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requirePermission, requireAccess, runAction } from "@/lib/access";
+import { requirePermission, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqEnum, reqNum, reqId, optDate } from "@/lib/validate";
 
@@ -68,7 +68,7 @@ export async function deleteProductionTarget(_prev: FormState, formData: FormDat
 
 async function deleteProductionTargetImpl(formData: FormData): Promise<FormState> {
   await requirePermission("health", "DELETE");
-  await requireAccess({ admin: true });
+  await requirePermission("health", "DELETE");
   const id = reqId(formData, "id", "Target");
   await prisma.productionTarget.delete({ where: { id } });
   refresh();

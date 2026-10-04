@@ -24,7 +24,8 @@ export default async function HealthSchedulesPage() {
     prisma.healthSchedule.findMany({ orderBy: { createdAt: "desc" } }),
     auth(),
   ]);
-  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const isAdmin = role === "ADMIN" || role === "EDITOR"; // can delete rows
 
   return (
     <div className="flex flex-col gap-6">

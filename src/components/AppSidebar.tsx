@@ -32,9 +32,8 @@ function Chevron({ open }: { open: boolean }) {
 // sidebar vs. a bare top bar with a tile grid), which is what made the app
 // feel like two disconnected halves. Same shell everywhere now, whichever
 // URL you're actually on.
-export default function AppSidebar({ role, permissions }: { role: string | undefined; permissions: Set<string> }) {
-  const isFullAdmin = role === "ADMIN";
-  const sections = visibleSections(isFullAdmin, permissions);
+export default function AppSidebar({ role }: { role: string }) {
+  const sections = visibleSections(role);
   const pathname = usePathname();
 
   const activeSectionKey = sections.find((s) => s.items.some((item) => pathname === item.href || pathname.startsWith(item.href + "/")))?.key ?? null;

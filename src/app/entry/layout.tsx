@@ -2,8 +2,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import AppSidebar from "@/components/AppSidebar";
 import AccountBlocked from "@/components/AccountBlocked";
-import { getLiveUser, hasPermission } from "@/lib/access";
-import { moduleForPath } from "@/lib/modules";
+import { getLiveUser } from "@/lib/access";
+import { homeFor, roleCanOpenPath } from "@/lib/modules";
 
 export default async function EntryLayout({ children }: { children: React.ReactNode }) {
   // Live lookup (not the token): role and modules reflect the database right
@@ -12,21 +12,15 @@ export default async function EntryLayout({ children }: { children: React.ReactN
   const user = await getLiveUser();
   if (!user) return <AccountBlocked />;
 
-  // middleware.ts's own gate only sees the JWT's modules snapshot from
-  // sign-in, so a permission revoked mid-session would otherwise stay
-  // readable here until the token expires. Re-check this specific route
-  // against the SAME live permissions just read above for the sidebar.
-  // /entry itself (the bare menu, no specific module) is exempt, same as
-  // in middleware.
+  // Re-check this route against the live role (see admin/layout.tsx).
   const pathname = (await headers()).get("x-pathname") ?? "";
-  const requiredModule = pathname === "/entry" ? null : moduleForPath(pathname);
-  if (requiredModule && !hasPermission(user, requiredModule, "VIEW")) {
-    redirect("/entry");
+  if (!roleCanOpenPath(user.role, pathname)) {
+    redirect(homeFor(user.role));
   }
 
   return (
     <div className="flex flex-col min-h-screen farm-bg md:flex-row">
-      <AppSidebar role={user.role} permissions={user.permissions} />
+      <AppSidebar role={user.role} />
       <main className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto">{children}</main>
     </div>
   );
