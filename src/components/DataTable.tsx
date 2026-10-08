@@ -99,10 +99,50 @@ export default function DataTable<T>({
             setPage(1);
           }}
           placeholder={searchPlaceholder}
-          className="border border-border rounded-md px-3 py-2 text-sm w-full sm:w-64"
+          className="border border-border rounded-md px-3 py-2 text-sm w-full md:w-64"
         />
       )}
-      <div className="overflow-x-auto bg-surface border border-border rounded-lg">
+      {/* Phones: one card per row (first column is the title, the rest are
+          label / value lines) -- far easier than side-scrolling a wide table. */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {pageRows.map((row) => {
+          const key = rowKey(row);
+          const [first, ...rest] = columns;
+          return (
+            <div
+              key={key}
+              onClick={() => onRowClick?.(row)}
+              className={`rounded-lg border border-border bg-surface p-3 ${onRowClick ? "active:bg-neutral-50" : ""}`}
+            >
+              <div className="flex items-start gap-3">
+                {selectable && (
+                  <input
+                    type="checkbox"
+                    aria-label={`Select row ${key}`}
+                    checked={selectedKeys?.has(key) ?? false}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={() => onToggleSelect?.(key)}
+                    className="mt-1"
+                  />
+                )}
+                <div className="min-w-0 flex-1 font-semibold text-text">{first.render(row)}</div>
+              </div>
+              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm">
+                {rest.map((c) => (
+                  <div key={c.key} className="min-w-0">
+                    <dt className="text-[11px] uppercase tracking-wide text-text-muted">{c.header}</dt>
+                    <dd className="break-words text-text">{c.render(row)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          );
+        })}
+        {pageRows.length === 0 && (
+          <p className="rounded-lg border border-border bg-surface px-3 py-6 text-center text-sm text-text-muted">{emptyMessage}</p>
+        )}
+      </div>
+      <div className="hidden md:block overflow-x-auto bg-surface border border-border rounded-lg">
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-100 sticky top-0">
             <tr>

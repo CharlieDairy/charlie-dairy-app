@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex flex-col min-h-screen farm-bg md:flex-row">
       <AppSidebar role={user.role} />
-      <main className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto">
+      <main className="flex-1 min-w-0 p-4 pb-28 md:p-8 md:pb-8 max-w-[1600px] w-full mx-auto">
         {user.role === "VIEWER" ? (
           <>
             <p className="mb-4 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium text-text-muted">

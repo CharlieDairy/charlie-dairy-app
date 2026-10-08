@@ -16,7 +16,7 @@ function ProducerTable({ title, rows }: { title: string; rows: { cowId: string; 
   return (
     <div className="bg-white border border-neutral-200 rounded-lg p-4">
       <h3 className="text-sm font-semibold text-neutral-700 mb-3">{title}</h3>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto"><table className="w-full text-sm">
         <thead>
           <tr className="text-xs text-neutral-500">
             <th className="text-left py-1 font-normal">Tag</th>
@@ -42,7 +42,7 @@ function ProducerTable({ title, rows }: { title: string; rows: { cowId: string; 
             </tr>
           )}
         </tbody>
-      </table>
+      </table></div>
     </div>
   );
 }
@@ -51,7 +51,7 @@ function DimTable({ title, rows, emptyMessage }: { title: string; rows: { cowId:
   return (
     <div className="bg-white border border-neutral-200 rounded-lg p-4">
       <h3 className="text-sm font-semibold text-neutral-700 mb-3">{title}</h3>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto"><table className="w-full text-sm">
         <thead>
           <tr className="text-xs text-neutral-500">
             <th className="text-left py-1 font-normal">Tag</th>
@@ -73,7 +73,7 @@ function DimTable({ title, rows, emptyMessage }: { title: string; rows: { cowId:
             </tr>
           )}
         </tbody>
-      </table>
+      </table></div>
     </div>
   );
 }

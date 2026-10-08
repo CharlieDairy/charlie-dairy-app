@@ -71,7 +71,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
         {employee.salaryPayments.length === 0 ? (
           <p className="text-sm text-neutral-400">No payments recorded yet.</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-neutral-500">
                 <th className="text-left py-1 font-normal">Date</th>
@@ -90,7 +90,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
 

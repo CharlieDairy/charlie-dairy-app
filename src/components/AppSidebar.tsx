@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { doSignOut } from "@/app/actions/sign-out";
 import { visibleSections } from "@/lib/nav";
+import MobileNav from "@/components/MobileNav";
 
 const STORAGE_KEY = "charlie-sidebar-collapsed";
 
@@ -76,7 +77,9 @@ export default function AppSidebar({ role }: { role: string }) {
   }
 
   return (
-    <header className="print:hidden bg-green-900 text-white p-4 flex flex-col gap-1 md:w-64 md:shrink-0">
+    <>
+    <MobileNav role={role} />
+    <header className="print:hidden bg-green-900 text-white p-4 hidden md:flex flex-col gap-1 md:w-64 md:shrink-0">
       <div className="flex items-center justify-between md:block">
         <Link href="/admin" className="flex items-center gap-2 font-semibold text-lg">
           <Image src="/logo.png" alt="Charlie Dairy" width={36} height={36} className="rounded-full bg-green-50" priority />
@@ -117,5 +120,6 @@ export default function AppSidebar({ role }: { role: string }) {
         })}
       </nav>
     </header>
+    </>
   );
 }

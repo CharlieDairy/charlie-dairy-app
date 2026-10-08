@@ -33,7 +33,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
           <h2 className="font-semibold text-neutral-900">Transaction History</h2>
           <span className="text-sm text-neutral-500">Total spent: <span className="font-semibold text-neutral-900">{formatRs(totalSpent)}</span></span>
         </div>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm">
           <thead>
             <tr className="text-xs text-neutral-500">
               <th className="text-left py-1 font-normal">Date</th>
@@ -61,7 +61,7 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
               </tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );

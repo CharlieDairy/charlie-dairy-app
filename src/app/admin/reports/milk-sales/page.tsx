@@ -125,7 +125,7 @@ export default async function MilkSalesPage({
       {detail && params.buyer && (
         <Card>
           <h2 className="font-semibold text-text mb-3">{params.buyer} — Payments</h2>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-neutral-500">
                 <th className="text-left py-1 font-normal">Date</th>
@@ -147,7 +147,7 @@ export default async function MilkSalesPage({
                 </tr>
               )}
             </tbody>
-          </table>
+          </table></div>
         </Card>
       )}
     </div>

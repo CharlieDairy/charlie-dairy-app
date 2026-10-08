@@ -11,9 +11,11 @@ const openSans = Open_Sans({
 export const metadata: Metadata = {
   title: "Charlie Dairy Farm",
   description: "Data collection, master data, and financial reporting for Charlie Dairy Farm",
+  appleWebApp: { capable: true, title: "Charlie Dairy", statusBarStyle: "black-translucent" },
+  formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = { themeColor: "#143a22" };
+export const viewport: Viewport = { themeColor: "#1b4a05", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

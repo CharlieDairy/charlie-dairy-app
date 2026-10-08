@@ -36,7 +36,7 @@ export default async function MasterDataPage() {
               </summary>
               <div className="px-4 pb-4 border-t border-neutral-100 pt-3 flex flex-col gap-3">
                 <p className="text-xs text-neutral-500">{cat.description}</p>
-                <table className="min-w-full text-sm">
+                <div className="overflow-x-auto"><table className="min-w-full text-sm">
                   <thead className="bg-neutral-50">
                     <tr>
                       <th className="text-left px-2 py-1">Code</th>
@@ -73,7 +73,7 @@ export default async function MasterDataPage() {
                       </tr>
                     )}
                   </tbody>
-                </table>
+                </table></div>
                 {!cat.locked && (
                   <div className="pt-2 border-t border-neutral-100">
                     <AddItemForm category={cat.key} />

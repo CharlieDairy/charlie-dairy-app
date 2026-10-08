@@ -21,7 +21,7 @@ export default async function EntryLayout({ children }: { children: React.ReactN
   return (
     <div className="flex flex-col min-h-screen farm-bg md:flex-row">
       <AppSidebar role={user.role} />
-      <main className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto">{children}</main>
+      <main className="flex-1 min-w-0 p-4 pb-28 md:p-8 md:pb-8 max-w-[1600px] w-full mx-auto">{children}</main>
     </div>
   );
 }

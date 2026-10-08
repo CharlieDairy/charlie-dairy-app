@@ -29,27 +29,29 @@ export default function PeriodBar({
 
   return (
     <form className="flex flex-wrap gap-2 items-center rounded-xl border border-border bg-white p-3">
-      <span className="text-xs font-semibold text-text-muted">PERIOD</span>
+      <span className="hidden md:inline text-xs font-semibold text-text-muted">PERIOD</span>
+      <div className="flex w-full gap-2 overflow-x-auto pb-1 md:w-auto md:flex-wrap md:overflow-visible md:pb-0 [scrollbar-width:none]">
       {PERIOD_OPTIONS.map((p) => (
         <Link
           key={p.key}
           href={pillHref(p.key)}
-          className={`rounded-full border px-3 py-2 text-xs ${
+          className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs md:text-xs ${
             period === p.key ? "bg-primary text-white border-primary" : "border-border text-text-muted hover:bg-primary-light"
           }`}
         >
           {p.label}
         </Link>
       ))}
+      </div>
       <input type="hidden" name="period" value="custom" />
       {Object.entries(extra).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
       <label className="sr-only" htmlFor="period-from">Period from</label>
-      <input className="border border-border rounded-lg p-2 text-xs" id="period-from" type="date" name="from" required defaultValue={from} />
+      <input className="min-w-0 flex-1 border border-border rounded-lg p-2 text-xs md:flex-none" id="period-from" type="date" name="from" required defaultValue={from} />
       <label className="sr-only" htmlFor="period-to">Period to</label>
-      <input className="border border-border rounded-lg p-2 text-xs" id="period-to" type="date" name="to" required defaultValue={to} />
-      <button className="border border-border rounded-lg px-3 py-2 text-xs font-medium hover:bg-primary-light" type="submit">
+      <input className="min-w-0 flex-1 border border-border rounded-lg p-2 text-xs md:flex-none" id="period-to" type="date" name="to" required defaultValue={to} />
+      <button className="w-full border border-border rounded-lg px-3 py-2 text-xs font-medium hover:bg-primary-light md:w-auto" type="submit">
         Apply period
       </button>
     </form>

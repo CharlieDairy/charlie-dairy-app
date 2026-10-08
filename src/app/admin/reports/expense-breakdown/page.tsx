@@ -27,7 +27,7 @@ export default async function ExpenseBreakdownPage({
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm">
           <thead className="bg-neutral-100">
             <tr>
               <th className="text-left px-3 py-2 font-medium text-neutral-600">Category</th>
@@ -55,7 +55,7 @@ export default async function ExpenseBreakdownPage({
               </tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );

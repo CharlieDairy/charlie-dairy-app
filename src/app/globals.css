@@ -121,3 +121,30 @@ body {
   background-image: radial-gradient(circle, rgba(27, 74, 5, 0.11) 1px, transparent 1.6px);
   background-size: 20px 20px;
 }
+
+/* ---- Phone usability (below the md breakpoint) --------------------------
+   Unlayered on purpose: it must beat Tailwind's utility classes such as
+   text-xs on inputs, so every field is comfortable to tap and iOS Safari
+   does not zoom the page when a field is focused (it zooms under 16px). */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  input[type="checkbox"], input[type="radio"] { width: 1.25rem; height: 1.25rem; }
+  button, .link-btn { min-height: 40px; }
+  td button, th button, td .link-btn { min-height: 36px; min-width: 36px; }
+  .link-btn { display: inline-flex; align-items: center; justify-content: center; }
+  main h1 { font-size: 1.375rem; line-height: 1.75rem; }
+  /* Wide tables scroll sideways inside their own box, never the page. */
+  main .overflow-x-auto { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  main table { font-size: 0.8125rem; }
+  main img, main svg { max-width: 100%; }
+}
+@media (max-width: 767px) {
+  .farm-bg, body { background-image: none; }
+}
