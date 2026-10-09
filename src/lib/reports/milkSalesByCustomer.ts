@@ -1,6 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { periodRange, type PeriodKey } from "./herd";
 
+// Sales loaded from history (see scripts/deploy/backfill-milksale-from-cash.ts
+// and the 12-month history load) carry this marker. They are real litres and
+// rupees for reports by period, but the money was already received and
+// booked through the cash ledger, so they must never count as an unpaid
+// customer bill: balances, statements and AR aging skip them.
+const BACKFILL_MARKER = "Backfill (cash ledger)";
+// `NOT: { enteredBy: marker }` would also drop rows whose enteredBy is NULL
+// (SQL three-valued logic), so spell it out.
+const REAL_BILLING = { OR: [{ enteredBy: null }, { enteredBy: { not: BACKFILL_MARKER } }] };
+
 export type CustomerSalesSummary = {
   buyer: string;
   totalLitres: number;
@@ -44,7 +54,7 @@ export async function getCustomerSalesSummary(period: PeriodKey = "month", from?
     // inside the selected period (e.g. "This Month" when their last sale was
     // last month) vanished from the result entirely instead of showing their
     // real balance. The union below fixes that.
-    prisma.milkSale.groupBy({ by: ["buyer"], _sum: { amount: true }, _max: { date: true } }),
+    prisma.milkSale.groupBy({ by: ["buyer"], where: REAL_BILLING, _sum: { amount: true }, _max: { date: true } }),
     prisma.customerPayment.groupBy({
       by: ["buyer"],
       _sum: { amount: true },
@@ -101,7 +111,7 @@ export type CustomerPaymentRow = {
 export async function getCustomerDetail(buyer: string): Promise<{ sales: CustomerSaleRow[]; payments: CustomerPaymentRow[] }> {
   const [sales, payments] = await Promise.all([
     prisma.milkSale.findMany({
-      where: { buyer },
+      where: { buyer, ...REAL_BILLING },
       orderBy: { date: "desc" },
       select: { id: true, date: true, litres: true, rate: true, amount: true },
     }),
@@ -150,7 +160,7 @@ export type ArAgingRow = {
 // sale's own date.
 export async function getArAging(asOf: Date = new Date()): Promise<ArAgingRow[]> {
   const [sales, payments] = await Promise.all([
-    prisma.milkSale.findMany({ orderBy: { date: "asc" }, select: { buyer: true, date: true, amount: true } }),
+    prisma.milkSale.findMany({ where: REAL_BILLING, orderBy: { date: "asc" }, select: { buyer: true, date: true, amount: true } }),
     prisma.customerPayment.groupBy({ by: ["buyer"], _sum: { amount: true } }),
   ]);
 

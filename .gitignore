@@ -58,3 +58,4 @@ scripts/deploy/dump/
 
 .vercel
 .env*
+scripts/history-load/history.json
