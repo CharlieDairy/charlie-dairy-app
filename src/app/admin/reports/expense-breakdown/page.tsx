@@ -12,18 +12,19 @@ export default async function ExpenseBreakdownPage({
   const params = await searchParams;
   const { period, from, to } = await resolvePeriod(params, "month");
 
-  const { total, categories } = await getExpenseBreakdown(period, from, to);
+  const { total, categories, notExpense } = await getExpenseBreakdown(period, from, to);
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-neutral-900">Expense Breakdown</h1>
       <p className="text-base font-semibold text-neutral-600">
-        Cash spent out, grouped by category — the same categories used on Cash Entry.
+        What it cost to run the farm in this period, by category (cash basis: counted when paid). Capital spending and money sent to the partners are not running costs, so they are listed separately below.
       </p>
       <PeriodBar period={period} from={from} to={to} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Expense" value={formatRs(total)} />
+        <StatCard label="Operating cost" value={formatRs(total)} />
+        {notExpense.map((n) => <StatCard key={n.label} label={`${n.label} (not a running cost)`} value={formatRs(n.amount)} />)}
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">

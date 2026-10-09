@@ -15,7 +15,23 @@ export type CashRow = {
   remark: string | null;
   amountIn: number;
   amountOut: number;
+  /** How the entry is counted in the books (automatic unless an Admin set it). */
+  cls: string;
+  clsLabel: string;
+  manualClass: string | null;
 };
+
+const CLASS_OPTIONS: { value: string; label: string }[] = [
+  { value: "MILK_SALES", label: "Milk sales" },
+  { value: "LIVESTOCK_SALES", label: "Animal & calf sales" },
+  { value: "OTHER_INCOME", label: "Other income" },
+  { value: "OPEX", label: "Operating cost" },
+  { value: "CAPEX", label: "Capital spending" },
+  { value: "PARTNER_IN", label: "Money from partners" },
+  { value: "PARTNER_OUT", label: "Money to partners" },
+  { value: "OPENING", label: "Opening balance" },
+  { value: "REVIEW", label: "Needs review" },
+];
 
 function Ic({ children }: { children: ReactNode }) {
   return (
@@ -27,7 +43,8 @@ function Ic({ children }: { children: ReactNode }) {
 const IconEdit = <Ic><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z" /></Ic>;
 const IconTrash = <Ic><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></Ic>;
 
-function EditRow({ entry, categories, vendorNames, colSpan, onDone }: {
+function EditRow({ entry, categories, vendorNames, colSpan, onDone, isAdmin }: {
+  isAdmin: boolean;
   entry: CashRow;
   categories: string[];
   vendorNames: string[];
@@ -78,6 +95,15 @@ function EditRow({ entry, categories, vendorNames, colSpan, onDone }: {
             <label className="text-xs text-neutral-500">Party</label>
             <input name="party" list="cash-edit-parties" defaultValue={entry.party ?? ""} className="border border-neutral-300 rounded px-2 py-1 text-sm" />
           </div>
+          {isAdmin && (
+            <div className="flex flex-col gap-0.5">
+              <label className="text-xs text-neutral-500">Counted in books as</label>
+              <select name="accountClass" defaultValue={entry.manualClass ?? ""} className="border border-neutral-300 rounded px-2 py-1 text-sm">
+                <option value="">Automatic ({entry.clsLabel})</option>
+                {CLASS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          )}
           <div className="flex flex-col gap-0.5 flex-1 min-w-[140px]">
             <label className="text-xs text-neutral-500">Remark</label>
             <input name="remark" defaultValue={entry.remark ?? ""} className="border border-neutral-300 rounded px-2 py-1 text-sm w-full" />
@@ -188,7 +214,7 @@ export default function CashRegisterTable({
           <tbody>
             {entries.map((e) =>
               editingId === e.id ? (
-                <EditRow key={e.id} entry={e} categories={categories} vendorNames={vendorNames} colSpan={colSpan} onDone={() => setEditingId(null)} />
+                <EditRow key={e.id} entry={e} isAdmin={isAdmin} categories={categories} vendorNames={vendorNames} colSpan={colSpan} onDone={() => setEditingId(null)} />
               ) : (
                 <tr key={e.id} className="border-t border-neutral-100">
                   {isAdmin && (
@@ -197,7 +223,10 @@ export default function CashRegisterTable({
                     </td>
                   )}
                   <td className="px-3 py-2">{e.date}</td>
-                  <td className="px-3 py-2">{e.category}</td>
+                  <td className="px-3 py-2">
+                    {e.category}
+                    <div className={`text-[11px] ${e.cls === "REVIEW" ? "text-amber-700 font-semibold" : "text-neutral-400"}`}>{e.clsLabel}{e.manualClass ? " · set by Admin" : ""}</div>
+                  </td>
                   <td className="px-3 py-2">{e.party ?? "—"}</td>
                   <td className="px-3 py-2">{e.mode === "BANK" ? "Bank" : "Cash"}</td>
                   <td className="px-3 py-2 text-right">{e.amountIn ? formatRs(e.amountIn) : "—"}</td>

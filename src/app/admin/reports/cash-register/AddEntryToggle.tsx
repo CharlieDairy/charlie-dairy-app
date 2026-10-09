@@ -3,7 +3,7 @@
 import { useState } from "react";
 import CashForm from "@/app/entry/cash/CashForm";
 
-export default function AddEntryToggle({ categories, vendorNames }: { categories: string[]; vendorNames: string[] }) {
+export default function AddEntryToggle({ categories, vendorNames, customerNames }: { categories: string[]; vendorNames: string[]; customerNames: string[] }) {
   const [open, setOpen] = useState<"IN" | "OUT" | null>(null);
 
   return (
@@ -26,7 +26,7 @@ export default function AddEntryToggle({ categories, vendorNames }: { categories
           − Cash Out
         </button>
       </div>
-      {open && <CashForm categories={categories} vendorNames={vendorNames} direction={open} />}
+      {open && <CashForm categories={categories} vendorNames={vendorNames} customerNames={customerNames} direction={open} />}
     </div>
   );
 }

@@ -20,18 +20,20 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
   const totalExpense = monthly.reduce((s, m) => s + m.expense, 0);
   const netIncome = totalRevenue - totalExpense;
 
-  const [activeHerdSize, milkAgg, capitalAgg] = await Promise.all([
+  const [activeHerdSize, milkAgg, capitalAgg, cashAgg] = await Promise.all([
     prisma.cow.count({ where: { status: { in: ["MILKING", "DRY", "HEIFER", "CALF"] } } }),
     prisma.milkingRecord.aggregate({ _sum: { litres: true } }),
     prisma.capitalEntry.aggregate({ _sum: { credit: true, debit: true } }),
+    prisma.cashTransaction.aggregate({ _sum: { amountIn: true, amountOut: true } }),
   ]);
+  const cashPosition = (cashAgg._sum.amountIn ?? 0) - (cashAgg._sum.amountOut ?? 0);
 
   return {
     totalRevenue,
     totalExpense,
     netIncome,
     netMargin: totalRevenue > 0 ? netIncome / totalRevenue : 0,
-    closingCash: netIncome, // cash-basis: net of all recorded cash in/out to date
+    closingCash: cashPosition,
     activeHerdSize,
     totalMilkLitres: milkAgg._sum.litres ?? 0,
     capitalRaised: (capitalAgg._sum.credit ?? 0) - (capitalAgg._sum.debit ?? 0),

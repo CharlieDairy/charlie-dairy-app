@@ -753,6 +753,19 @@ enum CashMode {
   BANK
 }
 
+// How a cash entry is counted in the books (see src/lib/accounting/cashClass.ts).
+enum CashClass {
+  MILK_SALES
+  LIVESTOCK_SALES
+  OTHER_INCOME
+  OPEX
+  CAPEX
+  PARTNER_IN
+  PARTNER_OUT
+  OPENING
+  REVIEW
+}
+
 model CashTransaction {
   id          String   @id @default(cuid())
   date        DateTime
@@ -766,6 +779,8 @@ model CashTransaction {
   enteredBy   String?
   projectLand String?
   remark      String?
+  // Admin override of the automatic class; null = decide from category and remark.
+  accountClass CashClass?
   createdAt   DateTime @default(now())
 
   customerPayment CustomerPayment?

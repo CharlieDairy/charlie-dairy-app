@@ -4,12 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { requireAccess, requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optEnum, optText, CASH_MODES, DIRECTIONS } from "@/lib/validate";
+import { CASH_CLASSES } from "@/lib/accounting/cashClass";
+import { getMilkSalesCutover, MILK_CASH_CATEGORY } from "@/lib/reports/pnl";
 import { revalidatePath } from "next/cache";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
 function refresh() {
   revalidatePath("/entry/cash");
+  revalidatePath("/admin/reports/expense-breakdown");
+  revalidatePath("/admin/reports/balance-sheet");
   revalidatePath("/admin/reports/cash-register");
   revalidatePath("/admin/reports/cashflow");
   revalidatePath("/admin/reports/pl");
@@ -44,6 +48,29 @@ async function submitCashImpl(formData: FormData): Promise<FormState> {
     throw new ValidationError("This looks identical to an entry saved moments ago, so it wasn't saved twice.");
   }
 
+  // A milk-sale receipt belongs to a customer: record it as that customer's payment (same transaction, one
+  // cash row) so balances and AR stay right. Older months, before itemized sales began, don't need it.
+  const isMilkReceipt = direction === "IN" && category.trim().toLowerCase() === MILK_CASH_CATEGORY.toLowerCase();
+  const cutover = isMilkReceipt ? await getMilkSalesCutover() : null;
+  if (isMilkReceipt && cutover && date >= cutover) {
+    const typed = reqText(formData, "customer", "Customer", { max: 100 });
+    const customer = await prisma.customer.findFirst({ where: { name: { equals: typed, mode: "insensitive" } }, select: { name: true } });
+    if (!customer) throw new ValidationError("Select a registered customer for this milk receipt.");
+    await prisma.$transaction(async (tx) => {
+      const cashTx = await tx.cashTransaction.create({
+        data: { date, category, party: customer.name, remark, mode, amountIn, amountOut, enteredBy: user.name },
+      });
+      await tx.customerPayment.create({
+        data: { buyer: customer.name, date, amount: amountIn, mode, notes: remark, cashTransactionId: cashTx.id, enteredBy: user.name },
+      });
+    });
+    refresh();
+    revalidatePath("/admin/reports/milk-sales");
+    revalidatePath("/admin/customers");
+    revalidatePath("/admin/reports/ar-aging");
+    return { success: true, message: `Cash entry saved and recorded as a payment from ${customer.name}.` };
+  }
+
   await prisma.cashTransaction.create({
     data: { date, category, party, remark, mode, amountIn, amountOut, enteredBy: user.name },
   });
@@ -57,7 +84,7 @@ export async function updateCashEntry(_prev: FormState, formData: FormData): Pro
 }
 
 async function updateCashEntryImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("financial", "EDIT");
+  const user = await requirePermission("financial", "EDIT");
   const id = reqId(formData, "id", "Entry");
   const date = reqDate(formData, "date", "Date");
   const direction = reqEnum(formData, "direction", "Direction", DIRECTIONS);
@@ -83,10 +110,24 @@ async function updateCashEntryImpl(formData: FormData): Promise<FormState> {
     prisma.salaryPayment.findUnique({ where: { cashTransactionId: id } }),
   ]);
 
+  // Only an Admin can set how an entry is counted in the books; "" puts it back to automatic.
+  const classRaw = formData.get("accountClass");
+  const classChange =
+    user.role === "ADMIN" && typeof classRaw === "string"
+      ? classRaw === ""
+        ? { accountClass: null }
+        : (CASH_CLASSES as readonly string[]).includes(classRaw)
+          ? { accountClass: classRaw as (typeof CASH_CLASSES)[number] }
+          : null
+      : null;
+  if (user.role === "ADMIN" && typeof classRaw === "string" && classRaw !== "" && !classChange) {
+    throw new ValidationError("That accounting class isn't one of the allowed choices.");
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.cashTransaction.update({
       where: { id },
-      data: { date, category, party, remark, mode, amountIn, amountOut },
+      data: { date, category, party, remark, mode, amountIn, amountOut, ...(classChange ?? {}) },
     });
     if (linkedPayment) {
       await tx.customerPayment.update({ where: { id: linkedPayment.id }, data: { date, amount, mode } });

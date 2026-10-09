@@ -297,7 +297,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
               <Breakdown title="Income by category" values={d.income} />
               <Breakdown title="Outgoings by category" values={d.expenses} />
             </div>
-            <p className="text-xs text-slate-500 mt-4">Recorded summary, not a complete accrual P&L. Loan, capital and asset classifications require review. Customer receipts are excluded from income already recognised at sale.</p>
+            <p className="text-xs text-slate-500 mt-4">Cash basis: income is money received (milk, animals, other) and outgoings are the cost of running the farm. Capital spending and money from or to the partners are not included. See the P&amp;L Statement for the full split.</p>
             <div className="border-t mt-4 pt-3">
               <Row label="Cash net recorded · all dates to today" value={formatRs(d.cash.cash)} />
               <Row label="Bank net recorded · all dates to today" value={formatRs(d.cash.bank)} />

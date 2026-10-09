@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { CLASS_LABEL, INCOME_CLASSES, classifyCash, netOf } from "@/lib/accounting/cashClass";
 import { cashTotals, dateBounds, farmDateKey, milkSession, periodBounds } from "./dashboardMetrics";
 
 export async function getFarmDashboard(params: { period?: string; from?: string; to?: string }) {
@@ -22,7 +23,7 @@ export async function getFarmDashboard(params: { period?: string; from?: string;
     prisma.milkingRecord.findMany({ where: { date: { gte: seriesStart, lt: seriesEnd } }, select: { cowId: true, date: true, shift: true, litres: true } }),
     prisma.milkSale.findMany({ where: { date: { lt: dateBounds(today).end } }, select: { date: true, buyer: true, litres: true, amount: true, enteredBy: true } }),
     prisma.customerPayment.findMany({ where: { date: { lt: dateBounds(today).end } }, select: { buyer: true, amount: true } }),
-    prisma.cashTransaction.findMany({ select: { date: true, category: true, mode: true, amountIn: true, amountOut: true } }),
+    prisma.cashTransaction.findMany({ select: { date: true, category: true, mode: true, amountIn: true, amountOut: true, remark: true, accountClass: true } }),
     prisma.feedTransaction.findMany({ select: { date: true, feedType: true, direction: true, quantity: true, cost: true } }),
     prisma.vaccinationRecord.findMany({ select: { cowId: true, vaccineName: true, date: true, nextDueDate: true } }),
     prisma.treatmentRecord.findMany({ where: { date: { gte: new Date(dateBounds(today).start.getTime() - 29 * 86400000), lt: dateBounds(today).end } }, select: { cowId: true } }),
@@ -52,11 +53,13 @@ export async function getFarmDashboard(params: { period?: string; from?: string;
   });
   const inPeriod = (d: Date) => d >= range.start && d < range.end;
   const income: Record<string, number> = {}, expenses: Record<string, number> = {};
+  // Cash basis: income is what was RECEIVED (milk, animals, other), costs are what was paid to run the farm.
+  // Capital spending, money from / to the partners and the opening balance are not income or cost.
   for (const c of cash.filter(c => inPeriod(c.date))) {
-    if (c.category !== "Milk Sale Payment") income[c.category] = (income[c.category] ?? 0) + c.amountIn;
-    expenses[c.category] = (expenses[c.category] ?? 0) + c.amountOut;
+    const cls = classifyCash(c);
+    if (INCOME_CLASSES.includes(cls)) income[CLASS_LABEL[cls]] = (income[CLASS_LABEL[cls]] ?? 0) + netOf(cls, c.amountIn, c.amountOut);
+    else if (cls === "OPEX") expenses[c.category] = (expenses[c.category] ?? 0) + netOf(cls, c.amountIn, c.amountOut);
   }
-  for (const s of sales.filter(s => inPeriod(s.date) && s.enteredBy !== "Backfill (cash ledger)")) income["Milk sales"] = (income["Milk sales"] ?? 0) + s.amount;
   // Historical cash-ledger sales have already been received; never turn them
   // into invented receivables merely because no CustomerPayment exists.
   const billed = new Map<string, number>(), received = new Map<string, number>();

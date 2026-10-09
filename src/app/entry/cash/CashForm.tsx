@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import { submitCash, type FormState } from "./actions";
 
 function todayIso() {
@@ -10,12 +10,18 @@ function todayIso() {
 export default function CashForm({
   categories,
   vendorNames,
+  customerNames = [],
   direction,
 }: {
   categories: string[];
   vendorNames: string[];
+  /** Active customers: a milk-sale receipt must say whose money it is. */
+  customerNames?: string[];
   direction?: "IN" | "OUT";
 }) {
+  const [category, setCategory] = useState("");
+  const [dir, setDir] = useState<"IN" | "OUT">(direction ?? "IN");
+  const isMilkReceipt = dir === "IN" && category.trim().toLowerCase() === "cash sale proceed for milk";
   const [state, formAction, isPending] = useActionState<FormState, FormData>(submitCash, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -26,7 +32,7 @@ export default function CashForm({
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-4 bg-white border border-neutral-200 rounded-lg p-4">
+    <form ref={formRef} action={formAction} onReset={() => setCategory("")} className="flex flex-col gap-4 bg-white border border-neutral-200 rounded-lg p-4">
       <div className="flex flex-col gap-1">
         <label htmlFor="date" className="text-sm font-medium text-neutral-700">Date</label>
         <input id="date" name="date" type="date" required defaultValue={todayIso()} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
@@ -38,10 +44,10 @@ export default function CashForm({
           <span className="text-sm font-medium text-neutral-700">Direction</span>
           <div className="flex gap-4">
             <label className="flex items-center gap-2">
-              <input type="radio" name="direction" value="IN" defaultChecked /> Cash In
+              <input type="radio" name="direction" value="IN" defaultChecked onChange={() => setDir("IN")} /> Cash In
             </label>
             <label className="flex items-center gap-2">
-              <input type="radio" name="direction" value="OUT" /> Cash Out
+              <input type="radio" name="direction" value="OUT" onChange={() => setDir("OUT")} /> Cash Out
             </label>
           </div>
         </div>
@@ -63,13 +69,25 @@ export default function CashForm({
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="category" className="text-sm font-medium text-neutral-700">Category</label>
-        <input id="category" name="category" list="category-options" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        <input id="category" name="category" list="category-options" required value={category} onChange={(e) => setCategory(e.target.value)} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
         <datalist id="category-options">
           {categories.map((c) => (
             <option key={c} value={c} />
           ))}
         </datalist>
       </div>
+      {isMilkReceipt && (
+        <div className="flex flex-col gap-1 rounded-md border border-green-200 bg-green-50 p-3">
+          <label htmlFor="customer" className="text-sm font-medium text-neutral-700">Which customer is this from?</label>
+          <select id="customer" name="customer" required defaultValue="" className="border border-neutral-300 rounded-md px-3 py-2 text-base bg-white">
+            <option value="">Select a customer…</option>
+            {customerNames.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <p className="text-xs text-neutral-500">The receipt is recorded as that customer&apos;s payment, so their balance goes down. If one receipt covers several customers, enter one entry per customer.</p>
+        </div>
+      )}
       <div className="flex flex-col gap-1">
         <label htmlFor="party" className="text-sm font-medium text-neutral-700">Party (optional)</label>
         <input id="party" name="party" type="text" list="party-options" placeholder="e.g. a vendor name, for Vendor Ledger" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />

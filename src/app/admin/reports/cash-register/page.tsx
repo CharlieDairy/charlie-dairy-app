@@ -6,6 +6,7 @@ import { periodRange } from "@/lib/reports/herd";
 import { resolvePeriod } from "@/lib/period";
 import PeriodBar from "@/components/PeriodBar";
 import AddEntryToggle from "./AddEntryToggle";
+import { CLASS_LABEL, classifyCash } from "@/lib/accounting/cashClass";
 import CashRegisterTable from "./CashRegisterTable";
 
 export default async function CashRegisterPage({
@@ -20,14 +21,15 @@ export default async function CashRegisterPage({
   const session = await auth();
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
 
-  const [transactions, categoryRows, vendors] = await Promise.all([
+  const [transactions, categoryRows, vendors, customers] = await Promise.all([
     prisma.cashTransaction.findMany({
       where: { date: { gte: range.start, lt: range.end } },
       orderBy: { date: "desc" },
-      select: { id: true, date: true, category: true, party: true, mode: true, remark: true, amountIn: true, amountOut: true },
+      select: { id: true, date: true, category: true, party: true, mode: true, remark: true, amountIn: true, amountOut: true, accountClass: true },
     }),
     prisma.cashTransaction.findMany({ select: { category: true }, distinct: ["category"], orderBy: { category: "asc" } }),
     prisma.vendor.findMany({ where: { active: true }, select: { name: true }, orderBy: { name: "asc" } }),
+    prisma.customer.findMany({ where: { active: true }, select: { name: true }, orderBy: { name: "asc" } }),
   ]);
 
   const categories = categoryRows.map((r) => r.category);
@@ -45,6 +47,9 @@ export default async function CashRegisterPage({
     remark: t.remark,
     amountIn: t.amountIn,
     amountOut: t.amountOut,
+    cls: classifyCash(t),
+    clsLabel: CLASS_LABEL[classifyCash(t)],
+    manualClass: t.accountClass,
   }));
 
   return (
@@ -62,7 +67,7 @@ export default async function CashRegisterPage({
         <StatCard label="Net" value={formatRs(totalIn - totalOut)} />
       </div>
 
-      <AddEntryToggle categories={categories} vendorNames={vendorNames} />
+      <AddEntryToggle categories={categories} vendorNames={vendorNames} customerNames={customers.map((c) => c.name)} />
 
       <CashRegisterTable entries={rows} categories={categories} vendorNames={vendorNames} isAdmin={isAdmin} />
     </div>
