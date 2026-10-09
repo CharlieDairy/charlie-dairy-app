@@ -48,12 +48,13 @@ export default async function CashRegisterPage({
   const session = await auth();
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
 
-  const [transactions, before, categoryRows, vendors, customers] = await Promise.all([
+  const [transactions, before, beforeByMode, categoryRows, vendors, customers] = await Promise.all([
     prisma.cashTransaction.findMany({
       where: { date: { gte: range.start, lt: range.end }, ...modeWhere },
       orderBy: [{ date: "asc" }, { entryNo: "asc" }],
     }),
     prisma.cashTransaction.aggregate({ where: { date: { lt: range.start }, ...modeWhere }, _sum: { amountIn: true, amountOut: true } }),
+    prisma.cashTransaction.groupBy({ by: ["mode"], where: { date: { lt: range.start } }, _sum: { amountIn: true, amountOut: true } }),
     prisma.cashTransaction.findMany({ select: { category: true }, distinct: ["category"], orderBy: { category: "asc" } }),
     prisma.vendor.findMany({ where: { active: true }, select: { name: true }, orderBy: { name: "asc" } }),
     prisma.customer.findMany({ where: { active: true }, select: { name: true }, orderBy: { name: "asc" } }),
@@ -105,12 +106,25 @@ export default async function CashRegisterPage({
     return `?${q.toString()}`;
   };
 
+  const openingOf = (m: "CASH" | "BANK") => {
+    const g = beforeByMode.find((x) => x.mode === m);
+    return (g?._sum.amountIn ?? 0) - (g?._sum.amountOut ?? 0);
+  };
+
   const summary = (
+    <div className="flex flex-col gap-2">
     <div className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-neutral-200 rounded-xl divide-neutral-200 [&>*]:border-neutral-200 [&>*:nth-child(odd)]:border-r [&>*:nth-child(-n+2)]:border-b lg:[&>*]:border-b-0 lg:[&>*:not(:last-child)]:border-r">
       <SummaryBox label="Opening Balance" value={formatRs(opening)} tone="indigo" icon={<span className="block h-3 w-3 rounded-full border-2 border-current" />} />
       <SummaryBox label="Cash In" value={formatRs(totalIn)} tone="green" icon="+" />
       <SummaryBox label="Cash Out" value={formatRs(totalOut)} tone="red" icon="−" />
       <SummaryBox label="Net Balance" value={formatRs(opening + totalIn - totalOut)} tone="indigo" icon="=" />
+    </div>
+    {mode === "ALL" && (
+      <p className="text-xs text-neutral-500">
+        All books adds the petty cash book and the Meezan bank account: opening {formatRs(openingOf("CASH"))} petty cash + {formatRs(openingOf("BANK"))} bank.
+        Choose <b>Petty cash</b> above to compare with the CashBook petty cash book.
+      </p>
+    )}
     </div>
   );
 
