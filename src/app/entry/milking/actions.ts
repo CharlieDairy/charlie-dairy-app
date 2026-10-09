@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, optNum } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -35,6 +35,7 @@ async function submitMilkingImpl(formData: FormData): Promise<FormState> {
 
   const cowId = reqId(formData, "cowId", "Cow");
   const date = reqDate(formData, "date", "Date");
+  assertNotBackdated(date, user, "Date");
 
   // Zero is a valid recorded milking (a cow that gave nothing); 200 L is well past any real single milking.
   const entries = SHIFT_FIELDS.map((s) => ({ ...s, litres: optNum(formData, s.field, s.label, { min: 0, max: 200 }) })).filter(
@@ -83,4 +84,74 @@ async function submitMilkingImpl(formData: FormData): Promise<FormState> {
   refresh();
   const sessionNames = entries.map((e) => e.label).join(", ");
   return { success: true, message: `Saved ${sessionNames} for cow ${cow.tag}.` };
+}
+
+// Edit one cow's milk record for a day (all three sessions at once). A blank
+// session removes that session's record, a number updates it, and a number
+// for a session that had none adds it -- which counts as a new entry, so the
+// no-back-dating rule applies to that part. cowId "" is a Herd/Group total.
+export async function updateMilking(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => updateMilkingImpl(formData));
+}
+
+function optCowId(formData: FormData): string | null {
+  const v = formData.get("cowId");
+  return typeof v === "string" && v.trim() !== "" ? v : null;
+}
+
+async function updateMilkingImpl(formData: FormData): Promise<FormState> {
+  const user = await requirePermission("milk", "EDIT");
+  const cowId = optCowId(formData);
+  const date = reqDate(formData, "date", "Date");
+
+  const values = SHIFT_FIELDS.map((s) => ({ ...s, litres: optNum(formData, s.field, s.label, { min: 0, max: 200 }) }));
+  if (values.every((v) => v.litres === null)) {
+    throw new ValidationError("Enter litres for at least one session, or use Delete to remove the whole record.");
+  }
+
+  const existing = await prisma.milkingRecord.findMany({ where: { cowId, date }, select: { id: true, shift: true } });
+  if (existing.length === 0) return { success: false, message: "That record no longer exists. Refresh the page." };
+
+  const adding = values.filter((v) => v.litres !== null && !existing.some((e) => e.shift === v.shift));
+  if (adding.length > 0) {
+    assertNotBackdated(date, user, "Date");
+    if (cowId) {
+      const group = await prisma.milkingRecord.count({ where: { cowId: null, date, shift: { in: adding.map((a) => a.shift) } } });
+      if (group > 0) {
+        throw new ValidationError("A herd/group total already covers one of those sessions on that date, so it can't also be recorded for this cow.");
+      }
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const v of values) {
+      const rows = existing.filter((e) => e.shift === v.shift);
+      if (v.litres === null) {
+        if (rows.length > 0) await tx.milkingRecord.deleteMany({ where: { id: { in: rows.map((r) => r.id) } } });
+      } else if (rows.length > 0) {
+        await tx.milkingRecord.update({ where: { id: rows[0].id }, data: { litres: v.litres } });
+        if (rows.length > 1) await tx.milkingRecord.deleteMany({ where: { id: { in: rows.slice(1).map((r) => r.id) } } });
+      } else {
+        await tx.milkingRecord.create({ data: { cowId, shift: v.shift, litres: v.litres, date, enteredBy: user.name } });
+      }
+    }
+  });
+
+  refresh();
+  return { success: true, message: "Milk record updated." };
+}
+
+// Delete all of one cow's sessions for a day.
+export async function deleteMilking(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(() => deleteMilkingImpl(formData));
+}
+
+async function deleteMilkingImpl(formData: FormData): Promise<FormState> {
+  await requirePermission("milk", "DELETE");
+  const cowId = optCowId(formData);
+  const date = reqDate(formData, "date", "Date");
+  const { count } = await prisma.milkingRecord.deleteMany({ where: { cowId, date } });
+  if (count === 0) return { success: false, message: "That record no longer exists. Refresh the page." };
+  refresh();
+  return { success: true, message: `Deleted ${count} session${count === 1 ? "" : "s"}.` };
 }

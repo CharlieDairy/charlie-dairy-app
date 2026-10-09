@@ -101,6 +101,16 @@ export function assertNotBackdated(date: Date, user: LiveUser, label = "Date"): 
   }
 }
 
+/**
+ * For edits: an Editor may correct a record in place, but may not use an edit
+ * to move it onto a past date (that would be back-dating by the side door).
+ * Leaving the date unchanged is always fine, whatever day the record is from.
+ */
+export function assertDateChangeNotBackdated(newDate: Date, oldDate: Date, user: LiveUser, label = "Date"): void {
+  if (newDate.toISOString().slice(0, 10) === oldDate.toISOString().slice(0, 10)) return;
+  assertNotBackdated(newDate, user, label);
+}
+
 // ---------------------------------------------------------------------------
 // Crash-proofing for form actions.
 // ---------------------------------------------------------------------------

@@ -12,6 +12,13 @@ import LactationChart from "../LactationChart";
 import WeightChart from "../WeightChart";
 import CowCustomFieldsForm from "../CowCustomFieldsForm";
 import PeriodBar from "@/components/PeriodBar";
+import RecordActions from "@/components/RecordActions";
+import { getLiveUser, hasPermission } from "@/lib/access";
+import {
+  updateWeightRecord, deleteWeightRecord, updateVaccination, deleteVaccination, updateTreatment, deleteTreatment,
+  updateHeatEvent, deleteHeatEvent, updateInsemination, deleteInsemination, updatePregnancyCheck, deletePregnancyCheck,
+  updateCalving, deleteCalving,
+} from "../recordActions";
 
 // This page's Milking Summary reads the "period" search param on every
 // request (day/week/month/year/all) -- force-dynamic guarantees a fresh
@@ -30,6 +37,15 @@ function fmtDate(d: Date | null | undefined): string {
   return d ? d.toISOString().slice(0, 10) : "—";
 }
 
+const iso = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : "");
+const isoDT = (d: Date) => d.toISOString().slice(0, 16);
+const opts = (values: string[]) => values.map((v) => ({ value: v, label: v.replace(/_/g, " ") }));
+const HEAT_METHODS = opts(["VISUAL", "ACTIVITY_MONITOR", "TAIL_PAINT", "OTHER"]);
+const AI_METHOD_OPTS = opts(["AI", "NATURAL", "EMBRYO_TRANSFER"]);
+const PREG_METHOD_OPTS = opts(["PALPATION", "ULTRASOUND", "BLOOD_TEST", "OBSERVATION"]);
+const PREG_RESULT_OPTS = opts(["PREGNANT", "OPEN", "INCONCLUSIVE"]);
+const DIFFICULTY_OPTS = opts(["UNASSISTED", "EASY_PULL", "HARD_PULL", "VET_ASSISTED", "CAESAREAN"]);
+
 function ageFromDob(dob: Date | null): string {
   if (!dob) return "—";
   const ms = Date.now() - dob.getTime();
@@ -46,6 +62,8 @@ export default async function CowProfilePage({
   searchParams: Promise<{ period?: string; from?: string; to?: string; edit?: string }>;
 }) {
   const { id } = await params;
+  const live = await getLiveUser();
+  const can = (m: "weight" | "health" | "breeding", a: "EDIT" | "DELETE") => !!live && hasPermission(live, m, a);
   const searchParamsResolved = await searchParams;
   const { edit } = searchParamsResolved;
   const { period, from, to } = await resolvePeriod(searchParamsResolved, "month");
@@ -206,6 +224,35 @@ export default async function CowProfilePage({
             {fmtDate(cow.weightRecords[cow.weightRecords.length - 1].date)}
           </p>
         )}
+        {cow.weightRecords.length > 0 && (
+          <div className="mb-3 overflow-x-auto">
+            <table className="w-full text-sm">
+              <tbody>
+                {[...cow.weightRecords].reverse().slice(0, 12).map((w) => (
+                  <tr key={w.id} className="border-t border-neutral-100">
+                    <td className="py-1">{fmtDate(w.date)}</td>
+                    <td className="py-1">{w.weightKg} kg</td>
+                    <td className="py-1 text-right">
+                      <RecordActions
+                        id={w.id}
+                        title={`Weight ${fmtDate(w.date)}`}
+                        canEdit={can("weight", "EDIT")}
+                        canDelete={can("weight", "DELETE")}
+                        updateAction={updateWeightRecord}
+                        deleteAction={deleteWeightRecord}
+                        deleteConfirm={`Delete the ${w.weightKg} kg weight on ${fmtDate(w.date)}?`}
+                        fields={[
+                          { name: "date", label: "Date", type: "date", value: iso(w.date), required: true },
+                          { name: "weightKg", label: "Weight (kg)", type: "number", step: "0.1", value: String(w.weightKg), required: true },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         <div className="border-t border-neutral-100 pt-3">
           <WeightForm cowId={cow.id} />
         </div>
@@ -272,6 +319,25 @@ export default async function CowProfilePage({
                       <td className="py-1">{fmtDate(v.date)}</td>
                       <td className="py-1">{v.vaccineName}</td>
                       <td className="py-1 text-neutral-500">{v.nextDueDate ? `Next: ${fmtDate(v.nextDueDate)}` : ""}</td>
+                      <td className="py-1 text-right">
+                        <RecordActions
+                          id={v.id}
+                          title={`${v.vaccineName} ${fmtDate(v.date)}`}
+                          canEdit={can("health", "EDIT")}
+                          canDelete={can("health", "DELETE")}
+                          updateAction={updateVaccination}
+                          deleteAction={deleteVaccination}
+                          deleteConfirm={`Delete the ${v.vaccineName} vaccination on ${fmtDate(v.date)}?`}
+                          fields={[
+                            { name: "date", label: "Date", type: "date", value: iso(v.date), required: true },
+                            { name: "vaccineName", label: "Vaccine", value: v.vaccineName, required: true },
+                            { name: "nextDueDate", label: "Next due date", type: "date", value: iso(v.nextDueDate) },
+                            { name: "cost", label: "Cost", type: "number", step: "1", value: v.cost == null ? "" : String(v.cost) },
+                            { name: "administeredBy", label: "Administered by", value: v.administeredBy ?? "" },
+                            { name: "notes", label: "Notes", type: "textarea", value: v.notes ?? "" },
+                          ]}
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -290,6 +356,27 @@ export default async function CowProfilePage({
                       <td className="py-1">{fmtDate(t.date)}</td>
                       <td className="py-1">{t.medicineName}</td>
                       <td className="py-1 text-neutral-500">{t.reason ?? ""}</td>
+                      <td className="py-1 text-right">
+                        <RecordActions
+                          id={t.id}
+                          title={`${t.medicineName} ${fmtDate(t.date)}`}
+                          canEdit={can("health", "EDIT")}
+                          canDelete={can("health", "DELETE")}
+                          updateAction={updateTreatment}
+                          deleteAction={deleteTreatment}
+                          deleteConfirm={`Delete the ${t.medicineName} treatment on ${fmtDate(t.date)}? Its medicine stock use is removed too.`}
+                          fields={[
+                            { name: "date", label: "Date", type: "date", value: iso(t.date), required: true },
+                            { name: "medicineName", label: "Medicine", value: t.medicineName, required: true },
+                            { name: "dosage", label: "Dosage", value: t.dosage ?? "" },
+                            { name: "quantityUsed", label: "Quantity used", type: "number", step: "0.1", value: t.quantityUsed == null ? "" : String(t.quantityUsed) },
+                            { name: "reason", label: "Reason", value: t.reason ?? "" },
+                            { name: "cost", label: "Cost", type: "number", step: "1", value: t.cost == null ? "" : String(t.cost) },
+                            { name: "administeredBy", label: "Administered by", value: t.administeredBy ?? "" },
+                            { name: "notes", label: "Notes", type: "textarea", value: t.notes ?? "" },
+                          ]}
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -366,6 +453,7 @@ export default async function CowProfilePage({
                 <th className="text-left py-1 font-normal">Gestation</th>
                 <th className="text-left py-1 font-normal">Difficulty</th>
                 <th className="text-left py-1 font-normal">Calves</th>
+                <th className="py-1 font-normal"></th>
               </tr>
             </thead>
             <tbody>
@@ -376,6 +464,25 @@ export default async function CowProfilePage({
                   <td className="py-1">{c.gestationDays ? `${c.gestationDays} d` : "—"}</td>
                   <td className="py-1">{c.difficulty}</td>
                   <td className="py-1">{c.calfCount}</td>
+                  <td className="py-1 text-right">
+                    <RecordActions
+                      id={c.id}
+                      title={`Calving ${fmtDate(c.date)}`}
+                      canEdit={can("breeding", "EDIT")}
+                      canDelete={can("breeding", "DELETE")}
+                      updateAction={updateCalving}
+                      deleteAction={deleteCalving}
+                      deleteConfirm={`Delete the calving on ${fmtDate(c.date)} and its calf records?`}
+                      fields={[
+                        { name: "sireTag", label: "Sire tag", value: c.sireTag ?? "" },
+                        { name: "difficulty", label: "Difficulty", type: "select", options: DIFFICULTY_OPTS, value: c.difficulty, required: true },
+                        { name: "assistedBy", label: "Assisted by", value: c.assistedBy ?? "" },
+                        { name: "retainedPlacenta", label: "Retained placenta", type: "checkbox", value: c.retainedPlacenta },
+                        { name: "complications", label: "Complications", type: "textarea", value: c.complications ?? "" },
+                        { name: "notes", label: "Notes", type: "textarea", value: c.notes ?? "" },
+                      ]}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -428,7 +535,26 @@ export default async function CowProfilePage({
             <p className="text-xs font-medium text-neutral-500 uppercase mb-1">Heat Events</p>
             {cow.heatEvents.length === 0 ? <p className="text-neutral-400">None</p> : (
               <ul className="space-y-1">
-                {cow.heatEvents.map((h) => <li key={h.id}>{fmtDate(h.detectedAt)} — {h.detectionMethod}</li>)}
+                {cow.heatEvents.map((h) => (
+                  <li key={h.id} className="flex items-center justify-between gap-2">
+                    <span>{fmtDate(h.detectedAt)} — {h.detectionMethod}</span>
+                    <RecordActions
+                      id={h.id}
+                      title={`Heat ${fmtDate(h.detectedAt)}`}
+                      canEdit={can("breeding", "EDIT")}
+                      canDelete={can("breeding", "DELETE")}
+                      updateAction={updateHeatEvent}
+                      deleteAction={deleteHeatEvent}
+                      deleteConfirm={`Delete the heat event on ${fmtDate(h.detectedAt)}?`}
+                      fields={[
+                        { name: "detectedAt", label: "Date / time", type: "datetime-local", value: isoDT(h.detectedAt), required: true },
+                        { name: "detectionMethod", label: "Detection method", type: "select", options: HEAT_METHODS, value: h.detectionMethod, required: true },
+                        { name: "intensity", label: "Intensity", value: h.intensity ?? "" },
+                        { name: "notes", label: "Notes", type: "textarea", value: h.notes ?? "" },
+                      ]}
+                    />
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -436,7 +562,29 @@ export default async function CowProfilePage({
             <p className="text-xs font-medium text-neutral-500 uppercase mb-1">Inseminations</p>
             {cow.inseminations.length === 0 ? <p className="text-neutral-400">None</p> : (
               <ul className="space-y-1">
-                {cow.inseminations.map((i) => <li key={i.id}>{fmtDate(i.date)} — #{i.serviceNumber} ({i.method})</li>)}
+                {cow.inseminations.map((i) => (
+                  <li key={i.id} className="flex items-center justify-between gap-2">
+                    <span>{fmtDate(i.date)} — #{i.serviceNumber} ({i.method})</span>
+                    <RecordActions
+                      id={i.id}
+                      title={`Insemination ${fmtDate(i.date)}`}
+                      canEdit={can("breeding", "EDIT")}
+                      canDelete={can("breeding", "DELETE")}
+                      updateAction={updateInsemination}
+                      deleteAction={deleteInsemination}
+                      deleteConfirm={`Delete the insemination on ${fmtDate(i.date)}?`}
+                      fields={[
+                        { name: "date", label: "Date", type: "date", value: iso(i.date), required: true },
+                        { name: "method", label: "Method", type: "select", options: AI_METHOD_OPTS, value: i.method, required: true },
+                        { name: "semenBatch", label: "Semen batch", value: i.semenBatch ?? "" },
+                        { name: "bullTag", label: "Bull tag", value: i.bullTag ?? "" },
+                        { name: "technician", label: "Technician", value: i.technician ?? "" },
+                        { name: "cost", label: "Cost", type: "number", step: "1", value: i.cost == null ? "" : String(i.cost) },
+                        { name: "notes", label: "Notes", type: "textarea", value: i.notes ?? "" },
+                      ]}
+                    />
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -444,7 +592,26 @@ export default async function CowProfilePage({
             <p className="text-xs font-medium text-neutral-500 uppercase mb-1">Pregnancy Checks</p>
             {cow.pregnancyChecks.length === 0 ? <p className="text-neutral-400">None</p> : (
               <ul className="space-y-1">
-                {cow.pregnancyChecks.map((p) => <li key={p.id}>{fmtDate(p.date)} — {p.result}</li>)}
+                {cow.pregnancyChecks.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-2">
+                    <span>{fmtDate(p.date)} — {p.result}</span>
+                    <RecordActions
+                      id={p.id}
+                      title={`Pregnancy check ${fmtDate(p.date)}`}
+                      canEdit={can("breeding", "EDIT")}
+                      canDelete={can("breeding", "DELETE")}
+                      updateAction={updatePregnancyCheck}
+                      deleteAction={deletePregnancyCheck}
+                      deleteConfirm={`Delete the pregnancy check on ${fmtDate(p.date)}?`}
+                      fields={[
+                        { name: "date", label: "Date", type: "date", value: iso(p.date), required: true },
+                        { name: "method", label: "Method", type: "select", options: PREG_METHOD_OPTS, value: p.method, required: true },
+                        { name: "result", label: "Result", type: "select", options: PREG_RESULT_OPTS, value: p.result, required: true },
+                        { name: "notes", label: "Notes", type: "textarea", value: p.notes ?? "" },
+                      ]}
+                    />
+                  </li>
+                ))}
               </ul>
             )}
           </div>

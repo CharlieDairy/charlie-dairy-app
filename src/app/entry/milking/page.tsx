@@ -4,6 +4,7 @@ import { getMilkingWorklist, getMilkingLog } from "@/lib/reports/milkingWorklist
 import { periodRange } from "@/lib/reports/herd";
 import { resolvePeriod } from "@/lib/period";
 import PeriodBar from "@/components/PeriodBar";
+import { getLiveUser, hasPermission } from "@/lib/access";
 import MilkEntryPanel, { type DisplayRow } from "./MilkEntryPanel";
 
 function todayIso() {
@@ -16,6 +17,9 @@ export default async function MilkingEntryPage({
   searchParams: Promise<{ date?: string; period?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
+  const user = await getLiveUser();
+  const canEdit = !!user && hasPermission(user, "milk", "EDIT");
+  const canDelete = !!user && hasPermission(user, "milk", "DELETE");
   const today = todayIso();
   const { period, from, to } = await resolvePeriod(params, "day");
   const date = params.date ?? today;
@@ -127,7 +131,7 @@ export default async function MilkingEntryPage({
       )}
       {logTruncated && <p className="text-xs text-text-muted">Showing the most recent 300 records for this period.</p>}
 
-      <MilkEntryPanel cows={cows} rows={displayRows} mode={period === "day" ? "day" : "log"} defaultDate={date} />
+      <MilkEntryPanel cows={cows} rows={displayRows} mode={period === "day" ? "day" : "log"} defaultDate={date} canEdit={canEdit} canDelete={canDelete} />
     </div>
   );
 }

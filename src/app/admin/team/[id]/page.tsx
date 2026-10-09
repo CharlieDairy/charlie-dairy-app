@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatRs } from "@/lib/format";
+import RecordActions from "@/components/RecordActions";
+import { getLiveUser, hasPermission } from "@/lib/access";
+import { updateSalaryPayment, deleteSalaryPayment, updateAttendance, deleteAttendance, updateEmployee, deleteEmployee } from "../recordActions";
 
 function fmtDate(d: Date | null): string {
   return d ? new Date(d).toISOString().slice(0, 10) : "—";
@@ -9,6 +12,9 @@ function fmtDate(d: Date | null): string {
 
 export default async function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const live = await getLiveUser();
+  const canEdit = !!live && hasPermission(live, "team", "EDIT");
+  const canDelete = !!live && hasPermission(live, "team", "DELETE");
   const employee = await prisma.employee.findUnique({
     where: { id },
     include: {
@@ -37,7 +43,26 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
             </p>
           </div>
         </div>
-        <Link href="/admin/team" className="link-btn">← Back to Team</Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <RecordActions
+            id={employee.id}
+            title={employee.name}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            updateAction={updateEmployee}
+            deleteAction={deleteEmployee}
+            deleteConfirm={`Delete ${employee.name}? Only possible when there is no salary or attendance history.`}
+            fields={[
+              { name: "name", label: "Name", value: employee.name, required: true },
+              { name: "position", label: "Position", value: employee.position ?? "" },
+              { name: "phone", label: "Phone", value: employee.phone ?? "" },
+              { name: "monthlySalary", label: "Monthly salary", type: "number", step: "1", value: employee.monthlySalary == null ? "" : String(employee.monthlySalary) },
+              { name: "joinDate", label: "Join date", type: "date", value: employee.joinDate ? fmtDate(employee.joinDate) : "" },
+              { name: "notes", label: "Notes", type: "textarea", value: employee.notes ?? "" },
+            ]}
+          />
+          <Link href="/admin/team" className="link-btn">← Back to Team</Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -78,6 +103,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
                 <th className="text-left py-1 font-normal">For Month</th>
                 <th className="text-left py-1 font-normal">Mode</th>
                 <th className="text-right py-1 font-normal">Amount</th>
+                <th className="py-1 font-normal"></th>
               </tr>
             </thead>
             <tbody>
@@ -87,6 +113,24 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
                   <td className="py-1">{p.forMonth ?? "—"}</td>
                   <td className="py-1">{p.mode}</td>
                   <td className="py-1 text-right">{formatRs(p.amount)}</td>
+                  <td className="py-1 text-right">
+                    <RecordActions
+                      id={p.id}
+                      title={`Salary ${fmtDate(p.date)}`}
+                      canEdit={canEdit}
+                      canDelete={canDelete}
+                      updateAction={updateSalaryPayment}
+                      deleteAction={deleteSalaryPayment}
+                      deleteConfirm={`Delete the ${formatRs(p.amount)} salary payment on ${fmtDate(p.date)}? Its Cash Register entry is removed too.`}
+                      fields={[
+                        { name: "date", label: "Date", type: "date", value: fmtDate(p.date), required: true },
+                        { name: "amount", label: "Amount", type: "number", step: "1", value: String(p.amount), required: true },
+                        { name: "forMonth", label: "For month", value: p.forMonth ?? "" },
+                        { name: "mode", label: "Mode", type: "select", required: true, value: p.mode, options: [{ value: "CASH", label: "Cash" }, { value: "BANK", label: "Bank" }] },
+                        { name: "notes", label: "Notes", type: "textarea", value: p.notes ?? "" },
+                      ]}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -105,22 +149,48 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
         {employee.attendanceRecords.length === 0 ? (
           <p className="text-sm text-neutral-400">No attendance recorded yet.</p>
         ) : (
-          <div className="flex flex-wrap gap-1">
-            {employee.attendanceRecords.map((a) => (
-              <span
-                key={a.id}
-                title={`${fmtDate(a.date)}: ${a.status}`}
-                className={`text-xs rounded px-2 py-1 border ${
-                  a.status === "PRESENT"
-                    ? "border-primary-light bg-primary-light text-primary-dark"
-                    : a.status === "ABSENT"
-                      ? "border-danger-light bg-danger-light text-danger"
-                      : "border-warning-light bg-warning-light text-warning"
-                }`}
-              >
-                {fmtDate(a.date).slice(5)}
-              </span>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <tbody>
+                {employee.attendanceRecords.map((a) => (
+                  <tr key={a.id} className="border-t border-neutral-100">
+                    <td className="py-1">{fmtDate(a.date)}</td>
+                    <td className="py-1">
+                      <span
+                        className={`text-xs rounded px-2 py-0.5 border ${
+                          a.status === "PRESENT"
+                            ? "border-primary-light bg-primary-light text-primary-dark"
+                            : a.status === "ABSENT"
+                              ? "border-danger-light bg-danger-light text-danger"
+                              : "border-warning-light bg-warning-light text-warning"
+                        }`}
+                      >
+                        {a.status.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td className="py-1 text-neutral-500">{a.notes ?? ""}</td>
+                    <td className="py-1 text-right">
+                      <RecordActions
+                        id={a.id}
+                        title={`Attendance ${fmtDate(a.date)}`}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
+                        updateAction={updateAttendance}
+                        deleteAction={deleteAttendance}
+                        deleteConfirm={`Delete the attendance record for ${fmtDate(a.date)}?`}
+                        fields={[
+                          {
+                            name: "status", label: "Status", type: "select", required: true, value: a.status,
+                            options: [{ value: "PRESENT", label: "Present" }, { value: "ABSENT", label: "Absent" }, { value: "HALF_DAY", label: "Half day" }, { value: "LEAVE", label: "Leave" }],
+                          },
+                          { name: "notes", label: "Notes", type: "textarea", value: a.notes ?? "" },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

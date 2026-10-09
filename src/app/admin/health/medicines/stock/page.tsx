@@ -4,6 +4,9 @@ import { getMedicineStockOverview } from "@/lib/reports/medicineStock";
 import StatCard from "@/components/StatCard";
 import Badge from "@/components/Badge";
 import RestockForm from "./RestockForm";
+import RecordActions from "@/components/RecordActions";
+import { getLiveUser, hasPermission } from "@/lib/access";
+import { updateRestock, deleteRestock } from "./recordActions";
 
 function stockTone(balance: number, daysRemaining: number | null): { tone: "danger" | "warning" | "success" | "neutral"; label: string } {
   if (balance < 0) return { tone: "danger", label: "Deficit" };
@@ -14,6 +17,15 @@ function stockTone(balance: number, daysRemaining: number | null): { tone: "dang
 }
 
 export default async function MedicineStockPage() {
+  const live = await getLiveUser();
+  const canEdit = !!live && hasPermission(live, "health", "EDIT");
+  const canDelete = !!live && hasPermission(live, "health", "DELETE");
+  const restocks = await prisma.medicineStockTransaction.findMany({
+    where: { direction: "IN" },
+    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+    take: 30,
+    include: { medicineDef: { select: { name: true, unit: true } } },
+  });
   const [overview, medicines] = await Promise.all([
     getMedicineStockOverview(),
     prisma.medicineDef.findMany({ where: { active: true }, select: { id: true, name: true, unit: true }, orderBy: { name: "asc" } }),
@@ -84,6 +96,49 @@ export default async function MedicineStockPage() {
           check for a missing restock entry or a data-entry mistake.
         </p>
       )}
+
+      <div className="bg-white border border-neutral-200 rounded-lg p-4">
+        <h2 className="font-semibold text-neutral-900 mb-1">Recent restocks</h2>
+        <p className="text-xs text-neutral-500 mb-2">Stock used by treatments is changed by editing the treatment on the animal&apos;s profile.</p>
+        {restocks.length === 0 ? (
+          <p className="text-sm text-neutral-400">No restocks recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <tbody>
+                {restocks.map((r) => {
+                  const d = r.date.toISOString().slice(0, 10);
+                  return (
+                    <tr key={r.id} className="border-t border-neutral-100">
+                      <td className="py-1">{d}</td>
+                      <td className="py-1">{r.medicineDef.name}</td>
+                      <td className="py-1 text-right">{r.quantity} {r.medicineDef.unit}</td>
+                      <td className="py-1 pl-3 text-neutral-500">{r.notes ?? ""}</td>
+                      <td className="py-1 text-right">
+                        <RecordActions
+                          id={r.id}
+                          title={`${r.medicineDef.name} restock ${d}`}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          updateAction={updateRestock}
+                          deleteAction={deleteRestock}
+                          deleteConfirm={`Delete the ${r.quantity} ${r.medicineDef.unit} restock of ${r.medicineDef.name} on ${d}?`}
+                          fields={[
+                            { name: "date", label: "Date", type: "date", value: d, required: true },
+                            { name: "quantity", label: `Quantity (${r.medicineDef.unit})`, type: "number", step: "0.1", value: String(r.quantity), required: true },
+                            { name: "cost", label: "Cost", type: "number", step: "1", value: r.cost == null ? "" : String(r.cost) },
+                            { name: "notes", label: "Notes", type: "textarea", value: r.notes ?? "" },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
