@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { cashStamp } from "@/lib/cashStamp";
 import { saveUploadedImage, deleteUploadedImage } from "@/lib/uploadImage";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -102,7 +103,7 @@ async function recordSalaryPaymentImpl(formData: FormData): Promise<FormState> {
         category: SALARY_CATEGORY,
         mode,
         amountOut: amount,
-        enteredBy,
+        ...cashStamp(user),
         remark: forMonth ? `Salary for ${employee.name} — ${forMonth}` : `Salary for ${employee.name}`,
       },
     });

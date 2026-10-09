@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { cashStamp } from "@/lib/cashStamp";
 import { revalidatePath } from "next/cache";
 import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
@@ -50,7 +51,7 @@ async function recordCustomerPaymentImpl(formData: FormData): Promise<FormState>
         category: "Milk Sale Payment",
         mode,
         amountIn: amount,
-        enteredBy,
+        ...cashStamp(user),
         remark: notes ? `Milk sale payment from ${buyer}: ${notes}` : `Milk sale payment from ${buyer}`,
       },
     });

@@ -783,6 +783,11 @@ model CashTransaction {
   // Admin override of the automatic class; null = decide from category and remark.
   accountClass CashClass?
   createdAt   DateTime @default(now())
+  // Running entry number shown as #N on every transaction; the user who recorded it and who last changed it.
+  entryNo     Int      @unique @default(autoincrement())
+  createdById String?
+  updatedById String?
+  updatedAt   DateTime?
 
   customerPayment CustomerPayment?
   salaryPayment   SalaryPayment?

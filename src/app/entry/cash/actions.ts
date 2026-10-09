@@ -5,6 +5,7 @@ import { requireAccess, requirePermission, assertNotBackdated, runAction } from 
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optEnum, optText, CASH_MODES, DIRECTIONS } from "@/lib/validate";
 import { CASH_CLASSES } from "@/lib/accounting/cashClass";
+import { cashStamp } from "@/lib/cashStamp";
 import { getMilkSalesCutover, MILK_CASH_CATEGORY } from "@/lib/reports/pnl";
 import { revalidatePath } from "next/cache";
 
@@ -58,7 +59,7 @@ async function submitCashImpl(formData: FormData): Promise<FormState> {
     if (!customer) throw new ValidationError("Select a registered customer for this milk receipt.");
     await prisma.$transaction(async (tx) => {
       const cashTx = await tx.cashTransaction.create({
-        data: { date, category, party: customer.name, remark, mode, amountIn, amountOut, enteredBy: user.name },
+        data: { date, category, party: customer.name, remark, mode, amountIn, amountOut, ...cashStamp(user) },
       });
       await tx.customerPayment.create({
         data: { buyer: customer.name, date, amount: amountIn, mode, notes: remark, cashTransactionId: cashTx.id, enteredBy: user.name },
@@ -72,7 +73,7 @@ async function submitCashImpl(formData: FormData): Promise<FormState> {
   }
 
   await prisma.cashTransaction.create({
-    data: { date, category, party, remark, mode, amountIn, amountOut, enteredBy: user.name },
+    data: { date, category, party, remark, mode, amountIn, amountOut, ...cashStamp(user) },
   });
 
   refresh();
@@ -93,6 +94,9 @@ async function updateCashEntryImpl(formData: FormData): Promise<FormState> {
   const mode = optEnum(formData, "mode", "Mode", CASH_MODES) ?? "CASH";
   const remark = optText(formData, "remark", "Remark", { max: 500 });
   const party = optText(formData, "party", "Party", { max: 100 });
+  const timeRaw = optText(formData, "time", "Time", { max: 8 });
+  if (timeRaw && !/^\d{2}:\d{2}(:\d{2})?$/.test(timeRaw)) throw new ValidationError("Time must look like 17:35.");
+  const time = timeRaw ? (timeRaw.length === 5 ? `${timeRaw}:00` : timeRaw) : null;
 
   const existing = await prisma.cashTransaction.findUnique({ where: { id } });
   if (!existing) return { success: false, message: "Entry not found." };
@@ -127,7 +131,7 @@ async function updateCashEntryImpl(formData: FormData): Promise<FormState> {
   await prisma.$transaction(async (tx) => {
     await tx.cashTransaction.update({
       where: { id },
-      data: { date, category, party, remark, mode, amountIn, amountOut, ...(classChange ?? {}) },
+      data: { date, category, party, remark, mode, amountIn, amountOut, ...(time ? { time } : {}), updatedById: user.id, updatedAt: new Date(), ...(classChange ?? {}) },
     });
     if (linkedPayment) {
       await tx.customerPayment.update({ where: { id: linkedPayment.id }, data: { date, amount, mode } });
