@@ -12,6 +12,10 @@ export type BalanceSheet = {
   totalAssets: number;
   totalLiabilities: number;
   capitalLedger: number;
+  /** Partner money in the cash books that is not yet in the Capital Ledger. The owner has confirmed it is capital (not a loan), so it is counted as equity. */
+  partnerCapitalNotInLedger: number;
+  /** Asset write-downs in the Assets list that were never charged to profit (deducted from equity). */
+  depreciationNotCharged: number;
   retainedEarnings: number;
   totalEquity: number;
   difference: number;
@@ -37,8 +41,9 @@ export type BalanceSheet = {
 
 // A snapshot assembled from the app's ledgers on a CASH basis -- not an independent
 // double-entry system and not an audited statement. Assets are what the farm holds
-// in cash and fixed assets; equity is the capital ledger plus the cash-basis profit
-// since the cash books start. Customers' unpaid bills are shown as a memo only: on a
+// in cash and fixed assets; equity is the capital ledger, plus partner money in the cash books
+// that the ledger does not hold (capital, confirmed by the owner), less asset write-downs not
+// yet charged to profit, plus the cash-basis profit since the cash books start. Customers' unpaid bills are shown as a memo only: on a
 // cash basis money owed to the farm is not an asset until it is received. The
 // "difference" is shown, not forced to zero, with the figures that explain it.
 export async function getBalanceSheet(): Promise<BalanceSheet> {
@@ -79,7 +84,10 @@ export async function getBalanceSheet(): Promise<BalanceSheet> {
   const capitalLedger = capitalEntries.reduce((n, e) => n + e.credit - e.debit, 0);
   const capitalLedgerSinceStart = start ? capitalEntries.filter((e) => e.date >= start!).reduce((n, e) => n + e.credit - e.debit, 0) : 0;
   const retainedEarnings = monthlyPnl.reduce((n, m) => n + m.net, 0);
-  const totalEquity = capitalLedger + retainedEarnings;
+  // The owner has confirmed that partner money is capital, not a loan. What the Capital Ledger does not already hold is added here.
+  const partnerCapitalNotInLedger = partnerNet - capitalLedgerSinceStart;
+  const depreciationNotCharged = assetCost - fixedAssets;
+  const totalEquity = capitalLedger + partnerCapitalNotInLedger - depreciationNotCharged + retainedEarnings;
   const difference = totalAssets - (totalLiabilities + totalEquity);
 
   return {
@@ -90,6 +98,8 @@ export async function getBalanceSheet(): Promise<BalanceSheet> {
     totalAssets,
     totalLiabilities,
     capitalLedger,
+    partnerCapitalNotInLedger,
+    depreciationNotCharged,
     retainedEarnings,
     totalEquity,
     difference,

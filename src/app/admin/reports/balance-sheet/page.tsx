@@ -52,9 +52,11 @@ export default async function BalanceSheetPage() {
         <div className="bg-white border border-neutral-200 rounded-lg p-4">
           <h2 className="font-semibold text-neutral-900 mb-2">Equity</h2>
           <Line label="Capital Ledger — Dairy venture only" value={formatRs(bs.capitalLedger)} indent />
+          <Line label="Partner capital in the cash books, not yet in the Capital Ledger" value={formatRs(bs.partnerCapitalNotInLedger)} indent />
+          <Line label="Less: asset write-downs not yet charged to profit" value={formatRs(-bs.depreciationNotCharged)} indent />
           <Line label={`Profit since ${bs.explain.booksStart ?? "the books start"} (cash basis)`} value={formatRs(bs.retainedEarnings)} indent />
           <Line label="Total Equity" value={formatRs(bs.totalEquity)} bold />
-          <p className="text-xs text-neutral-500 mt-3">Profit comes from the P&amp;L: milk, animal and other income minus running costs. Capital spending and partner money are not in it.</p>
+          <p className="text-xs text-neutral-500 mt-3">Profit comes from the P&amp;L: milk, animal and other income minus running costs. Capital spending and partner money are not in it. Partner money is treated as capital, not a loan.</p>
         </div>
       </div>
 
@@ -64,7 +66,7 @@ export default async function BalanceSheetPage() {
         <Line label="Difference" value={formatRs(bs.difference)} bold />
         {!isBalanced && (
           <p className="text-xs text-amber-700 mt-2">
-            The difference is shown, not hidden. The facts below explain most of it; closing it needs the decisions listed there.
+            The difference is shown, not hidden. What is left after counting partner money as capital and the asset write-downs most likely comes from profit or loss before {bs.explain.booksStart ?? "the books start"}, which are not loaded yet.
             {bs.unclassifiedNet !== 0 ? ` ${formatRs(Math.abs(bs.unclassifiedNet))} of cash entries are still waiting for a class.` : ""}
           </p>
         )}
@@ -72,7 +74,7 @@ export default async function BalanceSheetPage() {
 
       {!isBalanced && (
         <div className="bg-white border border-neutral-200 rounded-lg p-4">
-          <h2 className="font-semibold text-neutral-900 mb-2">What explains the difference</h2>
+          <h2 className="font-semibold text-neutral-900 mb-2">What is behind the difference</h2>
           <Line label="Fixed assets at cost" value={formatRs(bs.explain.assetCost)} indent />
           <Line label="Written down in the Assets list but never charged to profit" value={formatRs(bs.explain.accumulatedDepreciation)} indent />
           <Line label="Partner money in the cash books since they start (in minus out)" value={formatRs(bs.explain.partnerNetInCashBooks)} indent />
@@ -81,9 +83,9 @@ export default async function BalanceSheetPage() {
           <Line label="Bank-to-petty-cash transfers with no matching receipt" value={formatRs(bs.explain.unmatchedTransfers)} indent />
           <Line label="Cash at the start of the books" value={formatRs(bs.explain.openingCash)} indent />
           <ul className="text-xs text-neutral-600 mt-3 list-disc list-inside flex flex-col gap-1.5">
-            <li><b>Depreciation:</b> the Assets list has already written assets down, but that cost has not been charged to profit, so equity is too high by that amount.</li>
-            <li><b>Partner money:</b> the cash books show partners putting in much more than the Capital Ledger records. Each such amount is either capital (add it to the Capital Ledger) or a loan from a partner (a liability, which the app does not track yet). The owner decides which.</li>
-            <li><b>Before the books start:</b> profit or loss earlier than {bs.explain.booksStart ?? "the first entry"} (including 2023) is not in the profit above. The bank book goes back to January 2023.</li>
+            <li><b>Depreciation:</b> the Assets list has already written assets down. That amount is now deducted from equity above; it has not been charged month by month to the P&amp;L.</li>
+            <li><b>Partner money:</b> confirmed as capital, so what the Capital Ledger does not already hold is counted in equity above. You can also record it by partner in the Capital Ledger.</li>
+            <li><b>Before the books start:</b> a negative difference here means the farm has less than its capital and profit say. That is consistent with losses before {bs.explain.booksStart ?? "the first entry"} (including 2023) that are not loaded. The bank book goes back to January 2023. Treat the figure as an estimate until that history is loaded.</li>
           </ul>
         </div>
       )}
