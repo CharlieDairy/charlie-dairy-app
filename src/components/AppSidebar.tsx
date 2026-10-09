@@ -38,6 +38,7 @@ function SecIcon({ children }: { children: ReactNode }) {
 // One small icon per section so the menu can be scanned by shape, not just
 // by reading every label.
 const SECTION_ICON: Record<string, ReactNode> = {
+  watch: <SecIcon><circle cx="12" cy="12" r="3" /><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /></SecIcon>,
   herd: <SecIcon><path d="M4 8c0-2 1.5-3 3-3h10c1.5 0 3 1 3 3v6a5 5 0 01-5 5H9a5 5 0 01-5-5z" /><circle cx="9" cy="12" r="1" /><circle cx="15" cy="12" r="1" /><path d="M3 6l2 2M21 6l-2 2" /></SecIcon>,
   breeding: <SecIcon><path d="M12 21s-7-4.5-7-10a4 4 0 017-2.6A4 4 0 0119 11c0 5.5-7 10-7 10z" /></SecIcon>,
   health: <SecIcon><path d="M12 8v8M8 12h8" /><rect x="3" y="3" width="18" height="18" rx="4" /></SecIcon>,

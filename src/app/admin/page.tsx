@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { getLiveUser, hasPermission } from "@/lib/access";
 import { getFarmDashboard } from "@/lib/reports/farmDashboard";
 import { getFeedOverview } from "@/lib/reports/feed";
@@ -135,7 +136,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   // P&L, capital and the finance summary are Admin-only (Editors and View Only users never see them).
   const finance = isAdmin;
   const canWrite = user?.role === "ADMIN" || user?.role === "EDITOR";
-  const [d, feed] = await Promise.all([getFarmDashboard(params), getFeedOverview()]);
+  const [d, feed, watchRows] = await Promise.all([
+    getFarmDashboard(params),
+    getFeedOverview(),
+    prisma.watchFinding.groupBy({ by: ["severity"], where: { status: "OPEN", ...(isAdmin ? {} : { financeOnly: false }) }, _count: { _all: true } }).catch(() => []),
+  ]);
+  const watchCount = (sev: string) => watchRows.find((w) => w.severity === sev)?._count._all ?? 0;
+  const watchHigh = watchCount("HIGH");
+  const watchMedium = watchCount("MEDIUM");
   const sum = (v: Record<string, number>) => Object.values(v).reduce((n, a) => n + a, 0);
   const income = sum(d.income), expense = sum(d.expenses), net = income - expense;
   const sold = d.periodSales.reduce((n, s) => n + s.litres, 0);
@@ -181,6 +189,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </div>
         </div>
       </div>
+
+      <Link href="/admin/watch" className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${watchHigh > 0 ? "border-red-200 bg-red-50" : watchMedium > 0 ? "border-amber-200 bg-amber-50" : "border-green-200 bg-green-50"}`}>
+        <span className="text-sm font-semibold text-slate-900">
+          Farm Watch (virtual farm manager): {watchHigh > 0 ? `${watchHigh} high-priority item${watchHigh === 1 ? "" : "s"}` : watchMedium > 0 ? `${watchMedium} item${watchMedium === 1 ? "" : "s"} to look at` : "nothing urgent"}
+          {watchHigh > 0 && watchMedium > 0 ? ` and ${watchMedium} more to look at` : ""}
+        </span>
+        <span className="text-sm font-medium text-green-800">See what to fix →</span>
+      </Link>
 
       {(finance || operations) && (
         <form className="flex flex-wrap gap-2 items-center rounded-xl border border-slate-200 bg-white p-3">

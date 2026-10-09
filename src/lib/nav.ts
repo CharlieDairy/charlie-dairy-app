@@ -13,6 +13,11 @@ export type NavSection = { key: string; label: string; items: NavItem[] };
 // own separate navigation; this is the one list both now render from.
 export const NAV_SECTIONS: NavSection[] = [
   {
+    key: "watch",
+    label: "Farm Manager (AI)",
+    items: [{ href: "/admin/watch", label: "Farm Watch" }],
+  },
+  {
     key: "herd",
     label: "Herd",
     items: [

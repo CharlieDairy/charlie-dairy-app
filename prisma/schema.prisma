@@ -844,3 +844,74 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
 }
+
+
+// ---------------------------------------------------------------------------
+// Farm Watch: the virtual farm manager / accountant. Rules (plain code) scan the
+// records every run and write one WatchFinding per problem, keyed so the same
+// problem updates in place instead of duplicating. An AI review (WatchReview)
+// then reads the findings and data coverage, and writes the brief, the gaps
+// and the recommendations. The AI never writes to business records.
+// ---------------------------------------------------------------------------
+enum WatchSeverity {
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum WatchStatus {
+  OPEN
+  ACKNOWLEDGED
+  SNOOZED
+  RESOLVED
+}
+
+model WatchFinding {
+  id             String         @id @default(cuid())
+  key            String         @unique
+  ruleId         String
+  category       String
+  severity       WatchSeverity
+  title          String
+  detail         String
+  suggestion     String?
+  metric         Json?
+  financeOnly    Boolean        @default(false)
+  status         WatchStatus    @default(OPEN)
+  snoozedUntil   DateTime?
+  acknowledgedBy String?
+  resolvedAt     DateTime?
+  firstSeen      DateTime       @default(now())
+  lastSeen       DateTime       @default(now())
+  seenCount      Int            @default(1)
+
+  @@index([status, severity])
+  @@index([category])
+}
+
+model WatchRun {
+  id            String   @id @default(cuid())
+  startedAt     DateTime @default(now())
+  durationMs    Int      @default(0)
+  trigger       String   @default("manual")
+  byUser        String?
+  openCount     Int      @default(0)
+  newCount      Int      @default(0)
+  resolvedCount Int      @default(0)
+  ruleErrors    Json?
+}
+
+model WatchReview {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  createdBy       String?
+  model           String
+  inputTokens     Int?
+  outputTokens    Int?
+  brief           String
+  gaps            Json
+  recommendations Json
+  questions       Json
+  coverage        Json?
+}

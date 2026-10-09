@@ -8,6 +8,10 @@ import { after } from "next/server";
 const WRITE_OPS = new Set(["create", "update", "upsert", "delete", "createMany", "updateMany", "deleteMany"]);
 const BULK_OPS = new Set(["createMany", "updateMany", "deleteMany"]);
 const SENSITIVE_KEYS = new Set(["passwordHash", "tokenHash"]);
+// The Farm Watch rewrites its own findings every run; logging each of those
+// would bury real changes. Human actions on a finding (acknowledge, snooze,
+// resolve, run now) write an explicit Audit Log entry instead.
+const UNAUDITED_MODELS = new Set(["AuditLog", "WatchFinding", "WatchRun", "WatchReview"]);
 
 function redact(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;
@@ -169,7 +173,7 @@ function buildClient() {
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          if (model === "AuditLog" || !WRITE_OPS.has(operation)) {
+          if (UNAUDITED_MODELS.has(model as string) || !WRITE_OPS.has(operation)) {
             return query(args);
           }
 
