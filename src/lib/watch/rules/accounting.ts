@@ -99,9 +99,30 @@ export const accountingRules: Rule[] = [
           severity: abs > Math.abs(bs.totalAssets) * 0.1 ? "HIGH" : "MEDIUM",
           financeOnly: true,
           title: `The Balance Sheet does not balance (difference ${rs(bs.difference)})`,
-          detail: `Assets ${rs(bs.totalAssets)} (cash ${rs(bs.cashAndBank)}, fixed assets ${rs(bs.fixedAssets)}) against equity ${rs(bs.totalEquity)} (capital ledger ${rs(bs.capitalLedger)}, profit since Jan 2025 ${rs(bs.retainedEarnings)}) and no liabilities. The books start in January 2025: profit or loss before then, money owed to suppliers and asset depreciation are not in them.`,
-          suggestion: "Load the 2024 Cash Register (March to December 2024 is in the CashBook), record supplier bills as liabilities, and post depreciation. Then re-check; what is left is a real error.",
-          metric: { difference: Math.round(bs.difference), totalAssets: Math.round(bs.totalAssets), totalEquity: Math.round(bs.totalEquity) },
+          detail: `Assets ${rs(bs.totalAssets)} (cash ${rs(bs.cashAndBank)}, fixed assets ${rs(bs.fixedAssets)}) against equity ${rs(bs.totalEquity)} (capital ledger ${rs(bs.capitalLedger)}, profit since ${bs.explain.booksStart ?? "the books start"} ${rs(bs.retainedEarnings)}) and no liabilities. Known causes: ${rs(bs.explain.accumulatedDepreciation)} of asset write-downs never charged to profit; ${rs(bs.explain.partnerNetInCashBooks - bs.explain.capitalLedgerSinceStart)} of partner money in the cash books that is not in the Capital Ledger (capital or a loan?); profit or loss before the books start.`,
+          suggestion: "Decide whether the partner money is capital or a loan, post depreciation, and load the earlier history (the bank book goes back to January 2023). Then re-check; what is left is a real error.",
+          metric: { difference: Math.round(bs.difference), totalAssets: Math.round(bs.totalAssets), totalEquity: Math.round(bs.totalEquity), depreciation: Math.round(bs.explain.accumulatedDepreciation), partnerMoneyNotInLedger: Math.round(bs.explain.partnerNetInCashBooks - bs.explain.capitalLedgerSinceStart) },
+        },
+      ];
+    },
+  },
+  {
+    id: "acct.transfer-imbalance",
+    async run() {
+      const bs = await getBalanceSheet();
+      const t = bs.explain.unmatchedTransfers;
+      if (Math.abs(t) < 1000) return [];
+      return [
+        {
+          key: "acct.transfer-imbalance",
+          ruleId: "acct.transfer-imbalance",
+          category: "ACCOUNTING",
+          severity: "LOW",
+          financeOnly: true,
+          title: `${rs(Math.abs(t))} moved between the bank and petty cash without a matching entry on the other side`,
+          detail: `Transfers between the farm's own books should cancel out. ${t < 0 ? "More left the bank than arrived in petty cash" : "More arrived in petty cash than left the bank"} by ${rs(Math.abs(t))} (mainly bank transfers in March 2024 and January 2025). Either a petty-cash receipt was entered under a different amount, or part of the transfer was never recorded.`,
+          suggestion: "Compare the bank transfers to the farm manager (Meezan book) with the matching petty-cash receipts and correct the amounts or the missing entry.",
+          metric: { imbalance: Math.round(t) },
         },
       ];
     },

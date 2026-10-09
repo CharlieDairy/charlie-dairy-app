@@ -30,6 +30,7 @@ const CLASS_OPTIONS: { value: string; label: string }[] = [
   { value: "PARTNER_IN", label: "Money from partners" },
   { value: "PARTNER_OUT", label: "Money to partners" },
   { value: "OPENING", label: "Opening balance" },
+  { value: "TRANSFER", label: "Transfer between books" },
   { value: "REVIEW", label: "Needs review" },
 ];
 

@@ -92,6 +92,8 @@ export type MonthlyCashFlow = {
   operating: number;
   investing: number;
   financing: number;
+  /** Money moved between the farm's own books (e.g. bank to petty cash): nets to about zero overall. */
+  transfers: number;
   needsReview: number;
 };
 
@@ -108,7 +110,7 @@ export async function getMonthlyCashFlow(): Promise<MonthlyCashFlow[]> {
     const key = monthKey(c.date);
     let m = months.get(key);
     if (!m) {
-      m = { cashIn: 0, cashOut: 0, operating: 0, investing: 0, financing: 0, needsReview: 0 };
+      m = { cashIn: 0, cashOut: 0, operating: 0, investing: 0, financing: 0, transfers: 0, needsReview: 0 };
       months.set(key, m);
     }
     const net = c.amountIn - c.amountOut;
@@ -117,6 +119,7 @@ export async function getMonthlyCashFlow(): Promise<MonthlyCashFlow[]> {
     const cls = classifyCash(c);
     if (cls === "CAPEX") m.investing += net;
     else if (cls === "PARTNER_IN" || cls === "PARTNER_OUT") m.financing += net;
+    else if (cls === "TRANSFER") m.transfers += net;
     else if (cls === "REVIEW") m.needsReview += net;
     else if (cls !== "OPENING") m.operating += net;
   }

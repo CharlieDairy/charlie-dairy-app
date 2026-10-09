@@ -10,3 +10,10 @@ One-off data steps behind the cash-basis accounting change (code: `src/lib/accou
 
 Backups taken before each step: `backups/full-backup-2026-10-09T12-04-15-363Z.json` (before the CashBook import).
 Undo the receipt links by deleting CustomerPayment rows whose `enteredBy` is "Receipt linking (9 Oct 2026)".
+
+## Second step (9 Oct 2026): 2024 petty cash + Meezan bank account
+- `cashbook_2024_import.js` - added the 518 petty-cash entries for Mar-Dec 2024 (marker `account = "CashBook 09-10-2026 (2024)"`) and removed the temporary 1 Jan 2025 opening row.
+- `bank_import.ts` - added the Meezan Bank Account book from 1 Mar 2024 to 31 Jul 2025 (150 entries + an opening bank balance of Rs 1,181,479;
+  marker `account = "CashBook Meezan 09-10-2026"`, mode BANK) and marked the 15 petty-cash "Cash from Company" receipts that are the other side of a bank transfer as class TRANSFER.
+  Source export: `Meezan Bank Account 09-10-2026@CashBook.csv` (CashBook > Reports > Excel Report).
+- Backups: `full-backup-2026-10-09T12-28-58-980Z.json` (before 2024), `full-backup-2026-10-09T12-39-24-935Z.json` (before the bank book).

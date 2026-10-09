@@ -59,3 +59,45 @@ test("netOf: income counts in minus out, costs count out minus in", () => {
   assert.equal(netOf("OPEX", 45400, 0), -45400);
   assert.equal(netOf("OPEX", 0, 5000), 5000);
 });
+
+test("bank book: Engro milk receipts are milk sales, incentives too", () => {
+  assert.equal(c("SALE", 150366, 0, "Milk Collection from Engro"), "MILK_SALES");
+  assert.equal(c("MILK", 181747, 0, "Milk sale engro"), "MILK_SALES");
+  assert.equal(c("SALE", 13224, 0, "LOYALTY INCENTIVE"), "MILK_SALES");
+  assert.equal(c("SALE", 170638, 0, ""), "MILK_SALES");
+});
+
+test("bank book: transfers to the farm manager's petty cash are transfers, not costs or capital", () => {
+  assert.equal(c("Bank", 0, 162880, "Trf to AB for Jan Exp"), "TRANSFER");
+  assert.equal(c("Bank", 0, 151058, "Trf to Abdul Baist"), "TRANSFER");
+  assert.equal(c("Bank", 0, 81046, "Cash trf to A Basit"), "TRANSFER");
+  assert.equal(c("Ops", 0, 50050, "Petty Cash to AB"), "TRANSFER");
+  assert.equal(c("Bank", 0, 130000, "Petty Cash to AB"), "TRANSFER");
+});
+
+test("bank book: cash a partner takes from the bank is a partner withdrawal", () => {
+  assert.equal(c("Bank", 0, 210000, "Cash by Hafiz"), "PARTNER_OUT");
+  assert.equal(c("Bank", 0, 36911, "final settlement of Hafiz shab"), "PARTNER_OUT");
+});
+
+test("bank book: partner deposits, Phase III and capital", () => {
+  assert.equal(c("Bank", 464485, 0, "Trf from Abid Sheikh"), "PARTNER_IN");
+  assert.equal(c("Investment PhIII", 99413, 0, "Capital from Farhan ul Haq"), "PARTNER_IN");
+  assert.equal(c("Investment PhIII", 0, 99000, "Capital return to Junaid Bhai"), "PARTNER_OUT");
+  assert.equal(c("PHASE 3", 0, 3000000, "2nd Payment of Cows"), "CAPEX");
+  assert.equal(c("PHASE 3", 600000, 0, "Junaid and Mohsin Deposit"), "PARTNER_IN");
+  assert.equal(c("Bank", 0, 250000, "To SK Industries on accunt of Land Payment"), "CAPEX");
+});
+
+test("bank book: a cow sale and the salary, accounting and silage payments", () => {
+  assert.equal(c("Bank", 153000, 0, "Proceeds from Cow sale"), "LIVESTOCK_SALES");
+  assert.equal(c("Bank", 0, 15000, "Taha Feb Salary"), "OPEX");
+  assert.equal(c("", 0, 60000, "payment to Taha Amir for Accounting service"), "OPEX");
+  assert.equal(c("Ops", 0, 364385, "Silage Payment"), "OPEX");
+});
+
+test("petty-cash behaviour is unchanged by the bank rules", () => {
+  assert.equal(c("Cash from Company", 100000, 0, "Cash by Hafiz sb"), "PARTNER_IN");
+  assert.equal(c("Opex Feed", 0, 60000, "Transfer to Agri Expence book For Fodder etc"), "OPEX");
+  assert.equal(c("Cash sale proceed for Milk", 62020, 0, "Cash Recived milk sale 01-09-26 to 04-09-26"), "MILK_SALES");
+});

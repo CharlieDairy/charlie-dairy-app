@@ -16,7 +16,7 @@ export default async function CashFlowPage() {
       <h1 className="text-2xl font-semibold text-neutral-900">Cash Flow Statement</h1>
       <p className="text-sm text-neutral-500">
         Every rupee that moved in the Cash Register, split by what it was for: <b>running the farm</b> (milk and animal sales, minus costs),{" "}
-        <b>capital spending</b> (assets, repairs that last), and <b>partners</b> (money put in or taken out). The three add up to the net cash flow.
+        <b>capital spending</b> (assets, repairs that last), and <b>partners</b> (money put in or taken out), plus <b>between books</b> (bank to petty cash, which cancels out across the farm&apos;s books). Together they add up to the net cash flow.
       </p>
       {current && previous && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -35,6 +35,7 @@ export default async function CashFlowPage() {
               <th className="text-right px-3 py-2">Running the farm</th>
               <th className="text-right px-3 py-2">Capital spending</th>
               <th className="text-right px-3 py-2">Partners</th>
+              <th className="text-right px-3 py-2">Between books</th>
               <th className="text-right px-3 py-2">Net Cash Flow</th>
               <th className="text-right px-3 py-2">Cash Position</th>
             </tr>
@@ -48,12 +49,13 @@ export default async function CashFlowPage() {
                 <td className={`${R} ${tone(m.operating)}`}>{formatRs(m.operating)}</td>
                 <td className={`${R} ${tone(m.investing)}`}>{formatRs(m.investing)}</td>
                 <td className={`${R} ${tone(m.financing)}`}>{formatRs(m.financing)}</td>
+                <td className={`${R} text-neutral-500`}>{formatRs(m.transfers)}</td>
                 <td className={`${R} font-medium ${tone(m.netCashFlow)}`}>{formatRs(m.netCashFlow)}</td>
                 <td className={`${R} font-medium ${tone(m.cumulativeCash)}`}>{formatRs(m.cumulativeCash)}</td>
               </tr>
             ))}
             {monthly.length === 0 && (
-              <tr><td colSpan={8} className="px-3 py-6 text-center text-neutral-500">No cash transactions recorded yet.</td></tr>
+              <tr><td colSpan={9} className="px-3 py-6 text-center text-neutral-500">No cash transactions recorded yet.</td></tr>
             )}
           </tbody>
         </table>

@@ -16,6 +16,7 @@ export const CASH_CLASSES = [
   "PARTNER_IN",
   "PARTNER_OUT",
   "OPENING",
+  "TRANSFER",
   "REVIEW",
 ] as const;
 export type CashClassKey = (typeof CASH_CLASSES)[number];
@@ -29,6 +30,7 @@ export const CLASS_LABEL: Record<CashClassKey, string> = {
   PARTNER_IN: "Money from partners",
   PARTNER_OUT: "Money to partners",
   OPENING: "Opening balance",
+  TRANSFER: "Transfer between books",
   REVIEW: "Needs review",
 };
 
@@ -62,6 +64,18 @@ export function classifyCash(row: ClassifiableRow): CashClassKey {
   // Money moved to / from a partner is never profit or loss, whatever category it was filed under.
   if (isOut && /(transfer(red)?|send|sent|payment)[^.]{0,60}\babid\b|\babid\s*(sb|sahib)?\s*account\b/.test(remark)) return "PARTNER_OUT";
   if (isIn && /(received|recived|recieved)\s+from\s+(abid|hafiz)/.test(remark)) return "PARTNER_IN";
+
+  // ---- Bank account entries (Meezan) ----
+  if (cat === "phase 3") return isIn ? "PARTNER_IN" : "CAPEX"; // Phase III funds in; cow purchases out
+  if (cat === "investment phiii") return isIn ? "PARTNER_IN" : "PARTNER_OUT";
+  if (isOut && /\bland payment\b/.test(remark)) return "CAPEX";
+  // Bank -> the farm manager's petty cash: the same money, moved between the farm's own books.
+  if (isOut && /(petty cash( withdr[a-z]*)?\s+to\s+(ab|a basit|basit|abdul baist)\b|(trf|cash trf|transfer)( for [a-z0-9 ]+)?\s+to\s+(ab|a basit|abdul baist|basit)\b)/.test(remark)) return "TRANSFER";
+  // Cash a partner takes out of the bank, or settles with the farm.
+  if (isOut && /(cash by hafiz|to hafiz|withdrawl via chq|final settlement of hafiz)/.test(remark)) return "PARTNER_OUT";
+  if (isIn && /(cow sale|bull breeder|breeder sale)/.test(remark)) return "LIVESTOCK_SALES";
+  if (isIn && (cat === "sale" || cat === "milk" || /milk (collection|payment|sale)|engro|loyalty incentive/.test(remark))) return "MILK_SALES";
+  if (isIn && /(trf from abid|cash by hafiz|hafiz shb|cash from obaid|mohsin share|palai payment|payment obaid|\bmaaz\b|payable to abid|trf from ph|money received from|deposit by)/.test(remark)) return "PARTNER_IN";
 
   if (cat === "cash from company") return isOut ? "PARTNER_OUT" : "PARTNER_IN";
   if (cat === "capex") return "CAPEX";

@@ -22,7 +22,7 @@ export default async function PnlPage() {
       <p className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-neutral-600">
         <b>Revenue</b> = milk sales + animal and calf sales + other income. <b>Cost</b> = what it cost to run the farm. Capital spending,
         money put in by the partners and money sent to them move cash but are <b>not</b> profit or loss, so they are shown separately in the second table.
-        Receipts paid into a bank account that is not in the Cash Register (for example Engro) are not here until that book is added.
+        Both the petty cash book and the Meezan bank account are included, so Engro milk receipts paid by bank are counted. Bank-to-petty-cash transfers are not income or cost.
       </p>
 
       {current && previous && (
@@ -92,6 +92,7 @@ export default async function PnlPage() {
               <th className="text-right px-3 py-2">Capital spending</th>
               <th className="text-right px-3 py-2">From partners</th>
               <th className="text-right px-3 py-2">To partners</th>
+              <th className="text-right px-3 py-2">Between books</th>
               <th className="text-right px-3 py-2">Needs review</th>
             </tr>
           </thead>
@@ -102,6 +103,7 @@ export default async function PnlPage() {
                 <td className={R}>{formatRs(m.byClass.CAPEX)}</td>
                 <td className={R}>{formatRs(m.byClass.PARTNER_IN)}</td>
                 <td className={R}>{formatRs(m.byClass.PARTNER_OUT)}</td>
+                <td className={`${R} text-neutral-500`}>{formatRs(m.byClass.TRANSFER)}</td>
                 <td className={`${R} ${m.byClass.REVIEW !== 0 ? "text-amber-700" : "text-neutral-400"}`}>{m.byClass.REVIEW !== 0 ? formatRs(m.byClass.REVIEW) : "—"}</td>
               </tr>
             ))}
