@@ -16,7 +16,7 @@ import { homeFor, roleCanOpenPath } from "@/lib/modules";
 // appear is decided by the same roleCanOpenPath() the server uses, so a View
 // Only user never sees an entry shortcut.
 
-const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", EDITOR: "Editor", VIEWER: "View Only" };
+const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", EDITOR: "Editor", VIEWER: "View Only", PARTNER: "Partner" };
 
 function Icon({ children, size = 22 }: { children: ReactNode; size?: number }) {
   return (
@@ -54,7 +54,7 @@ export default function MobileNav({ role }: { role: string }) {
 
   const sections = visibleSections(role);
   const home = homeFor(role);
-  const canAdd = role !== "VIEWER";
+  const canAdd = role !== "VIEWER" && role !== "PARTNER";
 
   // Title in the top bar: the most specific nav item that matches this URL.
   const allItems = NAV_SECTIONS.flatMap((s) => s.items).filter((i) => matches(pathname, i.href));

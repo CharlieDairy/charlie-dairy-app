@@ -38,7 +38,7 @@ export default async function UsersAdminPage() {
           </span>
           <div>
             <h1 className="text-2xl font-semibold text-neutral-900">Users &amp; Access</h1>
-            <p className="text-sm text-neutral-500">Invite people and choose their role: Admin, Editor or View Only.</p>
+            <p className="text-sm text-neutral-500">Invite people and choose their role: Admin, Editor, View Only or Partner.</p>
           </div>
         </div>
       </div>
@@ -65,8 +65,10 @@ export default async function UsersAdminPage() {
           <b>Admin</b> can see and change everything. <b>Editor</b> can read, add, edit and delete, but
           can&apos;t open the Admin panel, P&amp;L Statement, Balance Sheet, Capital Ledger, Assets or Cash
           Flow, and can&apos;t create customers or set rates. <b>View Only</b> can read everything an Editor
-          can, but can&apos;t add, edit or delete anything. Editors and View Only users can&apos;t back-date
-          entries. Deactivating an account blocks it immediately and keeps their name on past records.
+          can, but can&apos;t add, edit or delete anything. <b>Partner</b> is read-only like View Only but can
+          also open the P&amp;L Statement, Balance Sheet, Cash Flow, Capital Ledger and Assets; only the Admin
+          panel stays closed. Editors and View Only users can do back-date entries. Deactivating an
+          account blocks it immediately and keeps their name on past records.
         </p>
         <div className="overflow-x-auto mt-4">
           <table className="min-w-full text-sm">

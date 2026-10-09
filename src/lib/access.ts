@@ -2,7 +2,6 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AccessError, ValidationError } from "@/lib/errors";
 import type { PermissionActionKey, PermissionModuleKey } from "@/lib/permissions";
-import { farmDateKey } from "@/lib/reports/dashboardMetrics";
 
 // ---------------------------------------------------------------------------
 // Live authorization for server actions.
@@ -22,11 +21,13 @@ import { farmDateKey } from "@/lib/reports/dashboardMetrics";
 //              Ledger, Assets, Cash Flow -- and Customer / master-data
 //              changes are blocked by isAdminOnlyPath() and requireAccess().)
 //   VIEWER  -- read only, same exclusions as Editor.
+//   PARTNER -- read only, in every module except the Admin panel (so the P&L, Balance Sheet,
+//              Cash Flow, Capital Ledger and Assets are open to read).
 export type LiveUser = {
   id: string;
   name: string;
   username: string;
-  role: "ADMIN" | "EDITOR" | "VIEWER";
+  role: "ADMIN" | "EDITOR" | "VIEWER" | "PARTNER";
 };
 
 export type AccessRule = { admin?: boolean };
@@ -88,24 +89,16 @@ export async function requireAccess(rule: AccessRule = {}): Promise<LiveUser> {
 }
 
 /**
- * Non-Admin roles may only add information with today's date (farm-local,
- * Asia/Karachi) -- a past date on a new entry is an Admin-only override.
- * Admin is always exempt. Call this after reading a `date` field in any
- * CREATE action a non-Admin role can reach.
+ * Back-dating is allowed for every role that can add records: the owner decided that Editors may enter a
+ * past date, so a missed day can be caught up by whoever is on duty. The function is kept (and still called
+ * from every create action) so the rule lives in one place if it ever has to come back.
  */
-export function assertNotBackdated(date: Date, user: LiveUser, label = "Date"): void {
-  if (user.role === "ADMIN") return;
-  const entryKey = date.toISOString().slice(0, 10);
-  if (entryKey < farmDateKey()) {
-    throw new ValidationError(`${label} can't be backdated. Only an Admin can enter a past date.`);
-  }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function assertNotBackdated(_date: Date, _user: LiveUser, _label = "Date"): void {
+  // intentionally no restriction
 }
 
-/**
- * For edits: an Editor may correct a record in place, but may not use an edit
- * to move it onto a past date (that would be back-dating by the side door).
- * Leaving the date unchanged is always fine, whatever day the record is from.
- */
+/** Edits may change the date of a record too (see assertNotBackdated: back-dating is allowed). */
 export function assertDateChangeNotBackdated(newDate: Date, oldDate: Date, user: LiveUser, label = "Date"): void {
   if (newDate.toISOString().slice(0, 10) === oldDate.toISOString().slice(0, 10)) return;
   assertNotBackdated(newDate, user, label);

@@ -51,16 +51,15 @@ const PATH_MODULES: { prefix: string; module: PermissionModuleKey }[] = [
   { prefix: "/admin/audit-log", module: "admin" },
 ];
 
-export type AppRole = "ADMIN" | "EDITOR" | "VIEWER";
+export type AppRole = "ADMIN" | "EDITOR" | "VIEWER" | "PARTNER";
 
 // Pages only an Admin may open. Editors and View-Only users get everything
 // else (read for View Only; read/write/edit/delete for Editors) but never the
 // Admin panel, P&L, Balance Sheet, Capital Ledger, Assets or Cash Flow.
-const ADMIN_ONLY_PREFIXES = [
-  "/admin/users",
-  "/admin/master-data",
-  "/admin/bulk",
-  "/admin/audit-log",
+const ADMIN_PANEL_PREFIXES = ["/admin/users", "/admin/master-data", "/admin/bulk", "/admin/audit-log"];
+
+// The finance statements: closed to Editors and View Only users, open (to read) to Partners.
+const FINANCE_STATEMENT_PREFIXES = [
   "/admin/reports/pl",
   "/admin/reports/balance-sheet",
   "/admin/reports/cashflow",
@@ -68,8 +67,14 @@ const ADMIN_ONLY_PREFIXES = [
   "/admin/assets",
 ];
 
+const matches = (list: string[], pathname: string) => list.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+export function isAdminPanelPath(pathname: string): boolean {
+  return matches(ADMIN_PANEL_PREFIXES, pathname);
+}
+
 export function isAdminOnlyPath(pathname: string): boolean {
-  return ADMIN_ONLY_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  return isAdminPanelPath(pathname) || matches(FINANCE_STATEMENT_PREFIXES, pathname);
 }
 
 // A View-Only user can't use any data-entry form or "add" page -- they read
@@ -90,6 +95,7 @@ export function homeFor(role: string | undefined): string {
 /** True if a signed-in user with this role may open this path at all. */
 export function roleCanOpenPath(role: string | undefined, pathname: string): boolean {
   if (role === "ADMIN") return true;
+  if (role === "PARTNER") return !isAdminPanelPath(pathname) && !isWritePath(pathname);
   if (isAdminOnlyPath(pathname)) return false;
   if (role === "VIEWER" && isWritePath(pathname)) return false;
   return role === "EDITOR" || role === "VIEWER";

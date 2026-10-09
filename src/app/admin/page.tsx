@@ -133,8 +133,8 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   // one of them, not literally every one.
   const operations =
     isAdmin || (user !== null && (["herd", "breeding", "health", "milk", "weight", "feed"] as const).some((m) => hasPermission(user, m, "VIEW")));
-  // P&L, capital and the finance summary are Admin-only (Editors and View Only users never see them).
-  const finance = isAdmin;
+  // P&L, capital and the finance summary are for the Admin and the Partners (Editors and View Only users never see them).
+  const finance = isAdmin || user?.role === "PARTNER";
   const canWrite = user?.role === "ADMIN" || user?.role === "EDITOR";
   const [d, feed, watchRows] = await Promise.all([
     getFarmDashboard(params),

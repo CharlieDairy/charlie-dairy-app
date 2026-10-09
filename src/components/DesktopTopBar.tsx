@@ -4,11 +4,12 @@ import { usePathname } from "next/navigation";
 import { doSignOut } from "@/app/actions/sign-out";
 import { NAV_SECTIONS } from "@/lib/nav";
 
-const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", EDITOR: "Editor", VIEWER: "View Only" };
+const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", EDITOR: "Editor", VIEWER: "View Only", PARTNER: "Partner" };
 const ROLE_CHIP: Record<string, string> = {
   ADMIN: "bg-amber-100 text-amber-800",
   EDITOR: "bg-green-100 text-green-800",
   VIEWER: "bg-neutral-200 text-neutral-700",
+  PARTNER: "bg-amber-100 text-amber-800",
 };
 
 // Slim bar across the top of every page on a computer: where you are

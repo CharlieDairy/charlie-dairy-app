@@ -26,6 +26,7 @@ export default function AddUserForm() {
         <label htmlFor="role" className="text-sm font-medium text-neutral-700">Role</label>
         <select id="role" name="role" required defaultValue="VIEWER" className="border border-neutral-300 rounded-md px-3 py-2 text-base">
           <option value="VIEWER">View Only — can see everything except Admin &amp; finance statements</option>
+          <option value="PARTNER">Partner — read-only, everything except the Admin panel (includes P&amp;L, Balance Sheet, Cash Flow)</option>
           <option value="EDITOR">Editor — can add, edit and delete (no Admin &amp; finance statements)</option>
           <option value="ADMIN">Admin — full access</option>
         </select>

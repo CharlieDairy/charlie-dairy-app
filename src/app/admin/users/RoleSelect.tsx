@@ -19,6 +19,7 @@ export default function RoleSelect({ userId, role, isSelf }: { userId: string; r
         <option value="ADMIN">Admin</option>
         <option value="EDITOR">Editor</option>
         <option value="VIEWER">View Only</option>
+        <option value="PARTNER">Partner</option>
       </select>
     </form>
   );

@@ -28,10 +28,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="flex min-w-0 flex-1 flex-col">
       <DesktopTopBar role={user.role} name={user.name} />
       <main className="flex-1 min-w-0 p-4 pb-28 md:p-8 md:pb-8 max-w-[1600px] w-full mx-auto">
-        {user.role === "VIEWER" ? (
+        {user.role === "VIEWER" || user.role === "PARTNER" ? (
           <>
             <p className="mb-4 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium text-text-muted">
-              View Only account — you can look at everything here but can&apos;t add, change or delete anything.
+              {user.role === "PARTNER" ? "Partner account" : "View Only account"} — you can look at everything here but can&apos;t add, change or delete anything.
             </p>
             <ReadOnlyGuard>{children}</ReadOnlyGuard>
           </>

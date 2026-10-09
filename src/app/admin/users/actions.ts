@@ -11,7 +11,7 @@ import { issuePasswordToken, passwordLink, INVITE_HOURS, RESET_HOURS } from "@/l
 
 export type FormState = { success: boolean; message: string; link?: string } | undefined;
 
-const ROLES = ["ADMIN", "EDITOR", "VIEWER"] as const;
+const ROLES = ["ADMIN", "EDITOR", "VIEWER", "PARTNER"] as const;
 
 function isValidUsername(username: string): boolean {
   return /^[a-z0-9._-]{3,32}$/i.test(username);

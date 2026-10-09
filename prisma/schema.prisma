@@ -15,6 +15,7 @@ enum Role {
   ADMIN
   EDITOR
   VIEWER
+  PARTNER
 }
 
 model User {
