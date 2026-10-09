@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import AppSidebar from "@/components/AppSidebar";
+import DesktopTopBar from "@/components/DesktopTopBar";
 import AccountBlocked from "@/components/AccountBlocked";
 import ReadOnlyGuard from "@/components/ReadOnlyGuard";
 import { getLiveUser } from "@/lib/access";
@@ -24,6 +25,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex flex-col min-h-screen farm-bg md:flex-row">
       <AppSidebar role={user.role} />
+      <div className="flex min-w-0 flex-1 flex-col">
+      <DesktopTopBar role={user.role} name={user.name} />
       <main className="flex-1 min-w-0 p-4 pb-28 md:p-8 md:pb-8 max-w-[1600px] w-full mx-auto">
         {user.role === "VIEWER" ? (
           <>
@@ -36,6 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           children
         )}
       </main>
+      </div>
     </div>
   );
 }

@@ -101,7 +101,9 @@ function optCowId(formData: FormData): string | null {
 
 async function updateMilkingImpl(formData: FormData): Promise<FormState> {
   const user = await requirePermission("milk", "EDIT");
-  const cowId = optCowId(formData);
+  const cowId = optCowId(formData); // the cow the record belongs to now
+  const targetRaw = formData.get("newCowId");
+  const targetCowId = typeof targetRaw === "string" && targetRaw.trim() !== "" ? targetRaw : cowId; // the cow it should belong to
   const date = reqDate(formData, "date", "Date");
 
   const values = SHIFT_FIELDS.map((s) => ({ ...s, litres: optNum(formData, s.field, s.label, { min: 0, max: 200 }) }));
@@ -109,21 +111,48 @@ async function updateMilkingImpl(formData: FormData): Promise<FormState> {
     throw new ValidationError("Enter litres for at least one session, or use Delete to remove the whole record.");
   }
 
-  const existing = await prisma.milkingRecord.findMany({ where: { cowId, date }, select: { id: true, shift: true } });
+  const existing = await prisma.milkingRecord.findMany({ where: { cowId, date }, select: { id: true, shift: true, enteredBy: true } });
   if (existing.length === 0) return { success: false, message: "That record no longer exists. Refresh the page." };
 
-  const adding = values.filter((v) => v.litres !== null && !existing.some((e) => e.shift === v.shift));
-  if (adding.length > 0) {
-    assertNotBackdated(date, user, "Date");
-    if (cowId) {
-      const group = await prisma.milkingRecord.count({ where: { cowId: null, date, shift: { in: adding.map((a) => a.shift) } } });
-      if (group > 0) {
-        throw new ValidationError("A herd/group total already covers one of those sessions on that date, so it can't also be recorded for this cow.");
+  const wanted = values.filter((v) => v.litres !== null);
+  const moving = targetCowId !== cowId;
+
+  // Sessions that did not exist before are new entries, so the no-back-dating
+  // rule applies to them. Moving existing sessions to another animal is a
+  // correction, not a new entry.
+  const adding = wanted.filter((v) => !existing.some((e) => e.shift === v.shift));
+  if (adding.length > 0) assertNotBackdated(date, user, "Date");
+
+  if (moving) {
+    if (targetCowId) {
+      const target = await prisma.cow.findUnique({ where: { id: targetCowId }, select: { tag: true, status: true } });
+      if (!target) throw new ValidationError("That animal was not found.");
+      if (target.status === "SOLD" || target.status === "DEAD") {
+        throw new ValidationError(`Cow ${target.tag} is marked ${target.status} and can't be milked.`);
       }
+      const clash = await prisma.milkingRecord.findMany({ where: { cowId: targetCowId, date, shift: { in: wanted.map((w) => w.shift) } }, select: { shift: true } });
+      if (clash.length > 0) {
+        throw new ValidationError(`Cow ${target.tag} already has a recorded ${clash.map((c) => c.shift.toLowerCase()).join(", ")} milking for that date. Nothing was changed.`);
+      }
+    }
+  }
+  if (targetCowId) {
+    const group = await prisma.milkingRecord.count({ where: { cowId: null, date, shift: { in: wanted.map((w) => w.shift) }, id: { notIn: existing.map((e) => e.id) } } });
+    if (group > 0 && (moving || adding.length > 0)) {
+      throw new ValidationError("A herd/group total already covers one of those sessions on that date, so it can't also be recorded for a cow.");
     }
   }
 
   await prisma.$transaction(async (tx) => {
+    if (moving) {
+      // Replace the old animal's sessions with the same figures on the new one.
+      await tx.milkingRecord.deleteMany({ where: { id: { in: existing.map((e) => e.id) } } });
+      for (const v of wanted) {
+        const prev = existing.find((e) => e.shift === v.shift);
+        await tx.milkingRecord.create({ data: { cowId: targetCowId, shift: v.shift, litres: v.litres as number, date, enteredBy: prev?.enteredBy ?? user.name } });
+      }
+      return;
+    }
     for (const v of values) {
       const rows = existing.filter((e) => e.shift === v.shift);
       if (v.litres === null) {
@@ -138,7 +167,7 @@ async function updateMilkingImpl(formData: FormData): Promise<FormState> {
   });
 
   refresh();
-  return { success: true, message: "Milk record updated." };
+  return { success: true, message: moving ? "Milk record updated and moved to the other animal." : "Milk record updated." };
 }
 
 // Delete all of one cow's sessions for a day.

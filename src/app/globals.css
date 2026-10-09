@@ -13,14 +13,14 @@
    --color-warning (amber) are untouched, so negative financial values and
    warnings stay visually distinct from the brand green. */
 :root {
-  --background: #f4efe6;
+  --background: #f3f5ef;
   --foreground: #1c1c1a;
 
   --color-primary: #406d09;
   --color-primary-dark: #1b4a05;
   --color-primary-light: #eef3e2;
   --color-surface: #ffffff;
-  --color-border: #e4dac0;
+  --color-border: #e3e7da;
   --color-text: #1c1c1a;
   --color-text-muted: #78716c;
   --color-success: #406d09;
@@ -31,8 +31,8 @@
   --color-info: #2563eb;
   --color-info-light: #dbeafe;
 
-  --radius-card: 0.5rem;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --radius-card: 0.75rem;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04);
 }
 
 @theme inline {
@@ -75,8 +75,6 @@
 
 body {
   background-color: var(--background);
-  background-image: radial-gradient(circle, rgba(27, 74, 5, 0.11) 1px, transparent 1.6px);
-  background-size: 20px 20px;
   color: var(--foreground);
   font-family: var(--font-open-sans), Arial, Helvetica, sans-serif;
 }
@@ -118,8 +116,6 @@ body {
 
 .farm-bg {
   background-color: var(--background);
-  background-image: radial-gradient(circle, rgba(27, 74, 5, 0.11) 1px, transparent 1.6px);
-  background-size: 20px 20px;
 }
 
 /* ---- Phone usability (below the md breakpoint) --------------------------
@@ -145,6 +141,36 @@ body { overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
   main table { font-size: 0.8125rem; }
   main img, main svg { max-width: 100%; }
 }
-@media (max-width: 767px) {
-  .farm-bg, body { background-image: none; }
+
+/* ---- Look and feel (applies to every page inside the app shell) ---------
+   Unlayered so it refreshes the many pages that use plain utility classes
+   (bg-white border rounded-lg ...) without touching each one: soft rounded
+   cards, calmer table headers, row hover, clear keyboard focus, and smooth
+   button feedback. */
+main .bg-white.border,
+main .bg-surface.border {
+  border-color: var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
+main thead { background-color: #f1f4ea; }
+main thead th {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+main tbody tr { transition: background-color 120ms ease; }
+main tbody tr:hover { background-color: rgba(64, 109, 9, 0.045); }
+main td, main th { vertical-align: middle; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+button, a, select, input { transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, color 120ms ease; }
+input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(64, 109, 9, 0.15);
+  outline: none;
+}
+main h1 { letter-spacing: -0.01em; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
