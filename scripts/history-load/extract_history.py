@@ -8,7 +8,7 @@ import datetime, json, os, re, warnings, collections
 import openpyxl
 
 warnings.filterwarnings("ignore")
-ROOT = r"C:\Users\Admin\OneDrive\Desktop\Charlie\ALL"
+ROOT = r"E:/Charlie/ALL"
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "history.json")  # git-ignored staging file
 KG_PER_L = 1.035
 MARK = "History load (Excel)"

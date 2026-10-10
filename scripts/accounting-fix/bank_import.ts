@@ -7,7 +7,7 @@ import { classifyCash, CLASS_LABEL, type CashClassKey } from "../../src/lib/acco
 
 const apply = process.argv.includes("--apply");
 const MARK = "CashBook Meezan 09-10-2026";
-const FILE = process.env.BANK_CSV ?? "C:/Users/Admin/OneDrive/Desktop/Charlie/Meezan Bank Account 09-10-2026@CashBook.csv";
+const FILE = process.env.BANK_CSV ?? "E:/Charlie/Meezan Bank Account 09-10-2026@CashBook.csv";
 const FROM = "2024-03-01";
 
 function parseCsv(t: string): string[][] {

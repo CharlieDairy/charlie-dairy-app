@@ -4,7 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const apply = process.argv.includes('--apply');
 const MARK = 'CashBook 09-10-2026 (2024)';
-const FILE = 'C:/Users/Admin/OneDrive/Desktop/Charlie/Charlie - daily petty cash 09-10-2026@CashBook.csv';
+const FILE = 'E:/Charlie/Charlie - daily petty cash 09-10-2026@CashBook.csv';
 function parseCsv(t) { const rows = []; let row = [], cell = '', q = false; for (let i = 0; i < t.length; i++) { const c = t[i]; if (q) { if (c === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; } else if (c === '"') q = true; else if (c === ',') { row.push(cell); cell = ''; } else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; } else if (c !== '\r') cell += c; } return rows; }
 const MON = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12' };
 const iso = (s) => { const [d, m, y] = s.split(' '); return `${y}-${MON[m]}-${d.padStart(2, '0')}`; };

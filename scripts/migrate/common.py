@@ -1,7 +1,7 @@
 import datetime
 import os
 
-SOURCE_DIR = r"C:\Users\Admin\OneDrive\Desktop\Charlie"
+SOURCE_DIR = r"E:/Charlie"
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
