@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import AppSidebar from "@/components/AppSidebar";
 import DesktopTopBar from "@/components/DesktopTopBar";
 import AccountBlocked from "@/components/AccountBlocked";
-import DemoBanner from "@/components/DemoBanner";
 import ReadOnlyGuard from "@/components/ReadOnlyGuard";
 import { getLiveUser } from "@/lib/access";
 import { homeFor, roleCanOpenPath } from "@/lib/modules";
@@ -29,7 +28,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="flex min-w-0 flex-1 flex-col">
       <DesktopTopBar role={user.role} name={user.name} />
       <main className="flex-1 min-w-0 p-4 pb-28 md:p-8 md:pb-8 max-w-[1600px] w-full mx-auto">
-        <DemoBanner />
         {user.role === "VIEWER" || user.role === "PARTNER" ? (
           <>
             <p className="mb-4 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium text-text-muted">
