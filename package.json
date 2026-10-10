@@ -14,7 +14,9 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:export-for-postgres": "tsx scripts/deploy/export-sqlite-data.ts",
     "db:import-to-postgres": "tsx scripts/deploy/import-to-postgres.ts",
-    "db:seed-master-data": "tsx scripts/deploy/seed-master-data.ts"
+    "db:seed-master-data": "tsx scripts/deploy/seed-master-data.ts",
+    "demo:seed": "node scripts/demo/run.js seed",
+    "demo:dev": "node scripts/demo/run.js dev"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
