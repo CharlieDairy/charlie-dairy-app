@@ -89,6 +89,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/admin/reports/cash-register", label: "Cash Register" },
       { href: "/admin/reports/cashflow", label: "Cash Flow" },
       { href: "/admin/reports/pl", label: "P&L Statement" },
+      { href: "/admin/reports/animal-pnl", label: "Animal P&L" },
       { href: "/admin/reports/balance-sheet", label: "Balance Sheet" },
       { href: "/admin/reports/expense-breakdown", label: "Expense Breakdown" },
       { href: "/admin/reports/ar-aging", label: "AR Aging" },

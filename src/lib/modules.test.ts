@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { roleCanOpenPath, homeFor } from "./modules";
 
 const ADMIN_PANEL = ["/admin/users", "/admin/master-data", "/admin/bulk", "/admin/audit-log"];
+const ADMIN_ONLY_REPORTS = ["/admin/reports/animal-pnl"];
 const STATEMENTS = ["/admin/reports/pl", "/admin/reports/balance-sheet", "/admin/reports/cashflow", "/admin/capital", "/admin/assets"];
 
 test("Admin opens everything", () => {
@@ -24,6 +25,11 @@ test("Partner reads everything except the Admin panel and cannot open data-entry
   for (const p of ["/admin/reports/cash-register", "/admin/cows", "/admin/reports/milk-sales", "/admin/watch"]) assert.equal(roleCanOpenPath("PARTNER", p), true, p);
   assert.equal(roleCanOpenPath("PARTNER", "/entry/cash"), false);
   assert.equal(roleCanOpenPath("PARTNER", "/admin/cows/add"), false);
+});
+
+test("The Animal P&L is for the Admin only", () => {
+  assert.equal(roleCanOpenPath("ADMIN", ADMIN_ONLY_REPORTS[0]), true);
+  for (const role of ["EDITOR", "VIEWER", "PARTNER"]) assert.equal(roleCanOpenPath(role, ADMIN_ONLY_REPORTS[0]), false, role);
 });
 
 test("Partners land on the dashboard", () => {

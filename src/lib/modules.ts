@@ -43,6 +43,7 @@ const PATH_MODULES: { prefix: string; module: PermissionModuleKey }[] = [
   { prefix: "/admin/reports/ar-aging", module: "financial" },
   { prefix: "/entry/cash", module: "financial" },
   { prefix: "/admin/reports/cash-register", module: "financial" },
+  { prefix: "/admin/reports/animal-pnl", module: "financial" },
   { prefix: "/admin/team", module: "team" },
   { prefix: "/entry/team", module: "team" },
   { prefix: "/admin/users", module: "admin" },
@@ -56,7 +57,8 @@ export type AppRole = "ADMIN" | "EDITOR" | "VIEWER" | "PARTNER";
 // Pages only an Admin may open. Editors and View-Only users get everything
 // else (read for View Only; read/write/edit/delete for Editors) but never the
 // Admin panel, P&L, Balance Sheet, Capital Ledger, Assets or Cash Flow.
-const ADMIN_PANEL_PREFIXES = ["/admin/users", "/admin/master-data", "/admin/bulk", "/admin/audit-log"];
+// Closed to everyone except the Admin, Partners included: the Admin panel, plus the per-animal P&L.
+const ADMIN_PANEL_PREFIXES = ["/admin/users", "/admin/master-data", "/admin/bulk", "/admin/audit-log", "/admin/reports/animal-pnl"];
 
 // The finance statements: closed to Editors and View Only users, open (to read) to Partners.
 const FINANCE_STATEMENT_PREFIXES = [
