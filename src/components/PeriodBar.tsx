@@ -14,11 +14,17 @@ export default function PeriodBar({
   from,
   to,
   extraParams,
+  extraOptions,
+  labels,
 }: {
-  period: PeriodKey;
+  period: PeriodKey | string;
   from?: string;
   to?: string;
   extraParams?: Record<string, string>;
+  /** Pills only this page offers, shown after the standard ones (e.g. "Whole life"). */
+  extraOptions?: { key: string; label: string }[];
+  /** Rename standard pills on this page (e.g. { year: "Year to date" }). */
+  labels?: Partial<Record<PeriodKey, string>>;
 }) {
   const extra = extraParams ?? {};
 
@@ -31,7 +37,7 @@ export default function PeriodBar({
     <form className="flex flex-wrap gap-2 items-center rounded-xl border border-border bg-white p-3">
       <span className="hidden md:inline text-xs font-semibold text-text-muted">PERIOD</span>
       <div className="flex w-full gap-2 overflow-x-auto pb-1 md:w-auto md:flex-wrap md:overflow-visible md:pb-0 [scrollbar-width:none]">
-      {PERIOD_OPTIONS.map((p) => (
+      {[...PERIOD_OPTIONS.map((p) => ({ key: p.key as string, label: labels?.[p.key] ?? p.label })), ...(extraOptions ?? [])].map((p) => (
         <Link
           key={p.key}
           href={pillHref(p.key)}

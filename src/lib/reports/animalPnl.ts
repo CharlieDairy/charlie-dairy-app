@@ -70,6 +70,15 @@ export async function getAnimalPnl(cowId: string, start: Date, endExclusive: Dat
   ]);
 
   const warnings: string[] = [];
+  // Costs are only recorded from the first cash book entry on. Days before that carry no cost, so they are left out
+  // of the share-out (otherwise an animal's old days would pull in a share of costs that were never recorded).
+  const firstCash = (await prisma.cashTransaction.aggregate({ _min: { date: true } }))._min.date;
+  const aStart = firstCash ? Math.max(pStart, firstCash.getTime()) : pStart;
+  const allocStart = new Date(aStart);
+  if (firstCash && pStart < firstCash.getTime()) warnings.push(`Costs are recorded from ${iso(firstCash)}. Before that date only milk and calves can be shown, and no shared costs are charged.`);
+  const milkDaysInWindow = new Map(
+    (await prisma.$queryRaw<{ cowId: string; d: number }[]>`SELECT "cowId", COUNT(DISTINCT date)::int AS d FROM "MilkingRecord" WHERE date >= ${allocStart} AND date < ${endExclusive} AND "cowId" IS NOT NULL GROUP BY "cowId"`).map((r) => [r.cowId, r.d])
+  );
   const tagSet = new Set(cows.map((c) => c.tag.trim().toUpperCase()));
   const myTag = cow.tag.trim().toUpperCase();
 
@@ -85,13 +94,12 @@ export async function getAnimalPnl(cowId: string, start: Date, endExclusive: Dat
 
   // ---- animal-days, for sharing the farm's common costs ----
   const lastMilkMap = new Map(lastMilk.map((r) => [r.cowId, new Date(r.last).getTime()]));
-  const milkDaysMap = new Map(herdMilk.map((r) => [r.cowId, r.d]));
   const saleDateByTag = new Map<string, number>();
   for (const s of cashSales) {
     if (classifyCash(s) !== "LIVESTOCK_SALES") continue;
     for (const t of extractSoldTags(s.remark)) saleDateByTag.set(t, Math.max(saleDateByTag.get(t) ?? 0, s.date.getTime()));
   }
-  const midAge = (dob: Date | null) => (dob ? ((pStart + pEnd) / 2 - dob.getTime()) / DAY : null);
+  const midAge = (dob: Date | null) => (dob ? ((aStart + pEnd) / 2 - dob.getTime()) / DAY : null);
   const dayInfo = (c: (typeof cows)[number]) => {
     const born = (c.dateOfBirth ?? c.purchaseDate)?.getTime() ?? Number.NEGATIVE_INFINITY;
     let exitExcl = Number.POSITIVE_INFINITY;
@@ -101,8 +109,8 @@ export async function getAnimalPnl(cowId: string, start: Date, endExclusive: Dat
       const exit = sale ?? lm;
       exitExcl = exit === undefined ? Number.NEGATIVE_INFINITY : exit + DAY;
     }
-    const present = overlapDays(born, exitExcl, pStart, pEnd);
-    const milking = Math.min(milkDaysMap.get(c.id) ?? 0, present || (milkDaysMap.get(c.id) ?? 0));
+    const present = overlapDays(born, exitExcl, aStart, pEnd);
+    const milking = Math.min(milkDaysInWindow.get(c.id) ?? 0, present || (milkDaysInWindow.get(c.id) ?? 0));
     const age = midAge(c.dateOfBirth);
     const wOther = age !== null && age < 180 ? WEIGHT_YOUNG : WEIGHT_OTHER;
     const weighted = milking * WEIGHT_MILKING + Math.max(0, present - milking) * wOther;

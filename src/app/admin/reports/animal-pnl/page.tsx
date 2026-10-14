@@ -32,8 +32,23 @@ export default async function AnimalPnlPage({ searchParams }: { searchParams: Pr
   if (user?.role !== "ADMIN") redirect("/admin");
 
   const params = await searchParams;
-  const { period, from, to } = await resolvePeriod(params, "year");
-  const range = periodRange(period, new Date(), from, to);
+  // "life" is this page's own choice: from the animal's first record to today.
+  const isLife = params.period === "life";
+  const { period, from, to } = await resolvePeriod(isLife ? { ...params, period: undefined } : params, "year");
+  let range = periodRange(period, new Date(), from, to);
+  if (isLife) {
+    const today = periodRange("day", new Date());
+    const [c, firstMilk, firstCash] = params.cow
+      ? await Promise.all([
+          prisma.cow.findUnique({ where: { id: params.cow }, select: { dateOfBirth: true, purchaseDate: true } }),
+          prisma.milkingRecord.aggregate({ where: { cowId: params.cow }, _min: { date: true } }),
+          prisma.cashTransaction.aggregate({ _min: { date: true } }),
+        ])
+      : [null, null, null];
+    const dates = [c?.dateOfBirth, c?.purchaseDate, firstMilk?._min.date].filter((d): d is Date => !!d);
+    const start = dates.length ? new Date(Math.min(...dates.map((d) => d.getTime()))) : (firstCash?._min.date ?? new Date("2020-01-01T00:00:00Z"));
+    range = { start, end: today.end };
+  }
 
   const cows = await prisma.cow.findMany({ select: { id: true, tag: true, status: true, breed: true } });
   cows.sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) || a.tag.localeCompare(b.tag, undefined, { numeric: true }));
@@ -47,7 +62,7 @@ export default async function AnimalPnlPage({ searchParams }: { searchParams: Pr
       </div>
 
       <form className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-white p-3" method="get">
-        <input type="hidden" name="period" value={period} />
+        <input type="hidden" name="period" value={isLife ? "life" : period} />
         {period === "custom" && from && <input type="hidden" name="from" value={from} />}
         {period === "custom" && to && <input type="hidden" name="to" value={to} />}
         <div className="flex flex-col gap-1">
@@ -61,7 +76,14 @@ export default async function AnimalPnlPage({ searchParams }: { searchParams: Pr
         </div>
         <button type="submit" className="bg-green-700 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-green-800">Show P&amp;L</button>
       </form>
-      <PeriodBar period={period} from={from} to={to} extraParams={params.cow ? { cow: params.cow } : undefined} />
+      <PeriodBar
+        period={isLife ? "life" : period}
+        from={from}
+        to={to}
+        extraParams={params.cow ? { cow: params.cow } : undefined}
+        labels={{ year: "Year to date" }}
+        extraOptions={[{ key: "life", label: "Whole life at the farm" }]}
+      />
 
       {!params.cow && <p className="text-sm text-neutral-500">Choose an animal above to see its profit and loss for the selected period.</p>}
       {params.cow && !result && <p className="text-sm text-red-600">That animal was not found.</p>}
@@ -76,7 +98,7 @@ export default async function AnimalPnlPage({ searchParams }: { searchParams: Pr
               </p>
             </div>
             <div className="text-sm text-neutral-500 text-right">
-              {result.period.from} to {result.period.to} · {result.daysInHerd} days in the herd
+              {isLife ? "Whole life at the farm · " : period === "year" ? "Year to date · " : ""}{result.period.from} to {result.period.to} · {result.daysInHerd} days in the herd
               <div><Link href={`/admin/cows/${result.cow.id}`} className="link-btn">Open the animal&apos;s profile</Link></div>
             </div>
           </div>
