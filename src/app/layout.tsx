@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import InstallApp from "@/components/InstallApp";
+import { Analytics } from "@vercel/analytics/next";
 import { Open_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -23,7 +24,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${openSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}<InstallApp /></body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <InstallApp />
+        {/* Vercel Web Analytics: page views and device/country only, no farm data. Route parameters (ids, one-time links) are masked. */}
+        <Analytics />
+      </body>
     </html>
   );
 }
