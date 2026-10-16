@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { roleCanOpenPath, homeFor } from "./modules";
 
-const ADMIN_PANEL = ["/admin/users", "/admin/master-data", "/admin/bulk", "/admin/audit-log"];
+const ADMIN_PANEL = ["/admin/users", "/admin/master-data", "/admin/bulk", "/admin/audit-log", "/admin/backups"];
 const ADMIN_ONLY_REPORTS = ["/admin/reports/animal-pnl"];
 const STATEMENTS = ["/admin/reports/pl", "/admin/reports/balance-sheet", "/admin/reports/cashflow", "/admin/capital", "/admin/assets"];
 

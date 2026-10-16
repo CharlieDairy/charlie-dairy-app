@@ -107,6 +107,28 @@ one was generated in a chat session and should be rotated once you're on the rea
 production database) — see `/admin` once logged in, or ask me to reset it the same
 way as before, pointed at the new DB.
 
+## 10. Vercel features the app uses
+
+| Feature | What it does for the farm | Where |
+|---|---|---|
+| Web Analytics | Page views by country and device (route parameters masked) | Vercel → project → **Analytics** |
+| Speed Insights | How fast pages load on real phones and networks | Vercel → project → **Speed Insights** |
+| Cron: nightly backup | Saves the whole database at 2 am Pakistan time to a **private** Blob store; keeps the newest 45 | `/api/cron/backup`, listed in the app under Admin → Cloud Backups |
+| Cron: daily Farm Watch | Refreshes the Farm Watch findings at 6 am Pakistan time | `/api/cron/watch` |
+| Blob (public store) | Animal and staff photos | `BLOB_READ_WRITE_TOKEN` |
+| Security headers | nosniff, frame protection, referrer policy | `next.config.ts` |
+
+One-time setup the code cannot do for you (Vercel dashboard):
+
+1. **Storage → Create → Blob → Private**, connect it to this project and give the variable the name `BACKUP_BLOB_TOKEN`
+   (the existing photo store is public and cannot hold private files).
+2. **Settings → Environment Variables:** add `CRON_SECRET` (any random text of 16+ characters). Vercel then sends it with every cron call;
+   without it the cron routes refuse every request.
+3. Redeploy. Check **Settings → Cron Jobs** lists both jobs, then use **Run** on each once to test.
+4. **Analytics** and **Speed Insights** tabs: click **Enable** if they are not already on.
+
+Restore: Admin → Cloud Backups → Download, or `node scripts/restore-missing.js` with the downloaded file (decompress `.json.gz` first).
+
 ## Afterward
 
 - Custom domain: Vercel → Settings → Domains (optional, free `.vercel.app` URL works

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import InstallApp from "@/components/InstallApp";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Open_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -29,6 +30,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <InstallApp />
         {/* Vercel Web Analytics: page views and device/country only, no farm data. Route parameters (ids, one-time links) are masked. */}
         <Analytics />
+        {/* Vercel Speed Insights: how fast pages load on real phones and networks (Pakistan included). */}
+        <SpeedInsights />
       </body>
     </html>
   );

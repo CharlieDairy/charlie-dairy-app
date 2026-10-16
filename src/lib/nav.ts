@@ -119,6 +119,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/admin/master-data", label: "Master Data" },
       { href: "/admin/bulk", label: "Bulk Data" },
       { href: "/admin/audit-log", label: "Audit Log" },
+      { href: "/admin/backups", label: "Cloud Backups" },
     ],
   },
 ];
