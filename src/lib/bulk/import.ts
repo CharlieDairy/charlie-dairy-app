@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { repostFeedCosts } from "@/lib/feedCosting";
 import { Prisma } from "@prisma/client";
 import { parseCsv } from "./csv";
 import { getBulkTypeMeta } from "./registry";
@@ -331,7 +332,9 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
         }
       }
       const result = await prisma.feedTransaction.createMany({ data: parsed });
-      return { success: true, message: `Imported ${result.count} feed transactions.`, errors: [], insertedCount: result.count };
+      // Feed is costed first-in, first-out, so the imported purchases and issues re-cost their feeds.
+      const costed = await repostFeedCosts([...new Set(parsed.map((r) => r.feedType as string))], enteredBy ?? "Bulk import");
+      return { success: true, message: `Imported ${result.count} feed transactions. Issue costs were recalculated first-in, first-out (${costed.changed} changed).`, errors: [], insertedCount: result.count };
     }
 
     case "cash": {

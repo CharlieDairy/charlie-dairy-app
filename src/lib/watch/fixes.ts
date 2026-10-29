@@ -52,6 +52,14 @@ export function fixLinks(f: Input): FixLink[] {
       return [{ label: "Record feed received", href: "/entry/feed" }, { label: "Open Feed Overview", href: "/admin/reports/feed" }];
     case "feed.days-left":
       return [{ label: "Record a feed purchase", href: "/entry/feed" }];
+    case "feed.unrated-receipts": {
+      const feeds = Array.isArray(m.feeds) ? (m.feeds as { feed?: unknown }[]).map((x) => x.feed).filter((x): x is string => typeof x === "string") : [];
+      // the last 365 days, the same window the finding counts
+      const to = new Date().toISOString().slice(0, 10);
+      const from = new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10);
+      const links = feeds.map((name) => ({ label: `Enter the rates for ${name} purchases`, href: `/admin/reports/feed?feed=${encodeURIComponent(name)}&period=custom&from=${from}&to=${to}` }));
+      return links.length > 0 ? links : [{ label: "Open Feed & Inventory", href: "/admin/reports/feed" }];
+    }
     case "feed.uncosted": {
       const feeds = Array.isArray(m.feeds) ? (m.feeds as { feed?: unknown }[]).map((x) => x.feed).filter((x): x is string => typeof x === "string") : [];
       const links = feeds.map((name) => ({ label: `Fix ${name} entries (Feed Overview)`, href: `/admin/reports/feed?feed=${encodeURIComponent(name)}` }));

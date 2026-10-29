@@ -83,8 +83,35 @@ export const feedRules: Rule[] = [
           severity: "MEDIUM",
           title: `${total} feed issue entries in the last 90 days have no cost`,
           detail: rows.map((r) => `${r.feedType}: ${r._count._all} entries, ${Math.round(r._sum.quantity ?? 0).toLocaleString()} kg`).join("; ") + ". Feed cost per litre and the monthly feed cost are understated by this feed.",
-          suggestion: "Give each feed a rate (from the last purchase) so every issue carries a cost. Admin can edit the entries on Feed Overview.",
+          suggestion: "Feed is costed first-in, first-out from the purchase rates, so enter the rate paid on this feed's purchases (Feed & Inventory, Admin). Every issue is then costed automatically.",
           metric: { feeds: rows.map((r) => ({ feed: r.feedType, entries: r._count._all, kg: r._sum.quantity })) },
+        },
+      ];
+    },
+  },
+  {
+    // First-in, first-out costs an issue from the rate of the purchase it came from, so a purchase with no rate leaves the
+    // cost of everything taken from it as an estimate.
+    id: "feed.unrated-receipts",
+    async run({ today }) {
+      const rows = await prisma.feedTransaction.groupBy({
+        by: ["feedType"],
+        where: { direction: "IN", date: { gte: addDays(today, -365), lt: addDays(today, 1) }, OR: [{ rate: null }, { rate: 0 }] },
+        _sum: { quantity: true },
+        _count: { _all: true },
+      });
+      const total = rows.reduce((n, r) => n + r._count._all, 0);
+      if (total === 0) return [];
+      return [
+        {
+          key: "feed.unrated-receipts",
+          ruleId: "feed.unrated-receipts",
+          category: "FEED",
+          severity: "MEDIUM",
+          title: `${total} feed purchase${total === 1 ? "" : "s"} in the last year ${total === 1 ? "has" : "have"} no rate`,
+          detail: rows.map((r) => `${r.feedType}: ${r._count._all} purchase${r._count._all === 1 ? "" : "s"}, ${Math.round(r._sum.quantity ?? 0).toLocaleString()} units`).join("; ") + ". Feed is costed first-in, first-out from the purchase rates, so anything used from these purchases is costed at an estimate and the value of the stock left is not exact.",
+          suggestion: "Open the feed, edit each purchase and enter the rate you paid per unit (the supplier bill or the cash book shows it). Every issue after it is re-costed automatically.",
+          metric: { feeds: rows.map((r) => ({ feed: r.feedType, purchases: r._count._all, quantity: r._sum.quantity })) },
         },
       ];
     },

@@ -7,6 +7,7 @@ import { ValidationError } from "@/lib/errors";
 import { reqDate, optNum, optText } from "@/lib/validate";
 import { planNumbers, type Saved } from "@/lib/dailySheet";
 import { revalidatePath } from "next/cache";
+import { repostFeedCosts } from "@/lib/feedCosting";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -44,6 +45,7 @@ async function saveImpl(fd: FormData): Promise<FormState> {
   const ops: Prisma.PrismaPromise<unknown>[] = [];
   const counts = { created: 0, changed: 0, same: 0 };
   const left: string[] = [];
+  const touchedFeeds: string[] = []; // feeds whose cost is recalculated (first-in, first-out) after saving
 
   // ---- milk by cow and shift -------------------------------------------------------------------------------
   const milkWanted = new Map<string, number>();
@@ -175,17 +177,19 @@ async function saveImpl(fd: FormData): Promise<FormState> {
       const item = byId.get(id)!;
       const quantity = feedWanted.get(key)!;
       let rate: number | undefined;
-      if (direction === "OUT") {
-        // the issue is valued at the most recent rate used for this feed
-        const last = await prisma.feedTransaction.findFirst({ where: { feedType: item.name, direction: "OUT", rate: { not: null } }, orderBy: { date: "desc" }, select: { rate: true } });
-        rate = last?.rate ?? undefined;
+      if (direction === "IN") {
+        // feed is costed first-in, first-out: a purchase is a layer of stock and needs its own rate
+        const r = optNum(fd, `inrate_${id}`, `${item.name} purchase rate`, { min: 0, max: 1_000_000 });
+        if (!r || r <= 0) throw new ValidationError(`Enter the rate you paid per ${item.unit} for the ${item.name} received. Feed is costed first-in, first-out, so each purchase needs its rate. Nothing was saved.`);
+        rate = r;
       }
-      ops.push(prisma.feedTransaction.create({ data: { date, feedType: item.name, direction, quantity, rate, cost: rate ? round2(rate * quantity) : undefined, enteredBy: user.name } }));
+      // an issue gets no typed rate: its cost is taken from the oldest stock still on hand when the feed is re-costed below
+      ops.push(prisma.feedTransaction.create({ data: { date, feedType: item.name, direction, quantity, rate, enteredBy: user.name } }));
     }
     for (const u of plan.update) {
-      const row = rows.find((r) => r.id === u.id)!;
-      ops.push(prisma.feedTransaction.update({ where: { id: u.id }, data: { quantity: u.value, cost: row.rate && row.direction === "OUT" ? round2(row.rate * u.value) : undefined } }));
+      ops.push(prisma.feedTransaction.update({ where: { id: u.id }, data: { quantity: u.value } }));
     }
+    for (const id of itemIds) touchedFeeds.push(byId.get(id)!.name);
     counts.created += plan.create.length;
     counts.changed += plan.update.length;
     counts.same += plan.unchanged;
@@ -204,6 +208,7 @@ async function saveImpl(fd: FormData): Promise<FormState> {
     return { success: false, message: "Nothing to save. Type at least one number on the sheet." };
   }
   if (ops.length > 0) await prisma.$transaction(ops);
+  if (touchedFeeds.length > 0) await repostFeedCosts(touchedFeeds, user.name);
 
   for (const p of ["/entry/daily", "/entry/milking", "/entry/milk-sale", "/entry/feed", "/admin", "/admin/reports/herd", "/admin/reports/milk-sales", "/admin/reports/reconciliation", "/admin/reports/feed", "/admin/reports/balance-sheet", "/admin/reports/ar-aging", "/admin/reports/milk-analytics", "/admin/reports/animal-pnl", "/admin/customers"]) revalidatePath(p);
 

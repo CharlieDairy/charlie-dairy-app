@@ -5,6 +5,7 @@ import { requireAccess, requirePermission, assertNotBackdated, runAction } from 
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optNum, optText, DIRECTIONS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
+import { repostFeedCosts } from "@/lib/feedCosting";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -22,6 +23,11 @@ async function submitFeedImpl(formData: FormData): Promise<FormState> {
   const quantity = reqNum(formData, "quantity", "Quantity", { positive: true, max: 10_000_000 });
   const rate = optNum(formData, "rate", "Rate", { max: 1_000_000 });
   const notes = optText(formData, "notes", "Notes", { max: 300 });
+  // Feed is costed first-in, first-out: a receipt must carry its purchase rate (that is the cost of that layer of stock),
+  // and an issue takes its rate from the oldest stock still on hand, so a rate typed on an issue is not used.
+  if (direction === "IN" && !(rate && rate > 0)) {
+    throw new ValidationError("Enter the rate you paid per unit for this purchase. Feed is costed first-in, first-out, so each purchase needs its own rate.");
+  }
 
   // The feed must be one defined in Feed Master (matched ignoring case, saved
   // with the master's spelling) so every entry lands on a real feed item.
@@ -59,26 +65,32 @@ async function submitFeedImpl(formData: FormData): Promise<FormState> {
     stockAfter = (inAgg._sum.quantity ?? 0) - (outAgg._sum.quantity ?? 0) - quantity;
   }
 
-  await prisma.feedTransaction.create({
+  const created = await prisma.feedTransaction.create({
     data: {
       date,
       feedType,
       direction,
       quantity,
-      rate: rate ?? undefined,
-      cost: rate && direction === "OUT" ? Math.round(rate * quantity * 100) / 100 : undefined,
+      rate: direction === "IN" ? rate ?? undefined : undefined,
       notes,
       enteredBy: user.name,
     },
+    select: { id: true },
   });
+  // Every cost after this entry may change (a back-dated purchase re-prices later issues), so the feed is re-costed.
+  await repostFeedCosts([feedType], user.name);
 
-  revalidatePath("/entry/feed");
-  revalidatePath("/admin/reports/feed");
+  refreshFeed();
   const warning =
     stockAfter !== null && stockAfter < 0
       ? ` Warning: recorded stock of ${feedType} is now ${stockAfter.toFixed(1)} ${item.unit} — a purchase may be missing.`
       : "";
-  return { success: true, message: `${feedType} ${direction === "IN" ? "received" : "issued"}: ${quantity} ${item.unit} saved.${warning}` };
+  let costNote = "";
+  if (direction === "OUT") {
+    const row = await prisma.feedTransaction.findUnique({ where: { id: created.id }, select: { cost: true } });
+    costNote = row?.cost != null ? ` Cost Rs ${row.cost.toLocaleString("en-PK", { maximumFractionDigits: 0 })} (first-in, first-out).` : " No cost yet: there is no purchase rate on record for this feed.";
+  }
+  return { success: true, message: `${feedType} ${direction === "IN" ? "received" : "issued"}: ${quantity} ${item.unit} saved.${costNote}${warning}` };
 }
 
 // ---------------------------------------------------------------------------
@@ -98,17 +110,16 @@ export async function updateFeedTransaction(_prev: FormState, formData: FormData
 }
 
 async function updateFeedTransactionImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  const admin = await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Feed entry");
   const date = reqDate(formData, "date", "Date");
   const requested = reqText(formData, "feedType", "Feed", { max: 100 });
   const direction = reqEnum(formData, "direction", "Direction", DIRECTIONS);
   const quantity = reqNum(formData, "quantity", "Quantity", { positive: true, max: 10_000_000 });
   const rate = optNum(formData, "rate", "Rate", { max: 1_000_000 });
-  const costEntered = optNum(formData, "cost", "Cost", { max: 10_000_000_000 });
   const notes = optText(formData, "notes", "Notes", { max: 300 });
 
-  const existing = await prisma.feedTransaction.findUnique({ where: { id }, select: { id: true } });
+  const existing = await prisma.feedTransaction.findUnique({ where: { id }, select: { id: true, feedType: true, direction: true, rate: true } });
   if (!existing) return { success: false, message: "That entry no longer exists. Refresh the page." };
 
   const item = await prisma.feedItem.findFirst({
@@ -117,16 +128,16 @@ async function updateFeedTransactionImpl(formData: FormData): Promise<FormState>
   });
   if (!item) throw new ValidationError("Pick a feed from the list. New feeds are added in Feed Master.");
 
-  // Only issues (OUT) carry a cost: the typed cost, else rate x quantity.
-  const cost =
-    direction === "OUT" ? (costEntered ?? (rate ? Math.round(rate * quantity * 100) / 100 : null)) : null;
-
+  // A receipt's rate is the cost of that layer of stock. An issue's cost is not typed: it is worked out first-in,
+  // first-out, so an issue keeps whatever old rate it had (used only where a purchase has no rate) and cost is recalculated.
+  const keepRate = direction === "OUT" ? (existing.direction === "OUT" ? existing.rate : null) : rate;
   await prisma.feedTransaction.update({
     where: { id },
-    data: { date, feedType: item.name, direction, quantity, rate, cost, notes },
+    data: { date, feedType: item.name, direction, quantity, rate: keepRate, cost: null, notes },
   });
+  await repostFeedCosts([existing.feedType, item.name], admin.name);
   refreshFeed();
-  return { success: true, message: "Entry updated." };
+  return { success: true, message: "Entry updated and feed costs recalculated." };
 }
 
 export async function deleteFeedTransaction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -134,13 +145,14 @@ export async function deleteFeedTransaction(_prev: FormState, formData: FormData
 }
 
 async function deleteFeedTransactionImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  const admin = await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Feed entry");
-  const row = await prisma.feedTransaction.findUnique({ where: { id }, select: { id: true } });
+  const row = await prisma.feedTransaction.findUnique({ where: { id }, select: { id: true, feedType: true } });
   if (!row) return { success: false, message: "That entry no longer exists. Refresh the page." };
   await prisma.feedTransaction.delete({ where: { id } });
+  await repostFeedCosts([row.feedType], admin.name);
   refreshFeed();
-  return { success: true, message: "Entry deleted." };
+  return { success: true, message: "Entry deleted and feed costs recalculated." };
 }
 
 export async function deleteFeedTransactions(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -148,10 +160,12 @@ export async function deleteFeedTransactions(_prev: FormState, formData: FormDat
 }
 
 async function deleteFeedTransactionsImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  const admin = await requireAccess({ admin: true });
   const ids = (formData.getAll("entryIds") as string[]).filter((v) => typeof v === "string" && v.length > 0);
   if (ids.length === 0) return { success: false, message: "No entries selected." };
+  const feeds = await prisma.feedTransaction.findMany({ where: { id: { in: ids } }, select: { feedType: true }, distinct: ["feedType"] });
   const { count } = await prisma.feedTransaction.deleteMany({ where: { id: { in: ids } } });
+  await repostFeedCosts(feeds.map((f) => f.feedType), admin.name);
   refreshFeed();
   return { success: true, message: `Deleted ${count} entr${count === 1 ? "y" : "ies"}.` };
 }
@@ -166,7 +180,7 @@ export async function deleteAllFeedTransactions(_prev: FormState, formData: Form
 }
 
 async function deleteAllFeedTransactionsImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  const admin = await requireAccess({ admin: true });
   const feedType = reqText(formData, "feedType", "Feed", { max: 100 });
   const from = reqText(formData, "from", "From date", { max: 10 });
   const to = reqText(formData, "to", "To date", { max: 10 });
@@ -174,6 +188,7 @@ async function deleteAllFeedTransactionsImpl(formData: FormData): Promise<FormSt
   const { count } = await prisma.feedTransaction.deleteMany({
     where: { feedType, date: { gte: new Date(`${from}T00:00:00.000Z`), lte: new Date(`${to}T00:00:00.000Z`) } },
   });
+  await repostFeedCosts([feedType], admin.name);
   refreshFeed();
   return { success: true, message: `Deleted ${count} ${feedType} entr${count === 1 ? "y" : "ies"} from ${from} to ${to}.` };
 }

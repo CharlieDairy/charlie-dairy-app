@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { compare, monthRanges, type Comparison } from "@/lib/compare";
+import { runFifo, type FifoTx } from "@/lib/feedFifo";
 
 export type FeedTypeBalance = {
   feedType: string;
@@ -112,8 +113,15 @@ export type FeedPeriodRow = {
   outQty: number;
   closing: number;
   avgDailyUse: number; // OUT quantity / days in the period
-  avgRate: number | null; // quantity-weighted average of the rates recorded in the period
-  outCost: number; // cost recorded on OUT entries in the period
+  avgRate: number | null; // average cost per unit of what was used in the period (first-in, first-out)
+  outCost: number; // first-in, first-out cost of the feed used in the period
+  openingValue: number; // value of the stock at the start of the period
+  purchaseValue: number; // purchases received in the period at their own rates
+  closingValue: number; // value of the stock at the end of the period (the layers still on hand)
+  closingAvgCost: number | null; // closingValue / closing balance
+  estimatedUseQty: number; // quantity used in the period that was costed at a fallback rate
+  unpricedUseQty: number; // quantity used in the period that could not be priced at all
+  unratedPurchaseQty: number; // quantity received in the period with no purchase rate
   daysLeft: number | null; // closing balance / trailing-30-day average use
   reorderLevel: number | null;
   lowStock: boolean;
@@ -124,18 +132,29 @@ export type FeedLedgerLine = {
   date: string;
   direction: "IN" | "OUT";
   quantity: number;
-  rate: number | null;
-  cost: number | null; // cost as stored (OUT entries only)
-  amount: number | null; // recorded cost, else rate x quantity when a rate was given
+  rate: number | null; // IN: purchase rate. OUT: the first-in, first-out cost per unit.
+  cost: number | null; // first-in, first-out cost (OUT entries only)
+  amount: number | null; // value of the line: purchase value for IN, first-in, first-out cost for OUT
+  basis: "fifo" | "estimate" | "none" | null; // OUT only: costed from purchase rates, partly from a fallback, or not at all
   notes: string | null;
   enteredBy: string | null;
   balance: number; // running balance after this line
+};
+
+export type FeedLayerLine = {
+  date: string;
+  received: number;
+  remaining: number;
+  rate: number | null; // the purchase rate, null when none was recorded
+  valueRate: number | null; // rate used to value what is left
+  value: number;
 };
 
 export type FeedPeriodReport = {
   days: number;
   rows: FeedPeriodRow[];
   ledger: FeedLedgerLine[] | null; // only when a single feed is selected
+  layers: FeedLayerLine[] | null; // stock still on hand at the end of the period, oldest first (single feed only)
 };
 
 export async function getFeedPeriodReport(range: { start: Date; end: Date }, feedType?: string): Promise<FeedPeriodReport> {
@@ -144,20 +163,32 @@ export async function getFeedPeriodReport(range: { start: Date; end: Date }, fee
     prisma.feedTransaction.findMany({
       where: { date: { lt: range.end } },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
-      select: { id: true, date: true, feedType: true, direction: true, quantity: true, rate: true, cost: true, notes: true, enteredBy: true },
+      select: { id: true, date: true, createdAt: true, feedType: true, direction: true, quantity: true, rate: true, cost: true, notes: true, enteredBy: true },
     }),
   ]);
+
+  // First-in, first-out for every feed: once over everything up to the end of the period (issue costs and closing layers)
+  // and once over everything before it (the opening value).
+  const byFeed = new Map<string, FifoTx[]>();
+  for (const t of tx) {
+    const list = byFeed.get(t.feedType);
+    const item: FifoTx = { id: t.id, date: t.date, createdAt: t.createdAt, direction: t.direction, quantity: t.quantity, rate: t.rate };
+    if (list) list.push(item);
+    else byFeed.set(t.feedType, [item]);
+  }
+  const fifoEnd = new Map(Array.from(byFeed, ([name, list]) => [name, runFifo(list)] as const));
+  const fifoStart = new Map(Array.from(byFeed, ([name, list]) => [name, runFifo(list.filter((t) => t.date < range.start))] as const));
 
   const now = Date.now();
   const elapsedEnd = Math.min(range.end.getTime(), now + DAY_MS);
   const days = Math.max(1, Math.round((elapsedEnd - range.start.getTime()) / DAY_MS));
   const trailingStart = now - 30 * DAY_MS;
 
-  type Acc = { opening: number; inQty: number; outQty: number; outCost: number; rateQty: number; rateAmt: number; recentOut: number };
+  type Acc = { opening: number; inQty: number; outQty: number; outCost: number; purchaseValue: number; estimatedUse: number; unpricedUse: number; unratedIn: number; recentOut: number };
   const acc = new Map<string, Acc>();
   const get = (name: string): Acc => {
     let a = acc.get(name);
-    if (!a) acc.set(name, (a = { opening: 0, inQty: 0, outQty: 0, outCost: 0, rateQty: 0, rateAmt: 0, recentOut: 0 }));
+    if (!a) acc.set(name, (a = { opening: 0, inQty: 0, outQty: 0, outCost: 0, purchaseValue: 0, estimatedUse: 0, unpricedUse: 0, unratedIn: 0, recentOut: 0 }));
     return a;
   };
   for (const item of items) if (item.active) get(item.name);
@@ -167,16 +198,16 @@ export async function getFeedPeriodReport(range: { start: Date; end: Date }, fee
     const delta = t.direction === "IN" ? t.quantity : -t.quantity;
     if (t.date < range.start) {
       a.opening += delta;
+    } else if (t.direction === "IN") {
+      a.inQty += t.quantity;
+      if (t.rate !== null && t.rate > 0) a.purchaseValue += t.rate * t.quantity;
+      else a.unratedIn += t.quantity;
     } else {
-      if (t.direction === "IN") a.inQty += t.quantity;
-      else {
-        a.outQty += t.quantity;
-        a.outCost += t.cost ?? 0;
-      }
-      if (t.rate !== null) {
-        a.rateQty += t.quantity;
-        a.rateAmt += t.rate * t.quantity;
-      }
+      const issue = fifoEnd.get(t.feedType)?.issues.get(t.id);
+      a.outQty += t.quantity;
+      a.outCost += issue?.cost ?? 0;
+      a.estimatedUse += issue?.estimatedQty ?? 0;
+      a.unpricedUse += issue?.unpricedQty ?? 0;
     }
     if (t.direction === "OUT" && t.date.getTime() >= trailingStart) a.recentOut += t.quantity;
   }
@@ -188,6 +219,7 @@ export async function getFeedPeriodReport(range: { start: Date; end: Date }, fee
       const closing = a.opening + a.inQty - a.outQty;
       const recentDaily = a.recentOut / 30;
       const reorderLevel = item?.reorderLevel ?? null;
+      const closingValue = fifoEnd.get(name)?.stockValue ?? 0;
       return {
         feedType: name,
         unit: item?.unit ?? null,
@@ -197,8 +229,15 @@ export async function getFeedPeriodReport(range: { start: Date; end: Date }, fee
         outQty: a.outQty,
         closing,
         avgDailyUse: a.outQty / days,
-        avgRate: a.rateQty > 0 ? a.rateAmt / a.rateQty : null,
+        avgRate: a.outQty > 0 && a.outCost > 0 ? a.outCost / a.outQty : null,
         outCost: a.outCost,
+        openingValue: fifoStart.get(name)?.stockValue ?? 0,
+        purchaseValue: Math.round(a.purchaseValue * 100) / 100,
+        closingValue,
+        closingAvgCost: closing > 0 && closingValue > 0 ? closingValue / closing : null,
+        estimatedUseQty: a.estimatedUse,
+        unpricedUseQty: a.unpricedUse,
+        unratedPurchaseQty: a.unratedIn,
         daysLeft: recentDaily > 0 && closing > 0 ? closing / recentDaily : null,
         reorderLevel,
         lowStock: reorderLevel !== null && closing <= reorderLevel,
@@ -207,27 +246,41 @@ export async function getFeedPeriodReport(range: { start: Date; end: Date }, fee
     .sort((x, y) => x.feedType.localeCompare(y.feedType));
 
   let ledger: FeedLedgerLine[] | null = null;
+  let layers: FeedLayerLine[] | null = null;
   if (feedType) {
     const selected = rows.find((r) => r.feedType === feedType);
+    const issues = fifoEnd.get(feedType)?.issues;
     let balance = selected?.opening ?? 0;
     ledger = [];
     for (const t of tx) {
       if (t.feedType !== feedType || t.date < range.start) continue;
       balance += t.direction === "IN" ? t.quantity : -t.quantity;
+      const issue = t.direction === "OUT" ? issues?.get(t.id) : undefined;
+      const cost = issue?.cost ?? null;
+      const amount = t.direction === "IN" ? (t.rate !== null ? Math.round(t.rate * t.quantity * 100) / 100 : null) : cost;
       ledger.push({
         id: t.id,
         date: t.date.toISOString().slice(0, 10),
         direction: t.direction,
         quantity: t.quantity,
-        rate: t.rate,
-        cost: t.cost,
-        amount: t.cost ?? (t.rate !== null ? Math.round(t.rate * t.quantity * 100) / 100 : null),
+        rate: t.direction === "IN" ? t.rate : cost !== null && t.quantity > 0 ? cost / t.quantity : null,
+        cost,
+        amount,
+        basis: !issue ? null : issue.cost === null ? "none" : issue.estimatedQty > 0 ? "estimate" : "fifo",
         notes: t.notes,
         enteredBy: t.enteredBy,
         balance,
       });
     }
+    layers = (fifoEnd.get(feedType)?.layers ?? []).map((l) => ({
+      date: l.date.toISOString().slice(0, 10),
+      received: l.quantity,
+      remaining: l.remaining,
+      rate: l.rate,
+      valueRate: l.valueRate,
+      value: Math.round(l.remaining * (l.valueRate ?? 0) * 100) / 100,
+    }));
   }
 
-  return { days, rows, ledger };
+  return { days, rows, ledger, layers };
 }

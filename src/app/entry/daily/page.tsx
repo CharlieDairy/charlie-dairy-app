@@ -40,7 +40,7 @@ export default async function DailySheetPage({ searchParams }: { searchParams: P
     prisma.milkUsageRecord.findMany({ where: { date: day }, select: { type: true, litres: true } }),
     prisma.feedItem.findMany({ where: { active: true }, select: { id: true, name: true, unit: true } }),
     prisma.feedTransaction.groupBy({ by: ["feedType", "direction"], _sum: { quantity: true } }),
-    prisma.feedTransaction.findMany({ where: { date: day }, select: { feedType: true, direction: true, quantity: true } }),
+    prisma.feedTransaction.findMany({ where: { date: day }, select: { feedType: true, direction: true, quantity: true, rate: true } }),
     prisma.dailyNote.findUnique({ where: { date: day }, select: { text: true } }),
   ]);
 
@@ -79,7 +79,15 @@ export default async function DailySheetPage({ searchParams }: { searchParams: P
   };
   const feedRows: FeedRow[] = items
     .sort((a, b) => rank(FEED_ORDER, a.name) - rank(FEED_ORDER, b.name) || a.name.localeCompare(b.name))
-    .map((i) => ({ id: i.id, name: i.name, unit: i.unit, stock: stock.get(i.name) ?? 0, out: todayQty(i.name, "OUT"), in: todayQty(i.name, "IN") }));
+    .map((i) => ({
+      id: i.id,
+      name: i.name,
+      unit: i.unit,
+      stock: stock.get(i.name) ?? 0,
+      out: todayQty(i.name, "OUT"),
+      in: todayQty(i.name, "IN"),
+      inRate: shown(feedToday.find((f) => f.feedType === i.name && f.direction === "IN" && f.rate)?.rate ?? undefined),
+    }));
 
   const version = JSON.stringify([cowRows, customerRows, usageRows, feedRows.map((f) => [f.out, f.in]), note?.text ?? ""]);
   const prev = shiftDate(date, -1);

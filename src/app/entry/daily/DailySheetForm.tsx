@@ -7,7 +7,7 @@ import { rowTotal } from "@/lib/dailySheet";
 export type CowRow = { id: string; tag: string; m: string; a: string; e: string };
 export type CustomerRow = { id: string; name: string; rate: number; litres: string };
 export type UseRow = { type: string; label: string; litres: string };
-export type FeedRow = { id: string; name: string; unit: string; stock: number; out: string; in: string };
+export type FeedRow = { id: string; name: string; unit: string; stock: number; out: string; in: string; inRate: string };
 
 type Props = {
   date: string;
@@ -206,16 +206,18 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
           {canFeed ? (
             <table className="w-full table-fixed text-sm">
               <colgroup>
-                <col className="w-[34%]" />
+                <col className="w-[27%]" />
                 <col />
                 <col />
-                <col className="w-16" />
+                <col />
+                <col className="w-14" />
               </colgroup>
               <thead>
                 <tr>
                   <th className={`${th} text-left`}>Feed</th>
                   <th className={th}>Used today</th>
                   <th className={th}>Received</th>
+                  <th className={th} title="Rate paid per unit for the feed received. Needed for each purchase: feed is costed first-in, first-out.">Rate paid</th>
                   <th className={th}>Stock</th>
                 </tr>
               </thead>
@@ -252,6 +254,22 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                         readOnly={locked(f.in)}
                         title={lockTip(f.in)}
                         aria-label={`${f.name} received today`}
+                        className={boxCls(f.in, "w-full")}
+                      />
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <input
+                        name={`inrate_${f.id}`}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        defaultValue={f.inRate}
+                        readOnly={locked(f.in)}
+                        title={locked(f.in) ? "Already saved. An Admin can change the rate on Feed & Inventory." : `Rate paid per ${f.unit}, needed when something is received`}
+                        aria-label={`${f.name} rate paid per ${f.unit}`}
+                        placeholder="Rs"
                         className={boxCls(f.in, "w-full")}
                       />
                     </td>

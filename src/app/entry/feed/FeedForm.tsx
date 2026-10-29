@@ -67,12 +67,18 @@ export default function FeedForm({ items, stock, today }: { items: Item[]; stock
           <label htmlFor="quantity" className="text-sm font-medium text-neutral-700">Quantity{item ? ` (${item.unit})` : ""}</label>
           <input id="quantity" name="quantity" type="number" step="0.01" min="0" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
         </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="rate" className="text-sm font-medium text-neutral-700">
-            Rate per {item ? item.unit : "unit"} (optional)
-          </label>
-          <input id="rate" name="rate" type="number" step="0.01" min="0" className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
-        </div>
+        {direction === "IN" ? (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="rate" className="text-sm font-medium text-neutral-700">
+              Rate paid per {item ? item.unit : "unit"}
+            </label>
+            <input id="rate" name="rate" type="number" step="0.01" min="0" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+          </div>
+        ) : (
+          <p className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-600 self-end">
+            No rate needed. The cost of what is issued is taken from the oldest stock still on hand (first-in, first-out).
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="notes" className="text-sm font-medium text-neutral-700">Notes (optional)</label>

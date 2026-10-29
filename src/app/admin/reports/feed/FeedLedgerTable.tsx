@@ -66,14 +66,14 @@ function EditRow({ line, feedNames, colSpan, onDone, feedType }: {
             <label className="text-xs text-neutral-500">Quantity</label>
             <input name="quantity" type="number" step="0.01" min="0" defaultValue={line.quantity} required className={`${input} w-28`} />
           </div>
-          <div className="flex flex-col gap-0.5">
-            <label className="text-xs text-neutral-500">Rate</label>
-            <input name="rate" type="number" step="0.01" min="0" defaultValue={line.rate ?? ""} className={`${input} w-28`} />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <label className="text-xs text-neutral-500">Cost (Out only)</label>
-            <input name="cost" type="number" step="0.01" min="0" defaultValue={line.cost ?? ""} placeholder="rate × qty" className={`${input} w-32`} />
-          </div>
+          {line.direction === "IN" ? (
+            <div className="flex flex-col gap-0.5">
+              <label className="text-xs text-neutral-500">Purchase rate (paid per unit)</label>
+              <input name="rate" type="number" step="0.01" min="0" defaultValue={line.rate ?? ""} className={`${input} w-36`} />
+            </div>
+          ) : (
+            <p className="text-xs text-neutral-500 max-w-[220px]">The cost of an issue is worked out first-in, first-out. To change it, change the purchase rates.</p>
+          )}
           <div className="flex flex-col gap-0.5 flex-1 min-w-[140px]">
             <label className="text-xs text-neutral-500">Notes</label>
             <input name="notes" defaultValue={line.notes ?? ""} maxLength={300} className={`${input} w-full`} />
@@ -201,8 +201,8 @@ export default function FeedLedgerTable({
               <th className="text-right px-3 py-2">In</th>
               <th className="text-right px-3 py-2">Out</th>
               <th className="text-right px-3 py-2">Balance</th>
-              <th className="text-right px-3 py-2">Rate</th>
-              <th className="text-right px-3 py-2">Amount</th>
+              <th className="text-right px-3 py-2" title="Purchases: the rate paid. Issues: the first-in, first-out cost per unit.">Rate</th>
+              <th className="text-right px-3 py-2" title="Purchases: value bought. Issues: first-in, first-out cost.">Amount</th>
               <th className="text-left px-3 py-2">Notes</th>
               <th className="text-left px-3 py-2">By</th>
               {isAdmin && <th className="text-left px-3 py-2">Actions</th>}
@@ -230,8 +230,14 @@ export default function FeedLedgerTable({
                   <td className="px-3 py-2 text-right text-green-700">{l.direction === "IN" ? qty(l.quantity) : ""}</td>
                   <td className="px-3 py-2 text-right">{l.direction === "OUT" ? qty(l.quantity) : ""}</td>
                   <td className={`px-3 py-2 text-right font-medium ${l.balance < 0 ? "text-danger" : ""}`}>{qty(l.balance)}</td>
-                  <td className="px-3 py-2 text-right">{l.rate !== null ? rs2(l.rate) : "—"}</td>
-                  <td className="px-3 py-2 text-right">{l.amount !== null ? formatRs(l.amount) : "—"}</td>
+                  <td className="px-3 py-2 text-right">
+                    {l.rate !== null ? rs2(l.rate) : l.direction === "IN" ? <span className="text-amber-700" title="No purchase rate recorded. Costs after this use an estimate.">no rate</span> : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {l.amount !== null ? formatRs(l.amount) : "—"}
+                    {l.basis === "estimate" && <span className="ml-1 text-amber-700" title="Part of this cost uses an estimated rate because the stock it came from has no purchase rate">*</span>}
+                    {l.basis === "none" && <span className="ml-1 text-red-600" title="No rate on record, so this issue could not be costed">!</span>}
+                  </td>
                   <td className="px-3 py-2 text-neutral-600">{l.notes ?? ""}</td>
                   <td className="px-3 py-2 text-neutral-500">{l.enteredBy ?? ""}</td>
                   {isAdmin && (

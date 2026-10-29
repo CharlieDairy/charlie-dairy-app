@@ -31,6 +31,13 @@ test("the farm manager (Editor) gets entry pages, and is told to ask the Admin f
   assert.equal(books.adminOnly, 1);
 });
 
+test("a purchase-without-a-rate finding links to each feed's ledger for the last year", () => {
+  const links = fixLinks({ ruleId: "feed.unrated-receipts", key: "k", metric: { feeds: [{ feed: "Silage" }, { feed: "Wheat Straw" }] } });
+  assert.equal(links.length, 2);
+  assert.match(links[0].href, /^\/admin\/reports\/feed\?feed=Silage&period=custom&from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}$/);
+  assert.match(links[1].href, /feed=Wheat%20Straw/);
+});
+
 test("the Admin can open every fix", () => {
   const books = fixesForRole({ ruleId: "acct.balance-sheet", key: "k", metric: null }, "ADMIN");
   assert.equal(books.open.length, 2);

@@ -67,6 +67,11 @@ export default async function FeedOverviewPage({
         Pick a feed to see every entry with a running balance, or leave it on All to compare feeds. Opening is what was
         in stock before the period starts; Closing = Opening + In − Out.
       </p>
+      <p className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
+        <b>First-in, first-out costing.</b> Every purchase is a layer of stock at the rate paid for it. Whatever is used is
+        costed from the oldest layer that still has stock, and moves on to the next layer when it runs out. The feed cost
+        and the value of the stock left both come from those layers.
+      </p>
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-white p-3">
         <span className="text-xs font-semibold text-text-muted">FEED</span>
@@ -97,15 +102,29 @@ export default async function FeedOverviewPage({
             <StatCard label="Closing balance" value={`${qty(selectedRow.closing)} ${unitLabel}`} tone={selectedRow.closing < 0 ? "negative" : undefined} />
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Opening stock value" value={formatRs(selectedRow.openingValue)} />
+            <StatCard label="Purchases (at their rates)" value={selectedRow.purchaseValue > 0 ? formatRs(selectedRow.purchaseValue) : "None"} tone="positive" />
+            <StatCard label="Cost of feed used (FIFO)" value={selectedRow.outCost > 0 ? formatRs(selectedRow.outCost) : "Not costed"} />
+            <StatCard label="Closing stock value (FIFO)" value={formatRs(selectedRow.closingValue)} />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard label={`Avg daily use (${report.days} day${report.days === 1 ? "" : "s"})`} value={`${selectedRow.avgDailyUse.toFixed(1)} ${unitLabel}`} />
-            <StatCard label="Avg rate" value={selectedRow.avgRate !== null ? `${rs2(selectedRow.avgRate)} / ${unitLabel || "unit"}` : "Not recorded"} />
-            <StatCard label="Cost of feed used" value={selectedRow.outCost > 0 ? formatRs(selectedRow.outCost) : "Not recorded"} />
+            <StatCard label="Avg cost of what was used" value={selectedRow.avgRate !== null ? `${rs2(selectedRow.avgRate)} / ${unitLabel || "unit"}` : "Not costed"} />
+            <StatCard label="Cost of stock left" value={selectedRow.closingAvgCost !== null ? `${rs2(selectedRow.closingAvgCost)} / ${unitLabel || "unit"}` : "—"} />
             <StatCard
               label="Stock status"
               value={selectedRow.lowStock ? "Low stock" : stockTone(selectedRow.closing, selectedRow.daysLeft).label}
               tone={selectedRow.lowStock || selectedRow.closing < 0 ? "negative" : undefined}
             />
           </div>
+          {(selectedRow.estimatedUseQty > 0 || selectedRow.unpricedUseQty > 0 || selectedRow.unratedPurchaseQty > 0) && (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {selectedRow.unratedPurchaseQty > 0 && <>{qty(selectedRow.unratedPurchaseQty)} {unitLabel} received in this period has no purchase rate. </>}
+              {selectedRow.estimatedUseQty > 0 && <>{qty(selectedRow.estimatedUseQty)} {unitLabel} used in this period was costed at an estimated rate (no purchase rate on record, or more used than was ever received). </>}
+              {selectedRow.unpricedUseQty > 0 && <>{qty(selectedRow.unpricedUseQty)} {unitLabel} used has no cost at all. </>}
+              {isAdmin ? "Edit the purchase below and enter the rate paid, and every cost after it is recalculated." : "Ask the Admin to enter the missing purchase rates."}
+            </p>
+          )}
 
           <FeedLedgerTable
             lines={report.ledger ?? []}
@@ -119,7 +138,49 @@ export default async function FeedOverviewPage({
             from={range.start.toISOString().slice(0, 10)}
             to={new Date(range.end.getTime() - 86_400_000).toISOString().slice(0, 10)}
             isAdmin={isAdmin}
-          />          {selectedRow.closing < 0 && (
+          />
+          <section className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold text-neutral-900">Stock on hand at the end of the period, oldest first</h2>
+            <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
+              <table className="min-w-full text-sm">
+                <thead className="bg-neutral-100">
+                  <tr>
+                    <th className="text-left px-3 py-2">Bought on</th>
+                    <th className="text-right px-3 py-2">Bought ({unitLabel})</th>
+                    <th className="text-right px-3 py-2">Left ({unitLabel})</th>
+                    <th className="text-right px-3 py-2">Rate</th>
+                    <th className="text-right px-3 py-2">Value of what is left</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(report.layers ?? []).map((l, i) => (
+                    <tr key={`${l.date}-${i}`} className="border-t border-neutral-100">
+                      <td className="px-3 py-2 whitespace-nowrap">{l.date}</td>
+                      <td className="px-3 py-2 text-right">{qty(l.received)}</td>
+                      <td className="px-3 py-2 text-right font-medium">{qty(l.remaining)}</td>
+                      <td className="px-3 py-2 text-right">
+                        {l.rate !== null ? rs2(l.rate) : l.valueRate !== null ? <span className="text-amber-700" title="No purchase rate recorded; valued at the latest known rate">{rs2(l.valueRate)} (estimate)</span> : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right">{formatRs(l.value)}</td>
+                    </tr>
+                  ))}
+                  {(report.layers ?? []).length === 0 && (
+                    <tr><td colSpan={5} className="px-3 py-6 text-center text-neutral-500">No stock left, or no purchases recorded.</td></tr>
+                  )}
+                  {(report.layers ?? []).length > 0 && (
+                    <tr className="border-t-2 border-neutral-300 bg-neutral-50 font-semibold">
+                      <td className="px-3 py-2">Total</td>
+                      <td />
+                      <td className="px-3 py-2 text-right">{qty((report.layers ?? []).reduce((n, l) => n + l.remaining, 0))}</td>
+                      <td />
+                      <td className="px-3 py-2 text-right">{formatRs((report.layers ?? []).reduce((n, l) => n + l.value, 0))}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          {selectedRow.closing < 0 && (
             <p className="text-xs text-danger">
               A negative balance means more was logged as issued (Out) than was ever recorded as received (In) — check
               for a missing purchase entry.
@@ -132,7 +193,13 @@ export default async function FeedOverviewPage({
             <StatCard label="Total closing stock" value={sameUnit ? `${qty(total((r) => r.closing))} ${[...units][0] ?? ""}` : "Mixed units"} />
             <StatCard label="Low stock feeds" value={String(rows.filter((r) => r.lowStock).length)} tone={rows.some((r) => r.lowStock) ? "negative" : "positive"} />
             <StatCard label="Consumed in period" value={sameUnit ? `${qty(total((r) => r.outQty))} ${[...units][0] ?? ""}` : "Mixed units"} />
-            <StatCard label="Feed cost in period" value={formatRs(total((r) => r.outCost))} />
+            <StatCard label="Feed cost in period (FIFO)" value={formatRs(total((r) => r.outCost))} />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Opening stock value" value={formatRs(total((r) => r.openingValue))} />
+            <StatCard label="Purchases in period" value={formatRs(total((r) => r.purchaseValue))} tone="positive" />
+            <StatCard label="Closing stock value (FIFO)" value={formatRs(total((r) => r.closingValue))} />
+            <StatCard label="Feeds without a full cost" value={String(rows.filter((r) => r.estimatedUseQty > 0 || r.unpricedUseQty > 0 || r.unratedPurchaseQty > 0).length)} tone={rows.some((r) => r.unpricedUseQty > 0) ? "negative" : undefined} />
           </div>
 
           <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
@@ -145,8 +212,9 @@ export default async function FeedOverviewPage({
                   <th className="text-right px-3 py-2">Out</th>
                   <th className="text-right px-3 py-2">Closing</th>
                   <th className="text-right px-3 py-2">Avg daily use</th>
-                  <th className="text-right px-3 py-2">Avg rate</th>
-                  <th className="text-right px-3 py-2">Cost used</th>
+                  <th className="text-right px-3 py-2">Cost per unit used</th>
+                  <th className="text-right px-3 py-2">Cost used (FIFO)</th>
+                  <th className="text-right px-3 py-2">Stock value</th>
                   <th className="text-left px-3 py-2">Stock status</th>
                 </tr>
               </thead>
@@ -166,7 +234,11 @@ export default async function FeedOverviewPage({
                       <td className={`px-3 py-2 text-right font-medium ${r.closing < 0 ? "text-danger" : ""}`}>{qty(r.closing)}</td>
                       <td className="px-3 py-2 text-right">{r.avgDailyUse.toFixed(1)}</td>
                       <td className="px-3 py-2 text-right">{r.avgRate !== null ? rs2(r.avgRate) : "—"}</td>
-                      <td className="px-3 py-2 text-right">{r.outCost > 0 ? formatRs(r.outCost) : "—"}</td>
+                      <td className="px-3 py-2 text-right">
+                        {r.outCost > 0 ? formatRs(r.outCost) : "—"}
+                        {(r.estimatedUseQty > 0 || r.unpricedUseQty > 0) && <span className="ml-1 text-amber-700" title="Part of this cost uses an estimated rate or is missing a purchase rate">*</span>}
+                      </td>
+                      <td className="px-3 py-2 text-right">{r.closingValue > 0 ? formatRs(r.closingValue) : "—"}</td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge tone={status.tone}>{status.label}</Badge>
@@ -178,7 +250,7 @@ export default async function FeedOverviewPage({
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-3 py-6 text-center text-neutral-500">
+                    <td colSpan={10} className="px-3 py-6 text-center text-neutral-500">
                       No feeds yet. Add them in Feed Master, then record entries.
                     </td>
                   </tr>
@@ -193,6 +265,7 @@ export default async function FeedOverviewPage({
                     <td className="px-3 py-2 text-right">{total((r) => r.avgDailyUse).toFixed(1)}</td>
                     <td className="px-3 py-2" />
                     <td className="px-3 py-2 text-right">{formatRs(total((r) => r.outCost))}</td>
+                    <td className="px-3 py-2 text-right">{formatRs(total((r) => r.closingValue))}</td>
                     <td className="px-3 py-2" />
                   </tr>
                 )}
@@ -200,9 +273,10 @@ export default async function FeedOverviewPage({
             </table>
           </div>
           <p className="text-xs text-neutral-500">
-            Avg daily use = Out ÷ {report.days} day{report.days === 1 ? "" : "s"} in the period. Avg rate is the
-            quantity-weighted average of the rates entered in the period. Days left uses the last 30 days&apos; use. Cost
-            used only includes issues entered with a rate.
+            Avg daily use = Out ÷ {report.days} day{report.days === 1 ? "" : "s"} in the period. Cost used is worked out
+            first-in, first-out: each issue takes the rate of the oldest purchase that still has stock. Stock value is
+            what is left, at the rates of the purchases it came from. Days left uses the last 30 days&apos; use. A * means
+            part of the cost uses an estimated rate because a purchase has no rate recorded; open the feed to see which.
           </p>
           {rows.some((r) => r.closing < 0) && (
             <p className="text-xs text-danger">
