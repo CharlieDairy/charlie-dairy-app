@@ -4,6 +4,7 @@ import { formatRs } from "@/lib/format";
 import { compare } from "@/lib/compare";
 import { farmDateKey } from "@/lib/reports/dashboardMetrics";
 import { inSelection, parsePnlSelection, priorSelection, selectionLabel, selectionQuery, ytdMonth, type PnlSelection } from "@/lib/reports/pnlPeriod";
+import { operatingTotals } from "@/lib/reports/pnlOperating";
 import TrendStat from "@/components/TrendStat";
 import StatCard from "@/components/StatCard";
 
@@ -77,6 +78,13 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
   const year = sel.year;
   const link = (s: PnlSelection) => selectionQuery(s);
 
+  const op = operatingTotals(shown);
+  const opBefore = operatingTotals(priorMonths);
+  const opCards: { label: string; value: number; before: number; invert?: boolean }[] = [
+    { label: "Operating revenue", value: op.revenue, before: opBefore.revenue },
+    { label: "All operating costs", value: op.cost, before: opBefore.cost, invert: true },
+    { label: "Operating profit", value: op.net, before: opBefore.net },
+  ];
   const cards: { label: string; value: number; before: number; invert?: boolean }[] = [
     { label: "Revenue", value: t.revenue, before: p.revenue },
     { label: "Cost", value: t.expense, before: p.expense, invert: true },
@@ -120,8 +128,80 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
         )}
       </div>
 
+      {/* Operating P&L: animal and calf sales left out of revenue, every operating cost kept */}
+      <section className="flex flex-col gap-4 rounded-xl border-2 border-green-200 bg-green-50/40 p-4">
+        <div>
+          <h2 className="text-xl font-semibold text-neutral-900">Operating P&amp;L · excluding animal &amp; calf sales</h2>
+          <p className="text-sm text-neutral-600">
+            {label}. Revenue is milk sales plus other income only. All operating costs are counted. Animal and calf sales
+            ({formatRs(op.animalSalesExcluded)} in this period) are left out, so this shows what running the farm earns.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {opCards.map((c) =>
+            prior && priorMonths.length > 0 ? (
+              <TrendStat key={c.label} label={c.label} value={formatRs(c.value)} comparison={compare(c.value, c.before)} invertTone={c.invert} />
+            ) : (
+              <StatCard key={c.label} label={c.label} value={formatRs(c.value)} tone={c.invert ? undefined : c.value >= 0 ? "positive" : "negative"} />
+            )
+          )}
+          <StatCard label="Operating margin" value={op.marginPct === null ? "—" : `${op.marginPct.toFixed(1)}%`} tone={op.marginPct === null ? undefined : op.marginPct >= 0 ? "positive" : "negative"} />
+        </div>
+        {prior && <p className="text-xs text-neutral-500 -mt-2">{priorMonths.length > 0 ? `Compared with ${prior.label}.` : `No records for ${prior.label} to compare with.`}</p>}
+        <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
+          <table className="min-w-full text-sm">
+            <thead className="bg-neutral-100">
+              <tr>
+                <th className="text-left px-3 py-2">Month</th>
+                <th className="text-right px-3 py-2">Milk sales</th>
+                <th className="text-right px-3 py-2">Other income</th>
+                <th className="text-right px-3 py-2">Operating revenue</th>
+                <th className="text-right px-3 py-2">All costs</th>
+                <th className="text-right px-3 py-2">Operating profit</th>
+                <th className="text-right px-3 py-2">Margin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((m) => {
+                const o = operatingTotals([m]);
+                return (
+                  <tr key={m.month} className="border-t border-neutral-100">
+                    <td className="px-3 py-2">{m.month}</td>
+                    <td className={R}>{formatRs(o.milkSales)}</td>
+                    <td className={R}>{formatRs(o.otherIncome)}</td>
+                    <td className={`${R} font-medium`}>{formatRs(o.revenue)}</td>
+                    <td className={R}>{formatRs(o.cost)}</td>
+                    <td className={`${R} font-medium ${o.net >= 0 ? "text-green-700" : "text-red-600"}`}>{formatRs(o.net)}</td>
+                    <td className={`${R} text-neutral-500`}>{o.marginPct === null ? "—" : `${o.marginPct.toFixed(1)}%`}</td>
+                  </tr>
+                );
+              })}
+              {shown.length > 0 && (
+                <tr className="border-t-2 border-neutral-300 bg-neutral-50 font-semibold">
+                  <td className="px-3 py-2">Total</td>
+                  <td className={R}>{formatRs(op.milkSales)}</td>
+                  <td className={R}>{formatRs(op.otherIncome)}</td>
+                  <td className={R}>{formatRs(op.revenue)}</td>
+                  <td className={R}>{formatRs(op.cost)}</td>
+                  <td className={`${R} ${op.net >= 0 ? "text-green-700" : "text-red-600"}`}>{formatRs(op.net)}</td>
+                  <td className={`${R} text-neutral-500`}>{op.marginPct === null ? "—" : `${op.marginPct.toFixed(1)}%`}</td>
+                </tr>
+              )}
+              {shown.length === 0 && (
+                <tr><td colSpan={7} className="px-3 py-6 text-center text-neutral-500">No cash transactions recorded for this period.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-neutral-600">
+          Operating profit {formatRs(op.net)} + animal &amp; calf sales {formatRs(op.animalSalesExcluded)} = net profit {formatRs(t.net)} in the full P&amp;L below.
+          Capital spending and partner money are not costs in either view.
+        </p>
+      </section>
+
       <div>
-        <h2 className="text-lg font-semibold text-neutral-900 mb-2">{label}</h2>
+        <h2 className="text-lg font-semibold text-neutral-900">Full P&amp;L · including animal &amp; calf sales</h2>
+        <p className="text-sm text-neutral-500 mb-2">{label}</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {cards.map((c) =>
             prior && priorMonths.length > 0 ? (
