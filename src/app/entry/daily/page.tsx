@@ -105,8 +105,8 @@ export default async function DailySheetPage({ searchParams }: { searchParams: P
         </form>
       </div>
       <p className="text-sm text-neutral-600">
-        One sheet for the whole day, like the paper milk record: milk by cow, milk sold, milk used, feed and a note. Saving again updates what is already
-        there; an empty box changes nothing. Showing <b>{date}</b>.
+        One sheet for the whole day, like the paper milk record: milk by cow, milk sold, milk used, feed and a note. Saved figures are locked: you can
+        fill in empty boxes, and only an Admin can change what is already saved. Showing <b>{date}</b>.
       </p>
       <DailySheetForm
         date={date}
@@ -118,6 +118,7 @@ export default async function DailySheetPage({ searchParams }: { searchParams: P
         version={version}
         groupTotal={groupTotal}
         canFeed={hasPermission(user, "feed", "CREATE")}
+        isAdmin={user.role === "ADMIN"}
       />
     </div>
   );

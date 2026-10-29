@@ -545,6 +545,8 @@ model MilkingRecord {
   enteredBy String?
   createdAt DateTime @default(now())
 
+  // One record per cow per shift per day, enforced by the database (group totals have no cow and are not covered).
+  @@unique([cowId, date, shift])
   @@index([date])
   @@index([cowId])
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
+import { requireAccess, requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, optNum } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -100,7 +100,8 @@ function optCowId(formData: FormData): string | null {
 }
 
 async function updateMilkingImpl(formData: FormData): Promise<FormState> {
-  const user = await requirePermission("milk", "EDIT");
+  // A saved milk record can only be changed by an Admin; everyone else adds new entries only.
+  const user = await requireAccess({ admin: true });
   const cowId = optCowId(formData); // the cow the record belongs to now
   const targetRaw = formData.get("newCowId");
   const targetCowId = typeof targetRaw === "string" && targetRaw.trim() !== "" ? targetRaw : cowId; // the cow it should belong to
@@ -176,7 +177,7 @@ export async function deleteMilking(_prev: FormState, formData: FormData): Promi
 }
 
 async function deleteMilkingImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("milk", "DELETE");
+  await requireAccess({ admin: true });
   const cowId = optCowId(formData);
   const date = reqDate(formData, "date", "Date");
   const { count } = await prisma.milkingRecord.deleteMany({ where: { cowId, date } });

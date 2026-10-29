@@ -34,6 +34,12 @@ async function submitFeedImpl(formData: FormData): Promise<FormState> {
   }
   const feedType = item.name;
 
+  // One "used today" figure per feed per day: a second one would be added on top of the first. Only an Admin can add another.
+  if (direction === "OUT" && user.role !== "ADMIN") {
+    const sameDay = await prisma.feedTransaction.findFirst({ where: { date, feedType, direction: "OUT" }, select: { quantity: true } });
+    if (sameDay) throw new ValidationError(`${feedType} already has ${sameDay.quantity} ${item.unit} used recorded for that date. Only an Admin can change or add to a saved entry.`);
+  }
+
   const duplicate = await prisma.feedTransaction.findFirst({
     where: { date, feedType, direction, quantity, createdAt: { gte: new Date(Date.now() - 120_000) } },
     select: { id: true },

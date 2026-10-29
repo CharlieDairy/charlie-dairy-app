@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { assertDateChangeNotBackdated, requirePermission, assertNotBackdated, runAction } from "@/lib/access";
+import { assertDateChangeNotBackdated, requireAccess, requirePermission, assertNotBackdated, runAction } from "@/lib/access";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, reqNum, reqText, optEnum, SHIFTS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -63,9 +63,15 @@ export async function submitMilkSale(_prev: FormState, formData: FormData): Prom
   return runAction(() => submitMilkSaleImpl(formData));
 }
 
-async function submitInternalUse(formData: FormData, user: { name: string }, option: (typeof INTERNAL_USE_OPTIONS)[number]) {
+async function submitInternalUse(formData: FormData, user: { name: string; role: string }, option: (typeof INTERNAL_USE_OPTIONS)[number]) {
   const date = reqDate(formData, "date", "Date");
   const litres = reqNum(formData, "litres", "Litres", { positive: true, max: 100_000 });
+
+  // One figure per use type per day: a second one would silently add to the first. Only an Admin can add another.
+  const sameDay = await prisma.milkUsageRecord.findFirst({ where: { date, type: option.type }, select: { litres: true } });
+  if (sameDay && user.role !== "ADMIN") {
+    throw new ValidationError(`${option.label} already has ${sameDay.litres} L recorded for that date. Only an Admin can change or add to a saved figure.`);
+  }
 
   const duplicate = await prisma.milkUsageRecord.findFirst({
     where: { date, type: option.type, litres, createdAt: { gte: new Date(Date.now() - 120_000) } },
@@ -91,6 +97,14 @@ async function submitMilkSaleImpl(formData: FormData): Promise<FormState> {
 
   const sale = await readSale(formData);
   assertNotBackdated(sale.date, user, "Sale date");
+
+  // One sale per customer per shift per day: a second entry would be added on top of the first. Only an Admin can add another.
+  if (user.role !== "ADMIN") {
+    const sameDay = await prisma.milkSale.findFirst({ where: { date: sale.date, buyer: sale.buyer, shift: sale.shift }, select: { litres: true } });
+    if (sameDay) {
+      throw new ValidationError(`${sale.buyer} already has a sale of ${sameDay.litres} L recorded for that date. Only an Admin can change or add to a saved sale.`);
+    }
+  }
 
   const duplicate = await prisma.milkSale.findFirst({
     where: {
@@ -131,7 +145,7 @@ export async function updateMilkSale(_prev: FormState, formData: FormData): Prom
 }
 
 async function updateMilkSaleImpl(formData: FormData): Promise<FormState> {
-  const user = await requirePermission("milk", "EDIT");
+  const user = await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Sale");
   const sale = await readSale(formData);
 
@@ -156,7 +170,7 @@ async function updateMilkSaleImpl(formData: FormData): Promise<FormState> {
 }
 
 export async function deleteMilkSale(formData: FormData): Promise<void> {
-  await requirePermission("milk", "DELETE");
+  await requireAccess({ admin: true });
   const id = reqId(formData, "id", "Sale");
   // deleteMany: deleting a sale someone else already removed is a no-op, not a crash.
   await prisma.milkSale.deleteMany({ where: { id } });

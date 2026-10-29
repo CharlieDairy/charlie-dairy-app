@@ -17,6 +17,9 @@ const ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+const lockedError = (what: string[]) =>
+  new ValidationError(`Already saved for this day: ${what.join(", ")}. Only an Admin can change a saved figure. Nothing was saved. Refresh the page to see what is already there.`);
+
 function group<T>(rows: T[], keyOf: (r: T) => string): Map<string, T[]> {
   const m = new Map<string, T[]>();
   for (const r of rows) {
@@ -34,6 +37,8 @@ async function saveImpl(fd: FormData): Promise<FormState> {
   const user = await requirePermission("milk", "CREATE");
   const date = reqDate(fd, "date", "Date");
   assertNotBackdated(date, user, "Date");
+  // Anything already saved for the day is locked: only an Admin may change a saved figure.
+  const isAdmin = user.role === "ADMIN";
 
   const names = [...fd.keys()];
   const ops: Prisma.PrismaPromise<unknown>[] = [];
@@ -73,7 +78,7 @@ async function saveImpl(fd: FormData): Promise<FormState> {
         throw new ValidationError("A herd/group total already covers one of these shifts. Record the cows individually or as one group total, not both.");
       }
     }
-    if (plan.update.length > 0 && !hasPermission(user, "milk", "EDIT")) throw new ValidationError("Your account can add entries but not change saved ones.");
+    if (plan.update.length > 0 && !isAdmin) throw lockedError(plan.update.map((u) => `Tag ${tagOf.get(u.key.split("|")[0])?.tag ?? "?"} ${u.key.split("|")[1].toLowerCase()}`));
     for (const key of plan.create) {
       const [cowId, shift] = key.split("|");
       ops.push(prisma.milkingRecord.create({ data: { cowId, date, shift: shift as "MORNING", litres: milkWanted.get(key)!, enteredBy: user.name } }));
@@ -106,7 +111,7 @@ async function saveImpl(fd: FormData): Promise<FormState> {
     const saved = new Map<string, Saved[]>();
     for (const [k, v] of group(rows, (r) => byName.get(r.buyer.toLowerCase()) ?? r.buyer)) saved.set(k, v.map((r) => ({ id: r.id, value: r.litres })));
     const plan = planNumbers(saved, saleWanted);
-    if (plan.update.length > 0 && !hasPermission(user, "milk", "EDIT")) throw new ValidationError("Your account can add entries but not change saved ones.");
+    if (plan.update.length > 0 && !isAdmin) throw lockedError(plan.update.map((u) => `${byId.get(u.key)?.name ?? "a customer"} sale`));
     for (const id of plan.create) {
       const c = byId.get(id)!;
       const litres = saleWanted.get(id)!;
@@ -134,7 +139,7 @@ async function saveImpl(fd: FormData): Promise<FormState> {
     const saved = new Map<string, Saved[]>();
     for (const [k, v] of group(rows, (r) => r.type)) saved.set(k, v.map((r) => ({ id: r.id, value: r.litres })));
     const plan = planNumbers(saved, useWanted);
-    if (plan.update.length > 0 && !hasPermission(user, "milk", "EDIT")) throw new ValidationError("Your account can add entries but not change saved ones.");
+    if (plan.update.length > 0 && !isAdmin) throw lockedError(plan.update.map((u) => `${u.key.replace("_USE", "").toLowerCase()} milk use`));
     for (const t of plan.create) ops.push(prisma.milkUsageRecord.create({ data: { date, type: t as (typeof USE_TYPES)[number], litres: useWanted.get(t)!, enteredBy: user.name } }));
     for (const u of plan.update) ops.push(prisma.milkUsageRecord.update({ where: { id: u.id }, data: { litres: u.value } }));
     counts.created += plan.create.length;
@@ -162,7 +167,9 @@ async function saveImpl(fd: FormData): Promise<FormState> {
     const saved = new Map<string, Saved[]>();
     for (const [k, v] of group(rows, (r) => `${idByName.get(r.feedType)}|${r.direction}`)) saved.set(k, v.map((r) => ({ id: r.id, value: r.quantity })));
     const plan = planNumbers(saved, feedWanted);
-    if (plan.update.length > 0 && !hasPermission(user, "feed", "EDIT")) throw new ValidationError("Your account can add feed entries but not change saved ones.");
+    if (plan.update.length > 0 && !isAdmin) {
+      throw lockedError(plan.update.map((u) => `${byId.get(u.key.split("|")[0])?.name ?? "a feed"} ${u.key.endsWith("OUT") ? "used" : "received"}`));
+    }
     for (const key of plan.create) {
       const [id, direction] = key.split("|") as [string, "IN" | "OUT"];
       const item = byId.get(id)!;
@@ -188,6 +195,8 @@ async function saveImpl(fd: FormData): Promise<FormState> {
   // ---- the day's note ------------------------------------------------------------------------------------------
   const note = optText(fd, "note", "Note", { max: 1000 });
   if (note) {
+    const savedNote = await prisma.dailyNote.findUnique({ where: { date }, select: { text: true } });
+    if (savedNote && savedNote.text !== note && !isAdmin) throw lockedError(["the note"]);
     ops.push(prisma.dailyNote.upsert({ where: { date }, create: { date, text: note, enteredBy: user.name }, update: { text: note } }));
   }
 
@@ -196,7 +205,7 @@ async function saveImpl(fd: FormData): Promise<FormState> {
   }
   if (ops.length > 0) await prisma.$transaction(ops);
 
-  for (const p of ["/entry/daily", "/entry/milking", "/entry/milk-sale", "/entry/feed", "/admin", "/admin/reports/herd", "/admin/reports/milk-sales", "/admin/reports/reconciliation", "/admin/reports/feed"]) revalidatePath(p);
+  for (const p of ["/entry/daily", "/entry/milking", "/entry/milk-sale", "/entry/feed", "/admin", "/admin/reports/herd", "/admin/reports/milk-sales", "/admin/reports/reconciliation", "/admin/reports/feed", "/admin/reports/balance-sheet", "/admin/reports/ar-aging", "/admin/reports/milk-analytics", "/admin/reports/animal-pnl", "/admin/customers"]) revalidatePath(p);
 
   const parts = [`${counts.created} added`, `${counts.changed} changed`, `${counts.same} already saved`];
   if (note) parts.push("note saved");

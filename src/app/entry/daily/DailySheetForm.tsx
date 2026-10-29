@@ -20,6 +20,8 @@ type Props = {
   version: string;
   groupTotal: number;
   canFeed: boolean;
+  /** only an Admin can change a figure that is already saved; everyone else sees it locked */
+  isAdmin: boolean;
 };
 
 const num = (v: string | null | undefined) => {
@@ -28,11 +30,19 @@ const num = (v: string | null | undefined) => {
 };
 const fmt = (n: number) => (Math.round(n * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 });
 
-const inputCls = "w-20 border border-neutral-300 rounded-md px-2 py-1.5 text-right text-base";
+const boxBase = "min-w-0 rounded-md border px-1 py-2 text-center text-base tabular-nums";
+const boxOpen = "border-neutral-300 bg-white";
+const boxLocked = "border-neutral-200 bg-neutral-100 text-neutral-500 cursor-not-allowed";
+const th = "py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500";
 
-export default function DailySheetForm({ date, cows, customers, usage, feed, note, version, groupTotal, canFeed }: Props) {
+export default function DailySheetForm({ date, cows, customers, usage, feed, note, version, groupTotal, canFeed, isAdmin }: Props) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(saveDailySheet, undefined);
   const formRef = useRef<HTMLFormElement>(null);
+
+  // A saved figure is locked for everyone except an Admin (the server enforces the same rule).
+  const locked = (saved: string) => !isAdmin && saved.trim() !== "";
+  const boxCls = (saved: string, width: string) => `${boxBase} ${width} ${locked(saved) ? boxLocked : boxOpen}`;
+  const lockTip = (saved: string) => (locked(saved) ? "Already saved. Only an Admin can change it." : undefined);
 
   const calc = (read: (name: string) => string | null) => {
     const rows: Record<string, number> = {};
@@ -62,6 +72,11 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
   };
 
   const gap = totals.production - totals.sold - totals.used;
+  const lockedCount =
+    cows.reduce((n, c) => n + [c.m, c.a, c.e].filter(locked).length, 0) +
+    customers.filter((c) => locked(c.litres)).length +
+    usage.filter((u) => locked(u.litres)).length +
+    feed.reduce((n, f) => n + [f.out, f.in].filter(locked).length, 0);
 
   return (
     <form ref={formRef} action={formAction} onInput={recompute} className="flex flex-col gap-5">
@@ -71,27 +86,40 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
           A herd/group milk total of {fmt(groupTotal)} L is also recorded for this day. New cow entries cannot be added for a shift that a group total covers.
         </p>
       )}
+      {lockedCount > 0 && (
+        <p className="text-sm bg-neutral-50 border border-neutral-200 rounded-md px-3 py-2 text-neutral-700">
+          Grey boxes are already saved for this day and are locked. Only an Admin can change a saved figure. Empty boxes can still be filled in.
+        </p>
+      )}
 
       <div key={version} className="flex flex-col gap-5">
         <section className="bg-white border border-neutral-200 rounded-lg p-4">
           <h2 className="font-semibold text-neutral-900 mb-3">1. Milk by cow (litres)</h2>
-          <div className="overflow-x-auto">
-            <table className="text-sm">
-              <thead>
-                <tr className="text-left text-neutral-500">
-                  <th className="pr-3 py-1 font-medium">Tag</th>
-                  <th className="px-1 py-1 font-medium text-right">Morning</th>
-                  <th className="px-1 py-1 font-medium text-right">Noon</th>
-                  <th className="px-1 py-1 font-medium text-right">Evening</th>
-                  <th className="pl-3 py-1 font-medium text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cows.map((c) => (
-                  <tr key={c.id} className="border-t border-neutral-100">
-                    <td className="pr-3 py-1 font-medium text-neutral-900">{c.tag}</td>
-                    {(["M", "A", "E"] as const).map((s) => (
-                      <td key={s} className="px-1 py-1">
+          <table className="w-full table-fixed text-sm">
+            <colgroup>
+              <col className="w-14" />
+              <col />
+              <col />
+              <col />
+              <col className="w-16" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th className={`${th} text-left`}>Tag</th>
+                <th className={th}>Morning</th>
+                <th className={th}>Noon</th>
+                <th className={th}>Evening</th>
+                <th className={th}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cows.map((c) => (
+                <tr key={c.id} className="border-t border-neutral-100">
+                  <td className="py-1.5 pr-2 text-left font-semibold text-neutral-900">{c.tag}</td>
+                  {(["M", "A", "E"] as const).map((s) => {
+                    const saved = c[s.toLowerCase() as "m" | "a" | "e"];
+                    return (
+                      <td key={s} className="px-1 py-1.5">
                         <input
                           name={`m_${c.id}_${s}`}
                           type="number"
@@ -100,36 +128,51 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                           max="200"
                           inputMode="decimal"
                           autoComplete="off"
-                          defaultValue={c[s.toLowerCase() as "m" | "a" | "e"]}
+                          defaultValue={saved}
+                          readOnly={locked(saved)}
+                          title={lockTip(saved)}
                           aria-label={`Tag ${c.tag} ${s === "M" ? "morning" : s === "A" ? "noon" : "evening"} litres`}
-                          className={inputCls}
+                          className={boxCls(saved, "w-full")}
                         />
                       </td>
-                    ))}
-                    <td className="pl-3 py-1 text-right font-medium tabular-nums">{totals.rows[c.id] ? fmt(totals.rows[c.id]) : ""}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-neutral-300">
-                  <td colSpan={4} className="py-2 font-semibold">Production</td>
-                  <td className="pl-3 py-2 text-right font-semibold tabular-nums">{fmt(totals.production)}</td>
+                    );
+                  })}
+                  <td className="py-1.5 pl-1 text-center font-semibold tabular-nums text-neutral-800">{totals.rows[c.id] ? fmt(totals.rows[c.id]) : ""}</td>
                 </tr>
-              </tfoot>
-            </table>
-          </div>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-neutral-300">
+                <td colSpan={4} className="py-2.5 text-left font-semibold">
+                  Production
+                </td>
+                <td className="py-2.5 pl-1 text-center font-semibold tabular-nums">{fmt(totals.production)}</td>
+              </tr>
+            </tfoot>
+          </table>
           <p className="text-xs text-neutral-500 mt-2">Leave a box empty if nothing was recorded. Another animal? Use Milking Entry.</p>
         </section>
 
         <section className="bg-white border border-neutral-200 rounded-lg p-4">
           <h2 className="font-semibold text-neutral-900 mb-3">2. Milk sold (as written on the sheet)</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
             {customers.map((c) => (
               <label key={c.id} className="flex items-center justify-between gap-3 text-sm">
                 <span>
                   {c.name} <span className="text-neutral-400">(Rs {c.rate})</span>
                 </span>
-                <input name={`sale_${c.id}`} type="number" step="0.1" min="0" inputMode="decimal" autoComplete="off" defaultValue={c.litres} className={inputCls} />
+                <input
+                  name={`sale_${c.id}`}
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  defaultValue={c.litres}
+                  readOnly={locked(c.litres)}
+                  title={lockTip(c.litres)}
+                  className={boxCls(c.litres, "w-24 shrink-0")}
+                />
               </label>
             ))}
           </div>
@@ -137,11 +180,22 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
 
         <section className="bg-white border border-neutral-200 rounded-lg p-4">
           <h2 className="font-semibold text-neutral-900 mb-3">3. Milk used on the farm</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
             {usage.map((u) => (
               <label key={u.type} className="flex items-center justify-between gap-3 text-sm">
                 <span>{u.label}</span>
-                <input name={`use_${u.type}`} type="number" step="0.1" min="0" inputMode="decimal" autoComplete="off" defaultValue={u.litres} className={inputCls} />
+                <input
+                  name={`use_${u.type}`}
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  defaultValue={u.litres}
+                  readOnly={locked(u.litres)}
+                  title={lockTip(u.litres)}
+                  className={boxCls(u.litres, "w-24 shrink-0")}
+                />
               </label>
             ))}
           </div>
@@ -150,36 +204,64 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
         <section className="bg-white border border-neutral-200 rounded-lg p-4">
           <h2 className="font-semibold text-neutral-900 mb-3">4. Feed</h2>
           {canFeed ? (
-            <div className="overflow-x-auto">
-              <table className="text-sm">
-                <thead>
-                  <tr className="text-left text-neutral-500">
-                    <th className="pr-3 py-1 font-medium">Feed</th>
-                    <th className="px-1 py-1 font-medium text-right">Used today</th>
-                    <th className="px-1 py-1 font-medium text-right">Received today</th>
-                    <th className="pl-3 py-1 font-medium text-right">In stock</th>
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col className="w-[34%]" />
+                <col />
+                <col />
+                <col className="w-16" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th className={`${th} text-left`}>Feed</th>
+                  <th className={th}>Used today</th>
+                  <th className={th}>Received</th>
+                  <th className={th}>Stock</th>
+                </tr>
+              </thead>
+              <tbody>
+                {feed.map((f) => (
+                  <tr key={f.id} className="border-t border-neutral-100">
+                    <td className="py-1.5 pr-2 text-left font-semibold text-neutral-900">
+                      {f.name} <span className="text-neutral-400 font-normal">({f.unit})</span>
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <input
+                        name={`out_${f.id}`}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        defaultValue={f.out}
+                        readOnly={locked(f.out)}
+                        title={lockTip(f.out)}
+                        aria-label={`${f.name} used today`}
+                        className={boxCls(f.out, "w-full")}
+                      />
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <input
+                        name={`in_${f.id}`}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        defaultValue={f.in}
+                        readOnly={locked(f.in)}
+                        title={lockTip(f.in)}
+                        aria-label={`${f.name} received today`}
+                        className={boxCls(f.in, "w-full")}
+                      />
+                    </td>
+                    <td className={`py-1.5 pl-1 text-center tabular-nums ${f.stock < 0 ? "text-red-600" : "text-neutral-600"}`}>{fmt(f.stock)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {feed.map((f) => (
-                    <tr key={f.id} className="border-t border-neutral-100">
-                      <td className="pr-3 py-1 font-medium text-neutral-900">
-                        {f.name} <span className="text-neutral-400 font-normal">({f.unit})</span>
-                      </td>
-                      <td className="px-1 py-1">
-                        <input name={`out_${f.id}`} type="number" step="0.01" min="0" inputMode="decimal" autoComplete="off" defaultValue={f.out} className={inputCls} />
-                      </td>
-                      <td className="px-1 py-1">
-                        <input name={`in_${f.id}`} type="number" step="0.01" min="0" inputMode="decimal" autoComplete="off" defaultValue={f.in} className={inputCls} />
-                      </td>
-                      <td className={`pl-3 py-1 text-right tabular-nums ${f.stock < 0 ? "text-red-600" : "text-neutral-600"}`}>{fmt(f.stock)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <p className="text-sm text-neutral-500">Your account can't record feed.</p>
+            <p className="text-sm text-neutral-500">Your account cannot record feed.</p>
           )}
         </section>
 
@@ -190,15 +272,16 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
             rows={3}
             maxLength={1000}
             defaultValue={note}
+            readOnly={!isAdmin && note.trim() !== ""}
             placeholder="e.g. AI of Tag 55 (Florus), silage delivery 980 maund, animal sold"
-            className="w-full border border-neutral-300 rounded-md px-3 py-2 text-base"
+            className={`w-full rounded-md border px-3 py-2 text-base ${!isAdmin && note.trim() !== "" ? boxLocked : boxOpen}`}
           />
-          <p className="text-xs text-neutral-500 mt-1">Breeding, health and animal sales are still recorded in their own forms; this note is the day's memo.</p>
+          <p className="text-xs text-neutral-500 mt-1">Breeding, health and animal sales are still recorded in their own forms; this note is the memo for the day.</p>
         </section>
       </div>
 
       <div className="sticky bottom-0 -mx-1 bg-white/95 backdrop-blur border border-neutral-200 rounded-lg p-3 flex flex-col gap-2 shadow-md">
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-5 gap-y-1 text-sm">
           <span>
             Production <b className="tabular-nums">{fmt(totals.production)}</b>
           </span>

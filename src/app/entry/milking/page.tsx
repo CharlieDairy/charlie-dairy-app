@@ -4,7 +4,7 @@ import { getMilkingWorklist, getMilkingLog } from "@/lib/reports/milkingWorklist
 import { periodRange } from "@/lib/reports/herd";
 import { resolvePeriod } from "@/lib/period";
 import PeriodBar from "@/components/PeriodBar";
-import { getLiveUser, hasPermission } from "@/lib/access";
+import { getLiveUser } from "@/lib/access";
 import MilkEntryPanel, { type DisplayRow } from "./MilkEntryPanel";
 
 function todayIso() {
@@ -18,8 +18,9 @@ export default async function MilkingEntryPage({
 }) {
   const params = await searchParams;
   const user = await getLiveUser();
-  const canEdit = !!user && hasPermission(user, "milk", "EDIT");
-  const canDelete = !!user && hasPermission(user, "milk", "DELETE");
+  // Saved milk records are locked: only an Admin can edit or delete them.
+  const canEdit = user?.role === "ADMIN";
+  const canDelete = user?.role === "ADMIN";
   const today = todayIso();
   const { period, from, to } = await resolvePeriod(params, "day");
   const date = params.date ?? today;
