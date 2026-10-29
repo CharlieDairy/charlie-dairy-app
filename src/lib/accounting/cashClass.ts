@@ -36,6 +36,14 @@ export const CLASS_LABEL: Record<CashClassKey, string> = {
 
 export const INCOME_CLASSES: readonly CashClassKey[] = ["MILK_SALES", "LIVESTOCK_SALES", "OTHER_INCOME"];
 
+/**
+ * Is this cash-book category feed? Feed cost is split from the rest of the operating cost (OPEX: salaries, fuel, medical,
+ * A.I. and every other expense) on the P&L. One rule here so every report agrees on what counts as feed.
+ */
+export function isFeedCategory(category: string | null | undefined): boolean {
+  return /^(opex feed|feed supliment|feed supplement)/.test((category ?? "").trim().toLowerCase());
+}
+
 export type ClassifiableRow = {
   category: string | null;
   amountIn: number;

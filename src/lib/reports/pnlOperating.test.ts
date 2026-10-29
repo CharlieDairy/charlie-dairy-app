@@ -3,13 +3,37 @@ import assert from "node:assert/strict";
 import { operatingTotals } from "./pnlOperating";
 import { CASH_CLASSES } from "@/lib/accounting/cashClass";
 
-const month = (milk: number, animals: number, other: number, cost: number) => {
+const month = (milk: number, animals: number, other: number, cost: number, byCategory: Record<string, number> = { Opex: cost }) => {
   const byClass = Object.fromEntries(CASH_CLASSES.map((c) => [c, 0])) as Record<(typeof CASH_CLASSES)[number], number>;
   byClass.MILK_SALES = milk;
   byClass.LIVESTOCK_SALES = animals;
   byClass.OTHER_INCOME = other;
-  return { byClass, expense: cost };
+  return { byClass, expense: cost, expenseByCategory: byCategory };
 };
+
+test("feed cost covers Opex Feed and Feed supliment; OPEX covers salaries and every other expense", () => {
+  const t = operatingTotals([
+    month(5000, 0, 0, 1000 + 200 + 300 + 150 + 50, { "Opex Feed": 1000, "Feed supliment": 200, "Opex Salaries": 300, "Advance Salary": 150, "Opex Fuel": 50 }),
+  ]);
+  assert.equal(t.feedCost, 1200);
+  assert.equal(t.opex, 500);
+  assert.equal(t.cost, 1700);
+});
+
+test("feed cost plus OPEX always equals the total cost", () => {
+  const months = [
+    month(100, 0, 0, 90, { "Opex Feed": 40, Opex: 30, "A.I": 20 }),
+    month(100, 0, 0, 60, { "Feed supliment": 10, "Opex Medical": 50 }),
+  ];
+  const t = operatingTotals(months);
+  assert.equal(t.feedCost + t.opex, t.cost);
+});
+
+test("with no feed bought, all cost is OPEX", () => {
+  const t = operatingTotals([month(100, 0, 0, 80, { "Opex Salaries": 80 })]);
+  assert.equal(t.feedCost, 0);
+  assert.equal(t.opex, 80);
+});
 
 test("animal and calf sales are left out of the operating revenue", () => {
   const t = operatingTotals([month(1000, 500, 50, 0)]);

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { classifyCash } from "@/lib/accounting/cashClass";
+import { classifyCash, isFeedCategory } from "@/lib/accounting/cashClass";
 import { extractTags, extractSoldTags, extractMotherTags } from "./tagMatch";
 
 // Profit and loss for ONE animal over a period, on the same cash basis as the farm P&L.
@@ -37,7 +37,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 const overlapDays = (aStart: number, aEndExcl: number, pStart: number, pEndExcl: number) => Math.max(0, Math.round((Math.min(aEndExcl, pEndExcl) - Math.max(aStart, pStart)) / DAY));
 
 const POOLS: { key: "feed" | "labour" | "health" | "other"; label: string; test: (cat: string) => boolean }[] = [
-  { key: "feed", label: "Feed (shared share)", test: (c) => /^(opex feed|feed supliment|feed supplement)/.test(c) },
+  { key: "feed", label: "Feed (shared share)", test: isFeedCategory },
   { key: "labour", label: "Labour and salaries (shared share)", test: (c) => /^(opex salaries|advance salary)/.test(c) },
   { key: "health", label: "Herd health and breeding, not tagged to an animal (shared share)", test: (c) => /^(a\.i|opex medical|vaccination)/.test(c) },
   { key: "other", label: "Other running costs (shared share)", test: () => true },

@@ -5,6 +5,7 @@ import { compare } from "@/lib/compare";
 import { farmDateKey } from "@/lib/reports/dashboardMetrics";
 import { inSelection, parsePnlSelection, priorSelection, selectionLabel, selectionQuery, ytdMonth, type PnlSelection } from "@/lib/reports/pnlPeriod";
 import { operatingTotals } from "@/lib/reports/pnlOperating";
+import { isFeedCategory } from "@/lib/accounting/cashClass";
 import TrendStat from "@/components/TrendStat";
 import StatCard from "@/components/StatCard";
 
@@ -82,15 +83,24 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
   const opBefore = operatingTotals(priorMonths);
   const opCards: { label: string; value: number; before: number; invert?: boolean }[] = [
     { label: "Operating revenue", value: op.revenue, before: opBefore.revenue },
-    { label: "All operating costs", value: op.cost, before: opBefore.cost, invert: true },
+    { label: "Feed cost", value: op.feedCost, before: opBefore.feedCost, invert: true },
+    { label: "OPEX (salaries & other)", value: op.opex, before: opBefore.opex, invert: true },
+    { label: "Total cost", value: op.cost, before: opBefore.cost, invert: true },
     { label: "Operating profit", value: op.net, before: opBefore.net },
   ];
   const cards: { label: string; value: number; before: number; invert?: boolean }[] = [
     { label: "Revenue", value: t.revenue, before: p.revenue },
-    { label: "Cost", value: t.expense, before: p.expense, invert: true },
+    { label: "Feed cost", value: op.feedCost, before: opBefore.feedCost, invert: true },
+    { label: "OPEX (salaries & other)", value: op.opex, before: opBefore.opex, invert: true },
+    { label: "Total cost", value: t.expense, before: p.expense, invert: true },
     { label: "Net profit", value: t.net, before: p.net },
     { label: "Milk only", value: t.milkNet, before: p.milkNet },
   ];
+  // which categories sit in feed cost and which in OPEX, for the period
+  const costLines = (feed: boolean) =>
+    Object.entries(addUp(shown, (m) => m.expenseByCategory))
+      .filter(([cat]) => isFeedCategory(cat) === feed)
+      .sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -137,7 +147,7 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
             ({formatRs(op.animalSalesExcluded)} in this period) are left out, so this shows what running the farm earns.
           </p>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {opCards.map((c) =>
             prior && priorMonths.length > 0 ? (
               <TrendStat key={c.label} label={c.label} value={formatRs(c.value)} comparison={compare(c.value, c.before)} invertTone={c.invert} />
@@ -156,7 +166,9 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
                 <th className="text-right px-3 py-2">Milk sales</th>
                 <th className="text-right px-3 py-2">Other income</th>
                 <th className="text-right px-3 py-2">Operating revenue</th>
-                <th className="text-right px-3 py-2">All costs</th>
+                <th className="text-right px-3 py-2">Feed cost</th>
+                <th className="text-right px-3 py-2">OPEX</th>
+                <th className="text-right px-3 py-2">Total cost</th>
                 <th className="text-right px-3 py-2">Operating profit</th>
                 <th className="text-right px-3 py-2">Margin</th>
               </tr>
@@ -170,7 +182,9 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
                     <td className={R}>{formatRs(o.milkSales)}</td>
                     <td className={R}>{formatRs(o.otherIncome)}</td>
                     <td className={`${R} font-medium`}>{formatRs(o.revenue)}</td>
-                    <td className={R}>{formatRs(o.cost)}</td>
+                    <td className={R}>{formatRs(o.feedCost)}</td>
+                    <td className={R}>{formatRs(o.opex)}</td>
+                    <td className={`${R} font-medium`}>{formatRs(o.cost)}</td>
                     <td className={`${R} font-medium ${o.net >= 0 ? "text-green-700" : "text-red-600"}`}>{formatRs(o.net)}</td>
                     <td className={`${R} text-neutral-500`}>{o.marginPct === null ? "—" : `${o.marginPct.toFixed(1)}%`}</td>
                   </tr>
@@ -182,16 +196,41 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
                   <td className={R}>{formatRs(op.milkSales)}</td>
                   <td className={R}>{formatRs(op.otherIncome)}</td>
                   <td className={R}>{formatRs(op.revenue)}</td>
+                  <td className={R}>{formatRs(op.feedCost)}</td>
+                  <td className={R}>{formatRs(op.opex)}</td>
                   <td className={R}>{formatRs(op.cost)}</td>
                   <td className={`${R} ${op.net >= 0 ? "text-green-700" : "text-red-600"}`}>{formatRs(op.net)}</td>
                   <td className={`${R} text-neutral-500`}>{op.marginPct === null ? "—" : `${op.marginPct.toFixed(1)}%`}</td>
                 </tr>
               )}
               {shown.length === 0 && (
-                <tr><td colSpan={7} className="px-3 py-6 text-center text-neutral-500">No cash transactions recorded for this period.</td></tr>
+                <tr><td colSpan={9} className="px-3 py-6 text-center text-neutral-500">No cash transactions recorded for this period.</td></tr>
               )}
             </tbody>
           </table>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4 items-start">
+          {([
+            { title: "Feed cost", total: op.feedCost, lines: costLines(true), note: "All feed bought: Opex Feed and Feed supliment." },
+            { title: "OPEX", total: op.opex, lines: costLines(false), note: "All salaries and advances, and every other expense paid, such as fuel, medical, A.I. and vaccination." },
+          ] as const).map((g) => (
+            <div key={g.title} className="bg-white border border-neutral-200 rounded-lg p-4">
+              <div className="flex items-baseline justify-between gap-3">
+                <div className="font-semibold text-neutral-900">{g.title}</div>
+                <div className="font-semibold text-neutral-900">{formatRs(g.total)}</div>
+              </div>
+              <p className="text-xs text-neutral-500 mb-2">{g.note}</p>
+              <ul className="text-sm">
+                {g.lines.map(([cat, amt]) => (
+                  <li key={cat} className="flex justify-between gap-3 border-t border-neutral-100 py-1">
+                    <span className="truncate">{cat}</span>
+                    <span className="whitespace-nowrap">{formatRs(amt)} <span className="text-xs text-neutral-400">{g.total ? `${Math.round((amt / g.total) * 100)}%` : ""}</span></span>
+                  </li>
+                ))}
+                {g.lines.length === 0 && <li className="text-neutral-400 py-1">Nothing in this period.</li>}
+              </ul>
+            </div>
+          ))}
         </div>
         <p className="text-xs text-neutral-600">
           Operating profit {formatRs(op.net)} + animal &amp; calf sales {formatRs(op.animalSalesExcluded)} = net profit {formatRs(t.net)} in the full P&amp;L below.
@@ -202,7 +241,7 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
       <div>
         <h2 className="text-lg font-semibold text-neutral-900">Full P&amp;L · including animal &amp; calf sales</h2>
         <p className="text-sm text-neutral-500 mb-2">{label}</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {cards.map((c) =>
             prior && priorMonths.length > 0 ? (
               <TrendStat key={c.label} label={c.label} value={formatRs(c.value)} comparison={compare(c.value, c.before)} invertTone={c.invert} />
@@ -227,7 +266,9 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
               <th className="text-right px-3 py-2">Animal &amp; calf sales</th>
               <th className="text-right px-3 py-2">Other income</th>
               <th className="text-right px-3 py-2">Revenue</th>
-              <th className="text-right px-3 py-2">Cost</th>
+              <th className="text-right px-3 py-2">Feed cost</th>
+              <th className="text-right px-3 py-2">OPEX</th>
+              <th className="text-right px-3 py-2">Total cost</th>
               <th className="text-right px-3 py-2">Net profit</th>
               <th className="text-right px-3 py-2">Milk only</th>
             </tr>
@@ -242,6 +283,8 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
                   <td className={R}>{formatRs(m.byClass.LIVESTOCK_SALES)}</td>
                   <td className={R}>{formatRs(m.byClass.OTHER_INCOME)}</td>
                   <td className={`${R} font-medium`}>{formatRs(m.revenue)}</td>
+                  <td className={R}>{formatRs(operatingTotals([m]).feedCost)}</td>
+                  <td className={R}>{formatRs(operatingTotals([m]).opex)}</td>
                   <td className={R}>{formatRs(m.expense)}</td>
                   <td className={`${R} font-medium ${m.net >= 0 ? "text-green-700" : "text-red-600"}`}>{formatRs(m.net)}</td>
                   <td className={`${R} ${m.milkNet >= 0 ? "text-green-700" : "text-red-600"}`}>{formatRs(m.milkNet)}</td>
@@ -255,13 +298,15 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
                 <td className={R}>{formatRs(sum(shown, (m) => m.byClass.LIVESTOCK_SALES))}</td>
                 <td className={R}>{formatRs(sum(shown, (m) => m.byClass.OTHER_INCOME))}</td>
                 <td className={R}>{formatRs(t.revenue)}</td>
+                <td className={R}>{formatRs(op.feedCost)}</td>
+                <td className={R}>{formatRs(op.opex)}</td>
                 <td className={R}>{formatRs(t.expense)}</td>
                 <td className={R}>{formatRs(t.net)}</td>
                 <td className={R}>{formatRs(t.milkNet)}</td>
               </tr>
             )}
             {shown.length === 0 && (
-              <tr><td colSpan={8} className="px-3 py-6 text-center text-neutral-500">No cash transactions recorded for this period.</td></tr>
+              <tr><td colSpan={10} className="px-3 py-6 text-center text-neutral-500">No cash transactions recorded for this period.</td></tr>
             )}
           </tbody>
         </table>
