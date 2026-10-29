@@ -10,11 +10,13 @@ export default function FeedForm({ items, stock, today }: { items: Item[]; stock
   const formRef = useRef<HTMLFormElement>(null);
   const [feed, setFeed] = useState("");
   const [direction, setDirection] = useState<"IN" | "OUT">("IN");
+  const [amount, setAmount] = useState("");
 
   useEffect(() => {
     if (state?.success) {
       formRef.current?.reset();
       setFeed("");
+      setAmount("");
       setDirection("IN");
     }
   }, [state]);
@@ -65,7 +67,12 @@ export default function FeedForm({ items, stock, today }: { items: Item[]; stock
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="quantity" className="text-sm font-medium text-neutral-700">Quantity{item ? ` (${item.unit})` : ""}</label>
-          <input id="quantity" name="quantity" type="number" step="0.01" min="0" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+          <input id="quantity" name="quantity" type="number" step="0.01" min="0" required value={amount} onChange={(e) => setAmount(e.target.value)} className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+          {direction === "OUT" && item && onHand !== null && Number(amount) > onHand && (
+            <p className="text-sm text-red-600">
+              More than the {onHand.toLocaleString(undefined, { maximumFractionDigits: 1 })} {item.unit} in stock. It can&apos;t be saved until the {item.name} purchase is recorded with its rate.
+            </p>
+          )}
         </div>
         {direction === "IN" ? (
           <div className="flex flex-col gap-1">

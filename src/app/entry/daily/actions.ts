@@ -8,6 +8,8 @@ import { reqDate, optNum, optText } from "@/lib/validate";
 import { planNumbers, type Saved } from "@/lib/dailySheet";
 import { revalidatePath } from "next/cache";
 import { repostFeedCosts } from "@/lib/feedCosting";
+import { assertStockHolds } from "@/lib/feedStockGuard";
+import type { StockTx } from "@/lib/feedStock";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -189,7 +191,18 @@ async function saveImpl(fd: FormData): Promise<FormState> {
     for (const u of plan.update) {
       ops.push(prisma.feedTransaction.update({ where: { id: u.id }, data: { quantity: u.value } }));
     }
-    for (const id of itemIds) touchedFeeds.push(byId.get(id)!.name);
+    // No issue without stock: what the sheet uses must already have been received (a purchase on or before the day,
+    // which may be entered on this same sheet). Nothing is saved if any feed would go short.
+    for (const id of itemIds) {
+      const adds: StockTx[] = plan.create
+        .filter((k) => k.startsWith(`${id}|`))
+        .map((k) => ({ id: `new-${k}`, date, direction: k.endsWith("|OUT") ? "OUT" : "IN", quantity: feedWanted.get(k)! }));
+      const edits = new Map(plan.update.filter((u) => u.key.startsWith(`${id}|`)).map((u) => [u.id, u.value] as const));
+      if (adds.length > 0 || edits.size > 0) {
+        await assertStockHolds(byId.get(id)!.name, (before) => [...before.map((t) => (edits.has(t.id) ? { ...t, quantity: edits.get(t.id)! } : t)), ...adds]);
+      }
+      touchedFeeds.push(byId.get(id)!.name);
+    }
     counts.created += plan.create.length;
     counts.changed += plan.update.length;
     counts.same += plan.unchanged;

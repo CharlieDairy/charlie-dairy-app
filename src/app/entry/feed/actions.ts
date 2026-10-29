@@ -6,6 +6,7 @@ import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optNum, optText, DIRECTIONS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
 import { repostFeedCosts } from "@/lib/feedCosting";
+import { assertStockHolds } from "@/lib/feedStockGuard";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -54,15 +55,9 @@ async function submitFeedImpl(formData: FormData): Promise<FormState> {
     throw new ValidationError("This looks identical to an entry saved moments ago, so it wasn't saved twice.");
   }
 
-  // Recorded stock for this feed before this entry, to warn (not block --
-  // older stock may simply never have been entered) when an OUT overdraws it.
-  let stockAfter: number | null = null;
+  // No issue without stock: what is used must already have been received (a purchase on or before that day), for everyone.
   if (direction === "OUT") {
-    const [inAgg, outAgg] = await Promise.all([
-      prisma.feedTransaction.aggregate({ _sum: { quantity: true }, where: { feedType, direction: "IN" } }),
-      prisma.feedTransaction.aggregate({ _sum: { quantity: true }, where: { feedType, direction: "OUT" } }),
-    ]);
-    stockAfter = (inAgg._sum.quantity ?? 0) - (outAgg._sum.quantity ?? 0) - quantity;
+    await assertStockHolds(feedType, (before) => [...before, { id: "new-entry", date, direction: "OUT", quantity }]);
   }
 
   const created = await prisma.feedTransaction.create({
@@ -81,16 +76,12 @@ async function submitFeedImpl(formData: FormData): Promise<FormState> {
   await repostFeedCosts([feedType], user.name);
 
   refreshFeed();
-  const warning =
-    stockAfter !== null && stockAfter < 0
-      ? ` Warning: recorded stock of ${feedType} is now ${stockAfter.toFixed(1)} ${item.unit} — a purchase may be missing.`
-      : "";
   let costNote = "";
   if (direction === "OUT") {
     const row = await prisma.feedTransaction.findUnique({ where: { id: created.id }, select: { cost: true } });
     costNote = row?.cost != null ? ` Cost Rs ${row.cost.toLocaleString("en-PK", { maximumFractionDigits: 0 })} (first-in, first-out).` : " No cost yet: there is no purchase rate on record for this feed.";
   }
-  return { success: true, message: `${feedType} ${direction === "IN" ? "received" : "issued"}: ${quantity} ${item.unit} saved.${costNote}${warning}` };
+  return { success: true, message: `${feedType} ${direction === "IN" ? "received" : "issued"}: ${quantity} ${item.unit} saved.${costNote}` };
 }
 
 // ---------------------------------------------------------------------------
@@ -128,6 +119,15 @@ async function updateFeedTransactionImpl(formData: FormData): Promise<FormState>
   });
   if (!item) throw new ValidationError("Pick a feed from the list. New feeds are added in Feed Master.");
 
+  // No issue without stock, also when an Admin edits: the changed entry (and every later issue) must still be covered.
+  const edited = { id, date, direction, quantity };
+  if (item.name === existing.feedType) {
+    await assertStockHolds(item.name, (before) => before.map((t) => (t.id === id ? edited : t)), direction === "OUT" ? "issue" : "removal");
+  } else {
+    await assertStockHolds(existing.feedType, (before) => before.filter((t) => t.id !== id), "removal");
+    await assertStockHolds(item.name, (before) => [...before, edited], "issue");
+  }
+
   // A receipt's rate is the cost of that layer of stock. An issue's cost is not typed: it is worked out first-in,
   // first-out, so an issue keeps whatever old rate it had (used only where a purchase has no rate) and cost is recalculated.
   const keepRate = direction === "OUT" ? (existing.direction === "OUT" ? existing.rate : null) : rate;
@@ -149,6 +149,7 @@ async function deleteFeedTransactionImpl(formData: FormData): Promise<FormState>
   const id = reqId(formData, "id", "Feed entry");
   const row = await prisma.feedTransaction.findUnique({ where: { id }, select: { id: true, feedType: true } });
   if (!row) return { success: false, message: "That entry no longer exists. Refresh the page." };
+  await assertStockHolds(row.feedType, (before) => before.filter((t) => t.id !== id), "removal");
   await prisma.feedTransaction.delete({ where: { id } });
   await repostFeedCosts([row.feedType], admin.name);
   refreshFeed();
@@ -164,6 +165,8 @@ async function deleteFeedTransactionsImpl(formData: FormData): Promise<FormState
   const ids = (formData.getAll("entryIds") as string[]).filter((v) => typeof v === "string" && v.length > 0);
   if (ids.length === 0) return { success: false, message: "No entries selected." };
   const feeds = await prisma.feedTransaction.findMany({ where: { id: { in: ids } }, select: { feedType: true }, distinct: ["feedType"] });
+  const gone = new Set(ids);
+  for (const f of feeds) await assertStockHolds(f.feedType, (before) => before.filter((t) => !gone.has(t.id)), "removal");
   const { count } = await prisma.feedTransaction.deleteMany({ where: { id: { in: ids } } });
   await repostFeedCosts(feeds.map((f) => f.feedType), admin.name);
   refreshFeed();
@@ -185,6 +188,9 @@ async function deleteAllFeedTransactionsImpl(formData: FormData): Promise<FormSt
   const from = reqText(formData, "from", "From date", { max: 10 });
   const to = reqText(formData, "to", "To date", { max: 10 });
   if (!DAY_KEY.test(from) || !DAY_KEY.test(to)) throw new ValidationError("Dates must be YYYY-MM-DD.");
+  const lo = new Date(`${from}T00:00:00.000Z`).getTime();
+  const hi = new Date(`${to}T00:00:00.000Z`).getTime();
+  await assertStockHolds(feedType, (before) => before.filter((t) => t.date.getTime() < lo || t.date.getTime() > hi), "removal");
   const { count } = await prisma.feedTransaction.deleteMany({
     where: { feedType, date: { gte: new Date(`${from}T00:00:00.000Z`), lte: new Date(`${to}T00:00:00.000Z`) } },
   });

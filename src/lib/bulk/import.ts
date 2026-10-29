@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { repostFeedCosts } from "@/lib/feedCosting";
+import { assertStockHolds } from "@/lib/feedStockGuard";
+import { ValidationError } from "@/lib/errors";
 import { Prisma } from "@prisma/client";
 import { parseCsv } from "./csv";
 import { getBulkTypeMeta } from "./registry";
@@ -329,6 +331,18 @@ export async function importCsv(key: BulkTypeKey, csvText: string, enteredBy: st
             `${clashes.length} row${clashes.length === 1 ? "" : "s"} match feed transactions that already exist — nothing was imported (was this file uploaded before?).`,
             clashes.slice(0, 20).map((r) => `${(r.date as Date).toISOString().slice(0, 10)} ${r.feedType} ${r.direction} already recorded.`)
           );
+        }
+      }
+      // No issue without stock: the file's issues must be covered by purchases already on record or in the same file.
+      for (const feed of new Set(parsed.map((r) => r.feedType as string))) {
+        const adds = parsed
+          .filter((r) => r.feedType === feed)
+          .map((r, i) => ({ id: `import-${i}`, date: r.date as Date, direction: r.direction as "IN" | "OUT", quantity: r.quantity as number }));
+        try {
+          await assertStockHolds(feed, (before) => [...before, ...adds]);
+        } catch (e) {
+          if (e instanceof ValidationError) return FAIL("Nothing was imported: the file uses feed that was never received.", [e.message]);
+          throw e;
         }
       }
       const result = await prisma.feedTransaction.createMany({ data: parsed });
