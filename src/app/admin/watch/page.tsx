@@ -5,6 +5,7 @@ import { canWrite, getLiveUser } from "@/lib/access";
 import { runWatch } from "@/lib/watch/engine";
 import { aiConfigured, type Review } from "@/lib/watch/ai";
 import { CATEGORY_LABEL, type Category } from "@/lib/watch/types";
+import { fixesForRole } from "@/lib/watch/fixes";
 import FindingActions from "./FindingActions";
 import { AiReviewButton, RunCheckButton } from "./WatchControls";
 
@@ -29,6 +30,23 @@ function ago(d: Date): string {
   const h = Math.round(mins / 60);
   if (h < 48) return `${h} hour${h === 1 ? "" : "s"} ago`;
   return `${Math.round(h / 24)} days ago`;
+}
+
+// "Fix it" buttons: each one opens the page (and, for dated findings, the day) where the data can be corrected.
+function FixRow({ finding, role }: { finding: { ruleId: string; key: string; metric: unknown }; role: string }) {
+  const { open, adminOnly } = fixesForRole(finding, role);
+  if (open.length === 0 && adminOnly === 0) return null;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">Fix it</span>
+      {open.map((l) => (
+        <Link key={l.href + l.label} href={l.href} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-dark">
+          {l.label} →
+        </Link>
+      ))}
+      {adminOnly > 0 && <span className="text-xs text-text-muted">{open.length > 0 ? "More fixes need" : "Ask"} the Admin{open.length > 0 ? "" : " to fix this"}.</span>}
+    </div>
+  );
 }
 
 export default async function WatchPage({ searchParams }: { searchParams: Promise<{ cat?: string }> }) {
@@ -196,6 +214,7 @@ export default async function WatchPage({ searchParams }: { searchParams: Promis
             <h3 className="mt-2 text-base font-semibold text-text">{f.title}</h3>
             <p className="mt-1 text-sm text-text-muted">{f.detail}</p>
             {f.suggestion && <p className="mt-2 rounded-lg bg-primary-light px-3 py-2 text-sm text-text"><b>What to do:</b> {f.suggestion}</p>}
+            <FixRow finding={f} role={user.role} />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs text-text-muted">First seen {ago(f.firstSeen)} · seen in {f.seenCount} check{f.seenCount === 1 ? "" : "s"}</span>
               <FindingActions id={f.id} status={f.status} canAct={canAct && (!f.financeOnly || isAdmin)} />
