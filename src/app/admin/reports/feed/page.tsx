@@ -145,35 +145,35 @@ export default async function FeedOverviewPage({
               <table className="min-w-full text-sm">
                 <thead className="bg-neutral-100">
                   <tr>
-                    <th className="text-left px-3 py-2">Bought on</th>
-                    <th className="text-right px-3 py-2">Bought ({unitLabel})</th>
-                    <th className="text-right px-3 py-2">Left ({unitLabel})</th>
-                    <th className="text-right px-3 py-2">Rate</th>
-                    <th className="text-right px-3 py-2">Value of what is left</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Bought on</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Bought ({unitLabel})</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Left ({unitLabel})</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Rate</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Value of what is left</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(report.layers ?? []).map((l, i) => (
                     <tr key={`${l.date}-${i}`} className="border-t border-neutral-100">
-                      <td className="px-3 py-2 whitespace-nowrap">{l.date}</td>
-                      <td className="px-3 py-2 text-right">{qty(l.received)}</td>
-                      <td className="px-3 py-2 text-right font-medium">{qty(l.remaining)}</td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{l.date}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{qty(l.received)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap font-medium">{qty(l.remaining)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">
                         {l.rate !== null ? rs2(l.rate) : l.valueRate !== null ? <span className="text-amber-700" title="No purchase rate recorded; valued at the latest known rate">{rs2(l.valueRate)} (estimate)</span> : "—"}
                       </td>
-                      <td className="px-3 py-2 text-right">{formatRs(l.value)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{formatRs(l.value)}</td>
                     </tr>
                   ))}
                   {(report.layers ?? []).length === 0 && (
-                    <tr><td colSpan={5} className="px-3 py-6 text-center text-neutral-500">No stock left, or no purchases recorded.</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-6 text-center text-neutral-500">No stock left, or no purchases recorded.</td></tr>
                   )}
                   {(report.layers ?? []).length > 0 && (
                     <tr className="border-t-2 border-neutral-300 bg-neutral-50 font-semibold">
-                      <td className="px-3 py-2">Total</td>
+                      <td className="px-4 py-2 text-center">Total</td>
                       <td />
-                      <td className="px-3 py-2 text-right">{qty((report.layers ?? []).reduce((n, l) => n + l.remaining, 0))}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{qty((report.layers ?? []).reduce((n, l) => n + l.remaining, 0))}</td>
                       <td />
-                      <td className="px-3 py-2 text-right">{formatRs((report.layers ?? []).reduce((n, l) => n + l.value, 0))}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{formatRs((report.layers ?? []).reduce((n, l) => n + l.value, 0))}</td>
                     </tr>
                   )}
                 </tbody>
@@ -206,16 +206,16 @@ export default async function FeedOverviewPage({
             <table className="min-w-full text-sm">
               <thead className="bg-neutral-100">
                 <tr>
-                  <th className="text-left px-3 py-2">Feed</th>
-                  <th className="text-right px-3 py-2">Opening</th>
-                  <th className="text-right px-3 py-2">In</th>
-                  <th className="text-right px-3 py-2">Out</th>
-                  <th className="text-right px-3 py-2">Closing</th>
-                  <th className="text-right px-3 py-2">Avg daily use</th>
-                  <th className="text-right px-3 py-2">Cost per unit used</th>
-                  <th className="text-right px-3 py-2">Cost used (FIFO)</th>
-                  <th className="text-right px-3 py-2">Stock value</th>
-                  <th className="text-left px-3 py-2">Stock status</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">Feed</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">Opening</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">In</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">Out</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">Closing</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">Avg daily use</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">Cost per unit used</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">Cost used (FIFO)</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">Stock value</th>
+                  <th className="text-center px-4 py-2 whitespace-nowrap">Stock status</th>
                 </tr>
               </thead>
               <tbody>
@@ -223,23 +223,23 @@ export default async function FeedOverviewPage({
                   const status = stockTone(r.closing, r.daysLeft);
                   return (
                     <tr key={r.feedType} className="border-t border-neutral-100">
-                      <td className="px-3 py-2 font-medium">
+                      <td className="px-4 py-2 text-center whitespace-nowrap font-medium">
                         <Link href={feedHref(r.feedType)} className="text-primary hover:underline">{r.feedType}</Link>
                         {r.unit && <span className="ml-1 text-xs text-neutral-400">{r.unit}</span>}
                         {!r.inMaster && <span className="ml-1 text-xs text-warning" title="Not in Feed Master">(not in master)</span>}
                       </td>
-                      <td className="px-3 py-2 text-right">{qty(r.opening)}</td>
-                      <td className="px-3 py-2 text-right text-green-700">{qty(r.inQty)}</td>
-                      <td className="px-3 py-2 text-right">{qty(r.outQty)}</td>
-                      <td className={`px-3 py-2 text-right font-medium ${r.closing < 0 ? "text-danger" : ""}`}>{qty(r.closing)}</td>
-                      <td className="px-3 py-2 text-right">{r.avgDailyUse.toFixed(1)}</td>
-                      <td className="px-3 py-2 text-right">{r.avgRate !== null ? rs2(r.avgRate) : "—"}</td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{qty(r.opening)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap text-green-700">{qty(r.inQty)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{qty(r.outQty)}</td>
+                      <td className={`px-4 py-2 text-center whitespace-nowrap font-medium ${r.closing < 0 ? "text-danger" : ""}`}>{qty(r.closing)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{r.avgDailyUse.toFixed(1)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{r.avgRate !== null ? rs2(r.avgRate) : "—"}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">
                         {r.outCost > 0 ? formatRs(r.outCost) : "—"}
                         {(r.estimatedUseQty > 0 || r.unpricedUseQty > 0) && <span className="ml-1 text-amber-700" title="Part of this cost uses an estimated rate or is missing a purchase rate">*</span>}
                       </td>
-                      <td className="px-3 py-2 text-right">{r.closingValue > 0 ? formatRs(r.closingValue) : "—"}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{r.closingValue > 0 ? formatRs(r.closingValue) : "—"}</td>
+                      <td className="px-4 py-2 text-center">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge tone={status.tone}>{status.label}</Badge>
                           {r.lowStock && <Badge tone="danger">Low Stock</Badge>}
@@ -250,23 +250,23 @@ export default async function FeedOverviewPage({
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-3 py-6 text-center text-neutral-500">
+                    <td colSpan={10} className="px-4 py-6 text-center text-neutral-500">
                       No feeds yet. Add them in Feed Master, then record entries.
                     </td>
                   </tr>
                 )}
                 {rows.length > 0 && sameUnit && (
                   <tr className="border-t-2 border-neutral-300 bg-neutral-50 font-semibold">
-                    <td className="px-3 py-2">Total</td>
-                    <td className="px-3 py-2 text-right">{qty(total((r) => r.opening))}</td>
-                    <td className="px-3 py-2 text-right">{qty(total((r) => r.inQty))}</td>
-                    <td className="px-3 py-2 text-right">{qty(total((r) => r.outQty))}</td>
-                    <td className="px-3 py-2 text-right">{qty(total((r) => r.closing))}</td>
-                    <td className="px-3 py-2 text-right">{total((r) => r.avgDailyUse).toFixed(1)}</td>
-                    <td className="px-3 py-2" />
-                    <td className="px-3 py-2 text-right">{formatRs(total((r) => r.outCost))}</td>
-                    <td className="px-3 py-2 text-right">{formatRs(total((r) => r.closingValue))}</td>
-                    <td className="px-3 py-2" />
+                    <td className="px-4 py-2 text-center">Total</td>
+                    <td className="px-4 py-2 text-center whitespace-nowrap">{qty(total((r) => r.opening))}</td>
+                    <td className="px-4 py-2 text-center whitespace-nowrap">{qty(total((r) => r.inQty))}</td>
+                    <td className="px-4 py-2 text-center whitespace-nowrap">{qty(total((r) => r.outQty))}</td>
+                    <td className="px-4 py-2 text-center whitespace-nowrap">{qty(total((r) => r.closing))}</td>
+                    <td className="px-4 py-2 text-center whitespace-nowrap">{total((r) => r.avgDailyUse).toFixed(1)}</td>
+                    <td className="px-4 py-2 text-center" />
+                    <td className="px-4 py-2 text-center whitespace-nowrap">{formatRs(total((r) => r.outCost))}</td>
+                    <td className="px-4 py-2 text-center whitespace-nowrap">{formatRs(total((r) => r.closingValue))}</td>
+                    <td className="px-4 py-2 text-center" />
                   </tr>
                 )}
               </tbody>

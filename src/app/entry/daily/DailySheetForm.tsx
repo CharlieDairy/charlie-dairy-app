@@ -92,8 +92,8 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
         </p>
       )}
 
-      <div key={version} className="flex flex-col gap-5">
-        <section className="bg-white border border-neutral-200 rounded-lg p-4">
+      <div key={version} className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
+        <section className="bg-white border border-neutral-200 rounded-lg p-4 xl:row-span-4">
           <h2 className="font-semibold text-neutral-900 mb-3">1. Milk by cow (litres)</h2>
           <table className="w-full table-fixed text-sm">
             <colgroup>

@@ -12,7 +12,7 @@ export default async function AddAnimalPage() {
   const damTags = damCows.map((c) => c.tag);
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full">
       <AddAnimalForm statusOptions={statusOptions} locations={locations} damTags={damTags} />
     </div>
   );

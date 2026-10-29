@@ -4,6 +4,7 @@ import { getLiveUser, hasPermission } from "@/lib/access";
 import { farmDateKey } from "@/lib/reports/dashboardMetrics";
 import { compareTags } from "@/lib/dailySheet";
 import DailySheetForm, { type CowRow, type CustomerRow, type FeedRow, type UseRow } from "./DailySheetForm";
+import ShareDay from "./ShareDay";
 
 // Same order as the paper sheet; anything else follows alphabetically.
 const BUYER_ORDER = ["City Sale", "Farm Sale", "Nawaz Khan", "Hafiz Muneeb", "Mehtab", "Abdur Rasheed"];
@@ -94,7 +95,7 @@ export default async function DailySheetPage({ searchParams }: { searchParams: P
   const next = date < today ? shiftDate(date, 1) : null;
 
   return (
-    <div className="flex flex-col gap-5 max-w-3xl">
+    <div className="flex flex-col gap-5 w-full">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900">Daily Record Sheet</h1>
         <form method="get" className="flex items-center gap-2">
@@ -116,6 +117,7 @@ export default async function DailySheetPage({ searchParams }: { searchParams: P
         One sheet for the whole day, like the paper milk record: milk by cow, milk sold, milk used, feed and a note. Saved figures are locked: you can
         fill in empty boxes, and only an Admin can change what is already saved. Showing <b>{date}</b>.
       </p>
+      <ShareDay date={date} cows={cowRows} customers={customerRows} usage={usageRows} feed={feedRows} note={note?.text ?? ""} groupTotal={groupTotal} />
       <DailySheetForm
         date={date}
         cows={cowRows}

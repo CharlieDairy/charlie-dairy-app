@@ -196,24 +196,24 @@ export default function FeedLedgerTable({
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-100">
             <tr>
-              {isAdmin && <th className="text-left px-3 py-2 w-8"></th>}
-              <th className="text-left px-3 py-2">Date</th>
-              <th className="text-right px-3 py-2">In</th>
-              <th className="text-right px-3 py-2">Out</th>
-              <th className="text-right px-3 py-2">Balance</th>
-              <th className="text-right px-3 py-2" title="Purchases: the rate paid. Issues: the first-in, first-out cost per unit.">Rate</th>
-              <th className="text-right px-3 py-2" title="Purchases: value bought. Issues: first-in, first-out cost.">Amount</th>
-              <th className="text-left px-3 py-2">Notes</th>
-              <th className="text-left px-3 py-2">By</th>
-              {isAdmin && <th className="text-left px-3 py-2">Actions</th>}
+              {isAdmin && <th className="text-center px-4 py-2 whitespace-nowrap w-8"></th>}
+              <th className="text-center px-4 py-2 whitespace-nowrap">Date</th>
+              <th className="text-center px-4 py-2 whitespace-nowrap">In</th>
+              <th className="text-center px-4 py-2 whitespace-nowrap">Out</th>
+              <th className="text-center px-4 py-2 whitespace-nowrap">Balance</th>
+              <th className="text-center px-4 py-2 whitespace-nowrap" title="Purchases: the rate paid. Issues: the first-in, first-out cost per unit.">Rate</th>
+              <th className="text-center px-4 py-2 whitespace-nowrap" title="Purchases: value bought. Issues: first-in, first-out cost.">Amount</th>
+              <th className="text-center px-4 py-2 whitespace-nowrap">Notes</th>
+              <th className="text-center px-4 py-2 whitespace-nowrap">By</th>
+              {isAdmin && <th className="text-center px-4 py-2 whitespace-nowrap">Actions</th>}
             </tr>
           </thead>
           <tbody>
             <tr className="bg-neutral-50 font-medium">
-              <td colSpan={1 + lead} className="px-3 py-2">Opening balance</td>
-              <td className="px-3 py-2" />
-              <td className="px-3 py-2" />
-              <td className="px-3 py-2 text-right">{qty(opening)}</td>
+              <td colSpan={1 + lead} className="px-4 py-2 text-center whitespace-nowrap">Opening balance</td>
+              <td className="px-4 py-2 text-center whitespace-nowrap" />
+              <td className="px-4 py-2 text-center whitespace-nowrap" />
+              <td className="px-4 py-2 text-center whitespace-nowrap">{qty(opening)}</td>
               <td colSpan={colSpan - 4 - lead} />
             </tr>
             {lines.map((l) =>
@@ -222,26 +222,26 @@ export default function FeedLedgerTable({
               ) : (
                 <tr key={l.id} className="border-t border-neutral-100">
                   {isAdmin && (
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-2 text-center whitespace-nowrap">
                       <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)} aria-label={`Select entry ${l.date}`} />
                     </td>
                   )}
-                  <td className="px-3 py-2 whitespace-nowrap">{l.date}</td>
-                  <td className="px-3 py-2 text-right text-green-700">{l.direction === "IN" ? qty(l.quantity) : ""}</td>
-                  <td className="px-3 py-2 text-right">{l.direction === "OUT" ? qty(l.quantity) : ""}</td>
-                  <td className={`px-3 py-2 text-right font-medium ${l.balance < 0 ? "text-danger" : ""}`}>{qty(l.balance)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-4 py-2 text-center whitespace-nowrap">{l.date}</td>
+                  <td className="px-4 py-2 text-center whitespace-nowrap text-green-700">{l.direction === "IN" ? qty(l.quantity) : ""}</td>
+                  <td className="px-4 py-2 text-center whitespace-nowrap">{l.direction === "OUT" ? qty(l.quantity) : ""}</td>
+                  <td className={`px-4 py-2 text-center whitespace-nowrap font-medium ${l.balance < 0 ? "text-danger" : ""}`}>{qty(l.balance)}</td>
+                  <td className="px-4 py-2 text-center whitespace-nowrap">
                     {l.rate !== null ? rs2(l.rate) : l.direction === "IN" ? <span className="text-amber-700" title="No purchase rate recorded. Costs after this use an estimate.">no rate</span> : "—"}
                   </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-4 py-2 text-center whitespace-nowrap">
                     {l.amount !== null ? formatRs(l.amount) : "—"}
                     {l.basis === "estimate" && <span className="ml-1 text-amber-700" title="Part of this cost uses an estimated rate because the stock it came from has no purchase rate">*</span>}
                     {l.basis === "none" && <span className="ml-1 text-red-600" title="No rate on record, so this issue could not be costed">!</span>}
                   </td>
-                  <td className="px-3 py-2 text-neutral-600">{l.notes ?? ""}</td>
-                  <td className="px-3 py-2 text-neutral-500">{l.enteredBy ?? ""}</td>
+                  <td className="px-4 py-2 text-center text-neutral-600">{l.notes ?? ""}</td>
+                  <td className="px-4 py-2 text-center whitespace-nowrap text-neutral-500">{l.enteredBy ?? ""}</td>
                   {isAdmin && (
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-2 text-center whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
@@ -265,14 +265,14 @@ export default function FeedLedgerTable({
             )}
             {lines.length === 0 && (
               <tr>
-                <td colSpan={colSpan} className="px-3 py-6 text-center text-neutral-500">No entries for this feed in the period.</td>
+                <td colSpan={colSpan} className="px-4 py-6 text-center text-neutral-500">No entries for this feed in the period.</td>
               </tr>
             )}
             <tr className="border-t-2 border-neutral-300 bg-neutral-50 font-semibold">
-              <td colSpan={1 + lead} className="px-3 py-2">Closing balance</td>
-              <td className="px-3 py-2 text-right">{qty(inQty)}</td>
-              <td className="px-3 py-2 text-right">{qty(outQty)}</td>
-              <td className={`px-3 py-2 text-right ${closing < 0 ? "text-danger" : ""}`}>{qty(closing)}</td>
+              <td colSpan={1 + lead} className="px-4 py-2 text-center whitespace-nowrap">Closing balance</td>
+              <td className="px-4 py-2 text-center whitespace-nowrap">{qty(inQty)}</td>
+              <td className="px-4 py-2 text-center whitespace-nowrap">{qty(outQty)}</td>
+              <td className={`px-4 py-2 text-center whitespace-nowrap ${closing < 0 ? "text-danger" : ""}`}>{qty(closing)}</td>
               <td colSpan={colSpan - 4 - lead} />
             </tr>
           </tbody>
