@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { type Rule, DAY_MS, addDays, key } from "../types";
+import { driveConfigured } from "@/lib/googleDrive";
+import { DRIVE_AUDIT } from "@/lib/driveBackup";
 
 export const controlRules: Rule[] = [
   {
@@ -77,6 +79,33 @@ export const controlRules: Rule[] = [
           title: `${stale.length} active user${stale.length === 1 ? " has" : "s have"} not signed in for 30 days`,
           detail: stale.map((u) => `${u.name} (${u.role})`).join("; "),
           suggestion: "Deactivate accounts that are no longer used (Users & Access).",
+        },
+      ];
+    },
+  },
+  {
+    // Replaces the old permanent "Backups are manual" note: it clears itself once a weekly copy has reached Google Drive.
+    id: "backup.weekly",
+    async run() {
+      const last = await prisma.auditLog.findFirst({ where: { entity: DRIVE_AUDIT.entity, action: DRIVE_AUDIT.ok }, orderBy: { createdAt: "desc" }, select: { createdAt: true } });
+      const days = last ? Math.floor((Date.now() - last.createdAt.getTime()) / DAY_MS) : null;
+      if (driveConfigured() && days !== null && days <= 9) return [];
+      const connected = driveConfigured();
+      return [
+        {
+          key: "backup.weekly",
+          ruleId: "backup.weekly",
+          category: "CONTROL",
+          severity: "MEDIUM",
+          financeOnly: true,
+          title: !connected ? "Backups are not automatic yet" : days === null ? "No backup has reached Google Drive yet" : `The weekly Google Drive backup has not run for ${days} days`,
+          detail: !connected
+            ? "A copy of the whole database is saved to Google Drive every Monday once Google Drive is connected. Until then there is no automatic copy kept outside the database host."
+            : "The weekly backup runs every Monday at 2 am. The last copy that reached Google Drive is " + (days === null ? "none" : `${days} days old`) + ", so the job is failing or the sign-in to Google has expired.",
+          suggestion: !connected
+            ? "Open Cloud backups and follow the four steps to connect Google Drive (about 10 minutes, once)."
+            : "Open Cloud backups, press Back up to Google Drive now, and read the message. If Google rejected the sign-in, connect Google Drive again.",
+          metric: { connected, daysSinceLastBackup: days },
         },
       ];
     },

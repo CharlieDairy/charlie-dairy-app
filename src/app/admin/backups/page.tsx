@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { list } from "@vercel/blob";
 import { getLiveUser } from "@/lib/access";
 import { BACKUP_PREFIX, BACKUP_KEEP } from "@/lib/backup";
+import { prisma } from "@/lib/prisma";
+import { driveConfigured, DRIVE_FOLDER_NAME } from "@/lib/googleDrive";
+import { DRIVE_AUDIT, DRIVE_KEEP } from "@/lib/driveBackup";
+import BackupNowButton from "./BackupNowButton";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +14,19 @@ const fmtTime = (d: Date) => new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/
 export default async function BackupsPage() {
   const user = await getLiveUser();
   if (user?.role !== "ADMIN") redirect("/admin");
+
+  const driveOn = driveConfigured();
+  const [lastOk, lastFail] = await Promise.all([
+    prisma.auditLog.findFirst({ where: { entity: DRIVE_AUDIT.entity, action: DRIVE_AUDIT.ok }, orderBy: { createdAt: "desc" } }),
+    prisma.auditLog.findFirst({ where: { entity: DRIVE_AUDIT.entity, action: DRIVE_AUDIT.failed }, orderBy: { createdAt: "desc" } }),
+  ]);
+  const failedSince = lastFail && (!lastOk || lastFail.createdAt > lastOk.createdAt);
+  let lastFile = "";
+  try {
+    lastFile = lastOk?.newValue ? String((JSON.parse(lastOk.newValue) as { name?: string }).name ?? "") : "";
+  } catch {
+    lastFile = "";
+  }
 
   const token = process.env.BACKUP_BLOB_TOKEN;
   let backups: { pathname: string; size: number; uploadedAt: Date }[] = [];
@@ -28,9 +45,39 @@ export default async function BackupsPage() {
       <div>
         <h1 className="text-2xl font-semibold text-neutral-900">Cloud backups</h1>
         <p className="text-sm text-neutral-500">
-          Every night at 2 am (Pakistan time) the whole database is saved to a private cloud store. The newest {BACKUP_KEEP} are kept. Only an Admin can download them.
+          Every Monday at 2 am (Pakistan time) the whole database is saved automatically to the farm&apos;s Google Drive, in a folder called &quot;{DRIVE_FOLDER_NAME}&quot;. The newest {DRIVE_KEEP} weekly copies are kept (about six months).
         </p>
       </div>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-4 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-semibold text-neutral-900">Google Drive</h2>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${driveOn ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>{driveOn ? "Connected" : "Not connected yet"}</span>
+        </div>
+        {driveOn ? (
+          <>
+            <p className="text-sm text-neutral-700">
+              {lastOk ? <>Last backup: <b>{fmtTime(lastOk.createdAt)}</b>{lastFile ? ` (${lastFile})` : ""}.</> : "No backup has reached Google Drive yet. The first one runs on Monday, or press the button to make one now."}
+            </p>
+            {failedSince && lastFail && (
+              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                The last attempt failed on {fmtTime(lastFail.createdAt)}: {lastFail.newValue}. If it says the sign-in was rejected, run the connect step again (below).
+              </p>
+            )}
+            <BackupNowButton />
+          </>
+        ) : (
+          <ol className="list-decimal pl-5 text-sm text-neutral-700 flex flex-col gap-1.5">
+            <li>In Google Cloud Console (console.cloud.google.com) create a project called &quot;Charlie Dairy&quot; and turn on the <b>Google Drive API</b>.</li>
+            <li>Open <b>Google Auth Platform</b>, set it up as <b>External</b>, add your own Gmail address as a test user, then click <b>Publish app</b> (so the connection does not expire after 7 days).</li>
+            <li>Under <b>Clients</b> create an <b>OAuth client</b> of type <b>Desktop app</b> and download its JSON file into <code>E:\Charlie</code>.</li>
+            <li>Tell Claude the file name. It signs in once with you and saves the connection to Vercel. Nothing is typed or pasted by hand.</li>
+          </ol>
+        )}
+      </section>
+
+      <h2 className="text-lg font-semibold text-neutral-900 -mb-3">Private Blob store (optional second copy)</h2>
+      <p className="text-sm text-neutral-500">The newest {BACKUP_KEEP} copies are kept here. Only an Admin can download them.</p>
 
       {!token && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

@@ -1,7 +1,7 @@
 {
   "buildCommand": "prisma migrate deploy && next build",
   "crons": [
-    { "path": "/api/cron/backup", "schedule": "0 21 * * *" },
+    { "path": "/api/cron/backup", "schedule": "0 21 * * 0" },
     { "path": "/api/cron/watch", "schedule": "0 1 * * *" }
   ]
 }

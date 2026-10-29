@@ -132,8 +132,8 @@ export function fixLinks(f: Input): FixLink[] {
       return [{ label: "Open Vendors", href: "/admin/vendors" }];
     case "gap.unconfirmed-status":
       return [ANIMALS];
-    case "gap.static":
-      return f.key === "gap.backup" ? [{ label: "Open Backups", href: "/admin/backups" }] : [];
+    case "backup.weekly":
+      return [{ label: "Open Cloud backups", href: "/admin/backups" }];
     default:
       return [];
   }
