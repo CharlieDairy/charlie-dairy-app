@@ -27,6 +27,7 @@ const PATH_MODULES: { prefix: string; module: PermissionModuleKey }[] = [
   { prefix: "/entry/milking", module: "milk" },
   { prefix: "/entry/milk-sale", module: "milk" },
   { prefix: "/entry/milk-usage", module: "milk" },
+  { prefix: "/entry/daily", module: "milk" },
   { prefix: "/admin/reports/weight", module: "weight" },
   { prefix: "/admin/weight", module: "weight" },
   { prefix: "/entry/weight", module: "weight" },

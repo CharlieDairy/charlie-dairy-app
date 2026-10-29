@@ -937,3 +937,13 @@ model WatchReview {
   questions       Json
   coverage        Json?
 }
+
+// One free-text remark per day, written on the Daily Record Sheet (AI done, animal sold, stock received, ...).
+model DailyNote {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  text      String
+  enteredBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

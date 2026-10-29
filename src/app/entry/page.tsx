@@ -3,6 +3,7 @@ import { getLiveUser, hasPermission } from "@/lib/access";
 import type { PermissionModuleKey } from "@/lib/permissions";
 
 const tiles: { href: string; label: string; desc: string; module: PermissionModuleKey }[] = [
+  { href: "/entry/daily", label: "Daily Record Sheet", desc: "The whole day on one sheet: milk by cow, sales, milk used, feed, notes", module: "milk" },
   { href: "/entry/milking", label: "Milking Entry", desc: "Record litres per cow, per shift", module: "milk" },
   { href: "/entry/feed", label: "Feed Entry", desc: "Record feed inward / outward", module: "feed" },
   { href: "/entry/milk-sale", label: "Milk Sale Entry", desc: "Record a milk sale", module: "milk" },

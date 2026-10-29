@@ -11,7 +11,7 @@ export const BACKUP_MODELS = [
   "pregnancyCheck", "calving", "calf", "milkingRecord", "milkUsageRecord", "milkSale",
   "customerPayment", "employee", "salaryPayment", "attendanceRecord",
   "feedTransaction", "feedItem", "customer", "vendor", "cashTransaction",
-  "capitalEntry", "masterDataItem", "asset", "auditLog",
+  "capitalEntry", "masterDataItem", "asset", "auditLog", "dailyNote",
 ] as const;
 
 type Delegate = { findMany: () => Promise<unknown[]> };

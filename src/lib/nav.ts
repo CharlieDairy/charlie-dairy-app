@@ -15,7 +15,10 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     key: "watch",
     label: "Farm Manager (AI)",
-    items: [{ href: "/admin/watch", label: "Farm Watch" }],
+    items: [
+      { href: "/entry/daily", label: "Daily Record Sheet" },
+      { href: "/admin/watch", label: "Farm Watch" },
+    ],
   },
   {
     key: "herd",
