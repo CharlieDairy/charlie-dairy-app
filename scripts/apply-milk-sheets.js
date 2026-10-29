@@ -1,4 +1,4 @@
-// Daily "Charlie Farm - Milk Record" sheets, 1-21 Oct 2026 (the 10 Oct page was not photographed).
+// Daily "Charlie Farm - Milk Record" sheets, 1-21 Oct 2026.
 // Adds only what is missing: milk sales, milk usage, feed issues, the Wheat Straw item, the sale of tag 56 + calf 140.
 // Dry run by default; add --apply to write. Safe to re-run. Never deletes. Back up first: node scripts/backup-daily.js
 const { PrismaClient } = require("@prisma/client");
@@ -15,13 +15,13 @@ const SHEET = {
   1: [104, 2, 30, 4, 0, 3, 1, 6, 2], 2: [103, 1.5, 30, 4, 0, 0, 1, 6, 2], 3: [110, 1, 30, 4, 0, 0, 1, 6, 2],
   4: [110, 2, 30, 4, 9, 0, 1, 6, 2], 5: [106, 1.5, 30, 4, 0, 0, 1, 6, 2], 6: [110, 1, 30, 4, 0, 0, 1, 6, 2],
   7: [114, 1.5, 30, 4, 0, 0, 1, 6, 2], 8: [110, 2, 30, 4, 0, 0, 1, 6, 2], 9: [117, 2, 30, 4, 0, 0, 1, 6, 2],
-  11: [110, 1.5, 30, 4.5, 0, 0, 1, 6, 2], 12: [105, 2, 30, 4, 0, 0, 1, 6, 2], 13: [110, 1.5, 30, 4.5, 0, 0, 1, 6, 2],
+  10: [116, 1.5, 30, 4, 2, 0, 1, 6, 2], 11: [110, 1.5, 30, 4.5, 0, 0, 1, 6, 2], 12: [105, 2, 30, 4, 0, 0, 1, 6, 2], 13: [110, 1.5, 30, 4.5, 0, 0, 1, 6, 2],
   14: [103, 2, 30, 4.5, 8, 0, 1, 6, 2], 15: [107, 1.5, 30, 4.5, 0, 0, 1, 6, 2], 16: [112, 2, 36, 4.5, 0, 0, 1, 6, 2],
   17: [110, 1.5, 36, 4.5, 0, 0, 2, 6, 2], 18: [118, 2, 36, 4.5, 0, 0, 2, 6, 2], 19: [121, 2, 36, 4.5, 7, 0, 2, 6, 2],
   20: [120, 2, 36, 4.5, 0, 0, 2, 6, 2], 21: [131, 1.5, 34, 4.5, 0, 0, 1, 6, 2],
 };
 const BUYERS = [["City Sale", 0, 155], ["Farm Sale", 1, 180], ["Nawaz Khan", 3, 180], ["Hafiz Muneeb", 4, 150], ["Mehtab", 5, 170], ["Abdur Rasheed", 6, 120]];
-// Wheat straw used per day (closing stock on the sheet falls by this much). 1 Oct: 10,150 -> 10,100; 10 Oct is implied by the 11 Oct opening.
+// Wheat straw used per day (closing stock on the sheet falls by this much). 1 Oct: 10,150 -> 10,100.
 const STRAW = { 1: 50, 2: 70, 3: 80, 4: 100, 5: 100, 6: 100, 7: 80, 8: 80, 9: 80, 10: 80, 11: 80, 12: 80, 13: 80, 14: 80, 15: 80, 16: 80, 17: 80, 18: 80, 19: 80, 20: 80, 21: 100 };
 
 (async () => {
@@ -61,7 +61,7 @@ const STRAW = { 1: 50, 2: 70, 3: 80, 4: 100, 5: 100, 6: 100, 7: 80, 8: 80, 9: 80
   if (!(await p.feedTransaction.findFirst({ where: { feedType: "Wheat Straw" } }))) {
     say("feed  2026-09-30 Wheat Straw IN 10150 (opening stock on the 1 Oct sheet)"); n.feed++;
     await run(() => p.feedTransaction.create({ data: { date: new Date(Date.UTC(2026, 8, 30)), feedType: "Wheat Straw", direction: "IN", quantity: 10150, notes: "Opening stock per milk sheet of 1 Oct 2026", enteredBy: BY } }));
-    for (const [d, q] of Object.entries(STRAW)) { n.feed++; await run(() => p.feedTransaction.create({ data: { date: day(+d), feedType: "Wheat Straw", direction: "OUT", quantity: q, notes: +d === 10 ? "Worked out from the 11 Oct opening (no sheet for 10 Oct)" : null, enteredBy: BY } })); }
+    for (const [d, q] of Object.entries(STRAW)) { n.feed++; await run(() => p.feedTransaction.create({ data: { date: day(+d), feedType: "Wheat Straw", direction: "OUT", quantity: q, notes: null, enteredBy: BY } })); }
     say(`feed  Wheat Straw OUT 1-21 Oct, ${Object.values(STRAW).reduce((a, b) => a + b, 0)} kg in all (closing stock 8,430 kg)`);
   }
 
