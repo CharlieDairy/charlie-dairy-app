@@ -19,6 +19,8 @@ const SHEET = {
   14: [103, 2, 30, 4.5, 8, 0, 1, 6, 2], 15: [107, 1.5, 30, 4.5, 0, 0, 1, 6, 2], 16: [112, 2, 36, 4.5, 0, 0, 1, 6, 2],
   17: [110, 1.5, 36, 4.5, 0, 0, 2, 6, 2], 18: [118, 2, 36, 4.5, 0, 0, 2, 6, 2], 19: [121, 2, 36, 4.5, 7, 0, 2, 6, 2],
   20: [120, 2, 36, 4.5, 0, 0, 2, 6, 2], 21: [131, 1.5, 34, 4.5, 0, 0, 1, 6, 2],
+  22: [120, 2, 30, 4.5, 11, 0, 1, 6, 2], 23: [104, 0, 30, 4.5, 0, 0, 1, 6, 2], 25: [102, 1.5, 30, 4.5, 0, 0, 1, 6, 2],
+  26: [102, 1, 30, 4.5, 4, 0, 1, 6, 2], 27: [114, 1.5, 27, 4.5, 0, 0, 1, 6, 2],
 };
 const BUYERS = [["City Sale", 0, 155], ["Farm Sale", 1, 180], ["Nawaz Khan", 3, 180], ["Hafiz Muneeb", 4, 150], ["Mehtab", 5, 170], ["Abdur Rasheed", 6, 120]];
 // Wheat straw used per day (closing stock on the sheet falls by this much). 1 Oct: 10,150 -> 10,100.
@@ -72,6 +74,26 @@ const STRAW = { 1: 50, 2: 70, 3: 80, 4: 100, 5: 100, 6: 100, 7: 80, 8: 80, 9: 80
     if (!c || c.status === "SOLD") continue;
     say(`cow   tag ${tag}: ${c.status} -> SOLD`);
     await run(() => p.cow.update({ where: { id: c.id }, data: { status: "SOLD", notes: ((c.notes || "") + "; " + note).replace(/^; /, "") } }));
+  }
+
+  // 7. sheets of 22-27 Oct. The 24 Oct page was not photographed: its feed use is worked out from the opening stock on 25 Oct.
+  const feed = async (d, type, direction, quantity, extra = {}) => {
+    if (await p.feedTransaction.findFirst({ where: { date: day(d), feedType: type, direction } })) return;
+    say(`feed  ${iso(day(d))} ${type} ${direction} ${quantity}`); n.feed++;
+    await run(() => p.feedTransaction.create({ data: { date: day(d), feedType: type, direction, quantity, enteredBy: BY, ...extra } }));
+  };
+  const USE = { 22: [450, 2.5, 100], 23: [400, 2.5, 100], 24: [350, 2.5, 80], 25: [350, 2.5, 80], 26: [350, 3, 100], 27: [350, 2.5, 100] }; // silage, wenda, wheat straw
+  for (const [d, [si, we, ws]] of Object.entries(USE)) {
+    const x = +d === 24 ? { notes: "Worked out from the 25 Oct opening (no sheet for 24 Oct)" } : {};
+    await feed(+d, "Silage", "OUT", si, x); await feed(+d, "Wenda", "OUT", we, x); await feed(+d, "Wheat Straw", "OUT", ws, x);
+  }
+  for (const d of [23, 25, 26, 27]) await feed(d, "Fodder", "OUT", 6, { notes: "Daily ration consumption" });
+  await feed(22, "Wenda", "IN", 8, { notes: "Suncrop wanda, 8 bags (note dated 22-10-26)" });
+  await feed(25, "Silage", "IN", 39200, { rate: 14.66, cost: 574600, notes: "980 maund at Rs 11.75 plus Rs 114,600 rent, unloading, pressing, inoculant and covering labour; final Rs 586/maund (Rs 14.65/kg)" });
+  // AI of tag 55 on 26 Oct with Florus (c)
+  const c55 = await p.cow.findFirst({ where: { tag: "55" } });
+  if (c55 && !(await p.insemination.findFirst({ where: { cowId: c55.id, date: day(26) } }))) {
+    say("AI    tag 55 on 2026-10-26, Florus (c), service 5"); await run(() => p.insemination.create({ data: { cowId: c55.id, date: day(26), method: "AI", bullTag: "Florus (c)", serviceNumber: 5, notes: "Conventional semen (milk sheet of 26 Oct)", enteredBy: BY } }));
   }
 
   say(`\n${APPLY ? "APPLIED" : "DRY RUN"}: ${n.sale} sales, ${n.use} usage rows, ${n.feed} feed rows.`);
