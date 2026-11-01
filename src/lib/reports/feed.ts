@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { compare, monthRanges, type Comparison } from "@/lib/compare";
 import { runFifo, type FifoTx } from "@/lib/feedFifo";
+import { monthlyStock, type MonthStockRow } from "@/lib/reports/feedMonthly";
 
 export type FeedTypeBalance = {
   feedType: string;
@@ -155,6 +156,7 @@ export type FeedPeriodReport = {
   rows: FeedPeriodRow[];
   ledger: FeedLedgerLine[] | null; // only when a single feed is selected
   layers: FeedLayerLine[] | null; // stock still on hand at the end of the period, oldest first (single feed only)
+  monthly: MonthStockRow[] | null; // month-by-month roll-forward of the selected feed: opening + received - used = left at month end
 };
 
 export async function getFeedPeriodReport(range: { start: Date; end: Date }, feedType?: string): Promise<FeedPeriodReport> {
@@ -247,7 +249,14 @@ export async function getFeedPeriodReport(range: { start: Date; end: Date }, fee
 
   let ledger: FeedLedgerLine[] | null = null;
   let layers: FeedLayerLine[] | null = null;
+  let monthly: MonthStockRow[] | null = null;
   if (feedType) {
+    // Month by month from the first record: left from last month + received = available; minus used = left at month end.
+    const issueCosts = fifoEnd.get(feedType)?.issues;
+    monthly = monthlyStock(
+      tx.filter((t) => t.feedType === feedType).map((t) => ({ id: t.id, date: t.date, direction: t.direction, quantity: t.quantity })),
+      (id) => issueCosts?.get(id)?.cost ?? null
+    );
     const selected = rows.find((r) => r.feedType === feedType);
     const issues = fifoEnd.get(feedType)?.issues;
     let balance = selected?.opening ?? 0;
@@ -282,5 +291,5 @@ export async function getFeedPeriodReport(range: { start: Date; end: Date }, fee
     }));
   }
 
-  return { days, rows, ledger, layers };
+  return { days, rows, ledger, layers, monthly };
 }

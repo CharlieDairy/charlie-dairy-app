@@ -142,7 +142,59 @@ export default async function FeedOverviewPage({
             deleteNeedsApproval={!isAdmin}
           />
           <section className="flex flex-col gap-2">
-            <h2 className="text-lg font-semibold text-neutral-900">Stock on hand at the end of the period, oldest first</h2>
+            <h2 className="text-lg font-semibold text-neutral-900">Month by month: what is left at the end of each month</h2>
+            <p className="text-sm text-neutral-500">
+              Left from last month + received = available. Available − used = left at the end of the month, and that is the next month&apos;s opening.
+            </p>
+            <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
+              <table className="min-w-full text-sm">
+                <thead className="bg-neutral-100">
+                  <tr>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Month</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Left from last month</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Received</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Available</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Used</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Left at month end</th>
+                    <th className="text-center px-4 py-2 whitespace-nowrap">Cost of what was used</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(report.monthly ?? []).map((m) => (
+                    <tr key={m.month} className="border-t border-neutral-100">
+                      <td className="px-4 py-2 text-center whitespace-nowrap font-medium">{m.month}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{qty(m.opening)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap text-green-700">{m.received > 0 ? `+ ${qty(m.received)}` : "—"}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{qty(m.available)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{m.used > 0 ? `− ${qty(m.used)}` : "—"}</td>
+                      <td className={`px-4 py-2 text-center whitespace-nowrap font-semibold ${m.closing < 0 ? "text-danger" : ""}`}>{qty(m.closing)}</td>
+                      <td className="px-4 py-2 text-center whitespace-nowrap">{m.usedCost !== null && m.usedCost > 0 ? formatRs(m.usedCost) : "—"}</td>
+                    </tr>
+                  ))}
+                  {(report.monthly ?? []).length === 0 && (
+                    <tr><td colSpan={7} className="px-4 py-6 text-center text-neutral-500">No entries for this feed yet.</td></tr>
+                  )}
+                  {(report.monthly ?? []).length > 0 && (
+                    <tr className="border-t-2 border-neutral-300 bg-neutral-50 font-semibold">
+                      <td className="px-4 py-2 text-center">Total</td>
+                      <td className="px-4 py-2" />
+                      <td className="px-4 py-2 text-center text-green-700">+ {qty((report.monthly ?? []).reduce((n, m) => n + m.received, 0))}</td>
+                      <td className="px-4 py-2" />
+                      <td className="px-4 py-2 text-center">− {qty((report.monthly ?? []).reduce((n, m) => n + m.used, 0))}</td>
+                      <td className="px-4 py-2 text-center">{qty((report.monthly ?? [])[(report.monthly ?? []).length - 1].closing)}</td>
+                      <td className="px-4 py-2 text-center">{formatRs((report.monthly ?? []).reduce((n, m) => n + (m.usedCost ?? 0), 0))}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold text-neutral-900">Which purchases the stock left came from, oldest first</h2>
+            <p className="text-sm text-neutral-500">
+              This is for costing, not a month-end balance. Feed is used oldest purchase first, so older months are used up first and a recent purchase
+              still shows its full quantity. The month-end balance is in the table above.
+            </p>
             <div className="overflow-x-auto bg-white border border-neutral-200 rounded-lg">
               <table className="min-w-full text-sm">
                 <thead className="bg-neutral-100">
