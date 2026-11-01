@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { formatRs } from "@/lib/format";
+import DeleteRowButton from "@/components/DeleteRowButton";
 import { updateMilkSale, deleteMilkSale, type FormState } from "./actions";
 import type { CustomerOption } from "./MilkSaleForm";
 
@@ -17,19 +18,14 @@ export type LedgerSaleRow = {
   amount: number;
 };
 
-function DeleteButton({ id }: { id: string }) {
+function DeleteButton({ id, needsApproval }: { id: string; needsApproval: boolean }) {
   return (
-    <form
+    <DeleteRowButton
       action={deleteMilkSale}
-      onSubmit={(e) => {
-        if (!confirm("Delete this sale entry? This can't be undone.")) e.preventDefault();
-      }}
-    >
-      <input type="hidden" name="id" value={id} />
-      <button type="submit" className="text-xs rounded px-2 py-1 border border-red-200 text-red-700 hover:bg-red-50">
-        Delete
-      </button>
-    </form>
+      hiddenFields={{ id }}
+      confirmMessage={needsApproval ? "Ask the Admin to delete this sale entry? Nothing is removed until the Admin approves it." : "Delete this sale entry? This can't be undone."}
+      icon={<span className="text-xs px-1">{needsApproval ? "Request delete" : "Delete"}</span>}
+    />
   );
 }
 
@@ -111,11 +107,15 @@ export default function MilkSalesLedger({
   showSessions = false,
   customers = [],
   isAdmin = false,
+  deleteNeedsApproval = false,
 }: {
   sales: LedgerSaleRow[];
   showSessions?: boolean;
   customers?: CustomerOption[];
+  /** shows the Edit / Delete buttons (the Admin and the farm manager) */
   isAdmin?: boolean;
+  /** the farm manager's delete is a request the Admin has to approve */
+  deleteNeedsApproval?: boolean;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const colCount = showSessions ? 9 : 6;
@@ -176,7 +176,7 @@ export default function MilkSalesLedger({
                       <button onClick={() => setEditingId(s.id)} className="text-xs rounded px-2 py-1 border border-neutral-300 text-neutral-700 hover:bg-neutral-100">
                         Edit
                       </button>
-                      <DeleteButton id={s.id} />
+                      <DeleteButton id={s.id} needsApproval={deleteNeedsApproval} />
                     </div>
                   </td>
                 )}

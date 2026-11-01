@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission, assertDateChangeNotBackdated, runAction } from "@/lib/access";
 import { reqDate, reqEnum, reqId, reqNum, optEnum, optText, CASH_MODES, MILK_USE_TYPES } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
+import { deleteOrRequest } from "@/lib/deletionApproval";
 
 // Edit and delete for customer payments and milk internal use. Admin and
 // Editor may both do this; an Editor cannot move a record onto a past date.
@@ -59,16 +60,10 @@ export async function updateCustomerPayment(_prev: FormState, formData: FormData
 
 export async function deleteCustomerPayment(_prev: FormState, formData: FormData): Promise<FormState> {
   return runAction(async () => {
-    await requirePermission("milk", "DELETE");
+    const user = await requirePermission("milk", "DELETE");
     const id = reqId(formData, "id", "Payment");
-    const existing = await prisma.customerPayment.findUnique({ where: { id } });
-    if (!existing) return gone;
-    await prisma.$transaction(async (tx) => {
-      await tx.customerPayment.delete({ where: { id } });
-      if (existing.cashTransactionId) await tx.cashTransaction.deleteMany({ where: { id: existing.cashTransactionId } });
-    });
-    refresh();
-    return { success: true, message: "Payment deleted, along with its Cash Register entry." };
+    // The Admin deletes now (with its Cash Register entry); the farm manager sends a request the Admin must approve.
+    return deleteOrRequest(user, "CUSTOMER_PAYMENT", id);
   });
 }
 
@@ -91,11 +86,8 @@ export async function updateMilkUsage(_prev: FormState, formData: FormData): Pro
 
 export async function deleteMilkUsage(_prev: FormState, formData: FormData): Promise<FormState> {
   return runAction(async () => {
-    await requirePermission("milk", "DELETE");
+    const user = await requirePermission("milk", "DELETE");
     const id = reqId(formData, "id", "Record");
-    const { count } = await prisma.milkUsageRecord.deleteMany({ where: { id } });
-    if (count === 0) return gone;
-    refresh();
-    return { success: true, message: "Milk use deleted." };
+    return deleteOrRequest(user, "MILK_USAGE", id);
   });
 }

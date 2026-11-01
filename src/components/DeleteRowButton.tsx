@@ -45,8 +45,13 @@ export default function DeleteRowButton({
           {icon}
         </button>
       </form>
-      {state && !state.success && (
-        <p className="absolute right-0 top-full mt-1 z-10 w-56 text-xs text-red-600 bg-white border border-red-200 rounded-md px-2 py-1.5 shadow-md">
+      {state && (
+        <p
+          className={`absolute right-0 top-full mt-1 z-10 w-56 text-xs bg-white border rounded-md px-2 py-1.5 shadow-md ${
+            state.success ? "text-green-700 border-green-200" : "text-red-600 border-red-200"
+          }`}
+          role="status"
+        >
           {state.message}
         </p>
       )}

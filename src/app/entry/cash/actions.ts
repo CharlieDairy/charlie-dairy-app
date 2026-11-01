@@ -8,6 +8,7 @@ import { CASH_CLASSES } from "@/lib/accounting/cashClass";
 import { cashStamp } from "@/lib/cashStamp";
 import { getMilkSalesCutover, MILK_CASH_CATEGORY } from "@/lib/reports/pnl";
 import { revalidatePath } from "next/cache";
+import { deleteOrRequest } from "@/lib/deletionApproval";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -155,31 +156,11 @@ export async function deleteCashEntry(_prev: FormState, formData: FormData): Pro
 }
 
 async function deleteCashEntryImpl(formData: FormData): Promise<FormState> {
-  await requirePermission("financial", "DELETE");
+  const user = await requirePermission("financial", "DELETE");
   const id = reqId(formData, "id", "Entry");
-
-  const existing = await prisma.cashTransaction.findUnique({ where: { id } });
-  if (!existing) return { success: false, message: "Entry not found." };
-
-  // The FK from CustomerPayment/SalaryPayment to CashTransaction is ON
-  // DELETE SET NULL, not RESTRICT -- deleting here would silently orphan
-  // the payment record (still shows money received/paid, with no cash-
-  // ledger entry backing it). Block it instead; the payment has to be
-  // reversed/deleted from its own page first.
-  const [linkedPayment, linkedSalary] = await Promise.all([
-    prisma.customerPayment.findUnique({ where: { cashTransactionId: id }, select: { buyer: true } }),
-    prisma.salaryPayment.findUnique({ where: { cashTransactionId: id }, select: { employee: { select: { name: true } } } }),
-  ]);
-  if (linkedPayment) {
-    throw new ValidationError(`This entry is linked to a customer payment from ${linkedPayment.buyer}. Delete that payment first.`);
-  }
-  if (linkedSalary) {
-    throw new ValidationError(`This entry is linked to a salary payment for ${linkedSalary.employee.name}. Delete that payment first.`);
-  }
-
-  await prisma.cashTransaction.delete({ where: { id } });
-  refresh();
-  return { success: true, message: "Cash entry deleted." };
+  // The Admin deletes now; the farm manager sends a request the Admin must approve (lib/deletionApproval.ts). The check that
+  // a linked customer or salary payment is deleted first lives there too.
+  return deleteOrRequest(user, "CASH", id);
 }
 
 export type BulkDeleteState = { success: boolean; message: string } | undefined;

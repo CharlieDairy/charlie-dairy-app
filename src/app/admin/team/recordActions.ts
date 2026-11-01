@@ -5,6 +5,7 @@ import { requirePermission, assertDateChangeNotBackdated, runAction } from "@/li
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqEnum, reqId, reqNum, reqText, optDate, optEnum, optNum, optText, CASH_MODES } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
+import { deleteOrRequest } from "@/lib/deletionApproval";
 
 // Edit and delete for salary payments and attendance. Admin and Editor may
 // both do this; an Editor cannot move a record onto a past date.
@@ -63,16 +64,10 @@ export async function updateSalaryPayment(_prev: FormState, formData: FormData):
 
 export async function deleteSalaryPayment(_prev: FormState, formData: FormData): Promise<FormState> {
   return runAction(async () => {
-    await requirePermission("team", "DELETE");
+    const user = await requirePermission("team", "DELETE");
     const id = reqId(formData, "id", "Payment");
-    const existing = await prisma.salaryPayment.findUnique({ where: { id } });
-    if (!existing) return gone;
-    await prisma.$transaction(async (tx) => {
-      await tx.salaryPayment.delete({ where: { id } });
-      if (existing.cashTransactionId) await tx.cashTransaction.deleteMany({ where: { id: existing.cashTransactionId } });
-    });
-    refresh(existing.employeeId);
-    return { success: true, message: "Salary payment deleted, along with its Cash Register entry." };
+    // The Admin deletes now (with its Cash Register entry); the farm manager sends a request the Admin must approve.
+    return deleteOrRequest(user, "SALARY_PAYMENT", id);
   });
 }
 

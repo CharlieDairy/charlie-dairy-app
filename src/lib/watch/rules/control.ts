@@ -84,6 +84,28 @@ export const controlRules: Rule[] = [
     },
   },
   {
+    // The farm manager can ask to delete any transaction, but nothing is removed until the Admin approves it.
+    id: "approvals.pending",
+    async run() {
+      const rows = await prisma.deletionRequest.findMany({ where: { status: "PENDING" }, orderBy: { requestedAt: "asc" }, select: { requestedAt: true, requestedBy: true, summary: true } });
+      if (rows.length === 0) return [];
+      const oldestDays = Math.floor((Date.now() - rows[0].requestedAt.getTime()) / DAY_MS);
+      return [
+        {
+          key: "approvals.pending",
+          ruleId: "approvals.pending",
+          category: "CONTROL",
+          severity: oldestDays >= 3 ? "HIGH" : "MEDIUM",
+          financeOnly: true,
+          title: `${rows.length} delete request${rows.length === 1 ? " is" : "s are"} waiting for your approval`,
+          detail: rows.slice(0, 5).map((r) => `${r.requestedBy}: ${r.summary}`).join("; ") + (rows.length > 5 ? ` and ${rows.length - 5} more` : "") + `. The oldest has been waiting ${oldestDays === 0 ? "since today" : `${oldestDays} day${oldestDays === 1 ? "" : "s"}`}. Nothing is deleted until you approve it.`,
+          suggestion: "Open Delete Approvals and either approve each one (it is then deleted) or keep it.",
+          metric: { pending: rows.length, oldestDays },
+        },
+      ];
+    },
+  },
+  {
     // Replaces the old permanent "Backups are manual" note: it clears itself once a weekly copy has reached Google Drive.
     id: "backup.weekly",
     async run() {

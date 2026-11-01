@@ -132,6 +132,8 @@ export function fixLinks(f: Input): FixLink[] {
       return [{ label: "Open the Audit Log", href: "/admin/audit-log" }];
     case "users.stale":
       return [{ label: "Open Users", href: "/admin/users" }];
+    case "approvals.pending":
+      return [{ label: "Open Delete Approvals", href: "/admin/approvals" }];
 
     // ---- app gaps worth acting on ----
     case "gap.team-unused":

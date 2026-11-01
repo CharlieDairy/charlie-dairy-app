@@ -27,7 +27,7 @@ const MODELS = [
   "pregnancyCheck", "calving", "calf", "milkingRecord", "milkUsageRecord", "milkSale",
   "customerPayment", "employee", "salaryPayment", "attendanceRecord",
   "feedTransaction", "feedItem", "customer", "vendor", "cashTransaction",
-  "capitalEntry", "masterDataItem", "asset", "auditLog", "dailyNote",
+  "capitalEntry", "masterDataItem", "asset", "auditLog", "dailyNote", "deletionRequest",
 ];
 
 function log(msg) {

@@ -42,7 +42,7 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
   // A saved figure is locked for everyone except an Admin (the server enforces the same rule).
   const locked = (saved: string) => !isAdmin && saved.trim() !== "";
   const boxCls = (saved: string, width: string) => `${boxBase} ${width} ${locked(saved) ? boxLocked : boxOpen}`;
-  const lockTip = (saved: string) => (locked(saved) ? "Already saved. Only an Admin can change it." : undefined);
+  const lockTip = (saved: string) => (locked(saved) ? "Already saved. To change it, use Edit in the Milking, Milk Sale or Feed register." : undefined);
 
   const calc = (read: (name: string) => string | null) => {
     const rows: Record<string, number> = {};
@@ -88,7 +88,7 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
       )}
       {lockedCount > 0 && (
         <p className="text-sm bg-neutral-50 border border-neutral-200 rounded-md px-3 py-2 text-neutral-700">
-          Grey boxes are already saved for this day and are locked. Only an Admin can change a saved figure. Empty boxes can still be filled in.
+          Grey boxes are already saved for this day and are locked here. To change one, use its Edit button in the Milking, Milk Sale or Feed register. Empty boxes can still be filled in.
         </p>
       )}
 
@@ -267,7 +267,7 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                         autoComplete="off"
                         defaultValue={f.inRate}
                         readOnly={locked(f.in)}
-                        title={locked(f.in) ? "Already saved. An Admin can change the rate on Feed & Inventory." : `Rate paid per ${f.unit}, needed when something is received`}
+                        title={locked(f.in) ? "Already saved. Change the rate with Edit on Feed & Inventory." : `Rate paid per ${f.unit}, needed when something is received`}
                         aria-label={`${f.name} rate paid per ${f.unit}`}
                         placeholder="Rs"
                         className={boxCls(f.in, "w-full")}

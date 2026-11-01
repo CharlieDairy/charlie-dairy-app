@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { formatRs } from "@/lib/format";
 import RecordActions from "@/components/RecordActions";
 import { getLiveUser, hasPermission } from "@/lib/access";
+import { deleteConfirm } from "@/lib/deleteConfirm";
 import { updateSalaryPayment, deleteSalaryPayment, updateAttendance, deleteAttendance, updateEmployee, deleteEmployee } from "../recordActions";
 
 function fmtDate(d: Date | null): string {
@@ -121,7 +122,7 @@ export default async function EmployeeProfilePage({ params }: { params: Promise<
                       canDelete={canDelete}
                       updateAction={updateSalaryPayment}
                       deleteAction={deleteSalaryPayment}
-                      deleteConfirm={`Delete the ${formatRs(p.amount)} salary payment on ${fmtDate(p.date)}? Its Cash Register entry is removed too.`}
+                      deleteConfirm={deleteConfirm(live?.role !== "ADMIN", `the ${formatRs(p.amount)} salary payment on ${fmtDate(p.date)}`, "Its Cash Register entry is removed too.")}
                       fields={[
                         { name: "date", label: "Date", type: "date", value: fmtDate(p.date), required: true },
                         { name: "amount", label: "Amount", type: "number", step: "1", value: String(p.amount), required: true },

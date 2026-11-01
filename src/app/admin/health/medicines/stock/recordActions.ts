@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission, assertDateChangeNotBackdated, runAction } from "@/lib/access";
 import { reqDate, reqId, reqNum, optNum, optText } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
+import { deleteOrRequest } from "@/lib/deletionApproval";
 
 // Edit and delete for medicine RESTOCK entries (IN). Stock used by a
 // treatment (OUT) is changed by editing or deleting that treatment on the
@@ -37,11 +38,9 @@ export async function updateRestock(_prev: FormState, formData: FormData): Promi
 
 export async function deleteRestock(_prev: FormState, formData: FormData): Promise<FormState> {
   return runAction(async () => {
-    await requirePermission("health", "DELETE");
+    const user = await requirePermission("health", "DELETE");
     const id = reqId(formData, "id", "Entry");
-    const { count } = await prisma.medicineStockTransaction.deleteMany({ where: { id, direction: "IN" } });
-    if (count === 0) return gone;
-    refresh();
-    return { success: true, message: "Restock deleted." };
+    // The Admin deletes now; the farm manager sends a request the Admin must approve.
+    return deleteOrRequest(user, "RESTOCK", id);
   });
 }

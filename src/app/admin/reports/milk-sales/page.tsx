@@ -15,6 +15,7 @@ import PeriodBar from "@/components/PeriodBar";
 import RecordPaymentButton from "./RecordPaymentButton";
 import RecordActions from "@/components/RecordActions";
 import { getLiveUser, hasPermission } from "@/lib/access";
+import { deleteConfirm } from "@/lib/deleteConfirm";
 import { updateCustomerPayment, deleteCustomerPayment, updateMilkUsage, deleteMilkUsage } from "./recordActions";
 
 const USE_LABEL: Record<string, string> = { CALF_USE: "Calf use", FARM_USE: "Farm use", EMPLOYEE_USE: "Farm employee" };
@@ -38,6 +39,7 @@ export default async function MilkSalesPage({
   const live = await getLiveUser();
   const canEditMilk = !!live && hasPermission(live, "milk", "EDIT");
   const canDeleteMilk = !!live && hasPermission(live, "milk", "DELETE");
+  const needsApproval = live?.role !== "ADMIN"; // the farm manager's delete is a request the Admin approves
   const usage = await prisma.milkUsageRecord.findMany({ where: { date: { gte: range.start, lt: range.end } }, orderBy: { date: "desc" } });
 
   const [customers, buyers, sales, detail, activeWithdrawals] = await Promise.all([
@@ -129,7 +131,7 @@ export default async function MilkSalesPage({
 
       <WithdrawalWarningBanner withdrawals={activeWithdrawals} />
 
-      <MilkSalesLedger sales={ledgerRows} showSessions customers={customers} isAdmin={canEdit} />
+      <MilkSalesLedger sales={ledgerRows} showSessions customers={customers} isAdmin={canEdit} deleteNeedsApproval={needsApproval} />
 
       {!params.buyer && (
         <Card>
@@ -160,7 +162,7 @@ export default async function MilkSalesPage({
                       canDelete={canDeleteMilk}
                       updateAction={updateMilkUsage}
                       deleteAction={deleteMilkUsage}
-                      deleteConfirm={`Delete ${u.litres} L of ${USE_LABEL[u.type] ?? u.type} on ${fmtDate(u.date)}?`}
+                      deleteConfirm={deleteConfirm(needsApproval, `${u.litres} L of ${USE_LABEL[u.type] ?? u.type} on ${fmtDate(u.date)}`)}
                       fields={[
                         { name: "date", label: "Date", type: "date", value: fmtDate(u.date), required: true },
                         { name: "type", label: "Use", type: "select", required: true, value: u.type, options: [{ value: "CALF_USE", label: "Calf use" }, { value: "FARM_USE", label: "Farm use" }, { value: "EMPLOYEE_USE", label: "Farm employee" }] },
@@ -207,7 +209,7 @@ export default async function MilkSalesPage({
                       canDelete={canDeleteMilk}
                       updateAction={updateCustomerPayment}
                       deleteAction={deleteCustomerPayment}
-                      deleteConfirm={`Delete the ${formatRs(p.amount)} payment on ${fmtDate(p.date)}? Its Cash Register entry is removed too.`}
+                      deleteConfirm={deleteConfirm(needsApproval, `the ${formatRs(p.amount)} payment on ${fmtDate(p.date)}`, "Its Cash Register entry is removed too.")}
                       fields={[
                         { name: "date", label: "Date", type: "date", value: fmtDate(p.date), required: true },
                         { name: "amount", label: "Amount", type: "number", step: "1", value: String(p.amount), required: true },

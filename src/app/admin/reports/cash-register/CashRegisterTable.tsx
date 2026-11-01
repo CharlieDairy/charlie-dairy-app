@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useActionState } from "react";
 import { formatRs } from "@/lib/format";
 import DeleteRowButton from "@/components/DeleteRowButton";
+import { deleteConfirm } from "@/lib/deleteConfirm";
 import CashForm from "@/app/entry/cash/CashForm";
 import { updateCashEntry, deleteCashEntry, deleteCashEntries, type FormState, type BulkDeleteState } from "@/app/entry/cash/actions";
 
@@ -163,6 +164,7 @@ export default function CashRegisterTable({
   vendorNames,
   customerNames,
   isAdmin = false,
+  deleteNeedsApproval = false,
   summary,
 }: {
   entries: CashRow[];
@@ -170,6 +172,8 @@ export default function CashRegisterTable({
   vendorNames: string[];
   customerNames: string[];
   isAdmin?: boolean;
+  /** the farm manager's delete is a request the Admin has to approve */
+  deleteNeedsApproval?: boolean;
   /** The Opening Balance / Cash In / Cash Out / Net Balance boxes, rendered by the server. */
   summary: ReactNode;
 }) {
@@ -399,7 +403,7 @@ export default function CashRegisterTable({
                         <DeleteRowButton
                           action={deleteCashEntry}
                           hiddenFields={{ id: e.id }}
-                          confirmMessage={`Delete cash entry #${e.entryNo} (${e.category})? This can't be undone.`}
+                          confirmMessage={deleteConfirm(deleteNeedsApproval, `cash entry #${e.entryNo} (${e.category})`)}
                           icon={IconTrash}
                         />
                       </div>

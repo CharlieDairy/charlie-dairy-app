@@ -151,6 +151,7 @@ export default async function CashRegisterPage({
         vendorNames={vendorNames}
         customerNames={customers.map((c) => c.name)}
         isAdmin={isAdmin}
+        deleteNeedsApproval={!isAdmin}
         summary={summary}
       />
     </div>

@@ -6,6 +6,7 @@ import Badge from "@/components/Badge";
 import RestockForm from "./RestockForm";
 import RecordActions from "@/components/RecordActions";
 import { getLiveUser, hasPermission } from "@/lib/access";
+import { deleteConfirm } from "@/lib/deleteConfirm";
 import { updateRestock, deleteRestock } from "./recordActions";
 
 function stockTone(balance: number, daysRemaining: number | null): { tone: "danger" | "warning" | "success" | "neutral"; label: string } {
@@ -122,7 +123,7 @@ export default async function MedicineStockPage() {
                           canDelete={canDelete}
                           updateAction={updateRestock}
                           deleteAction={deleteRestock}
-                          deleteConfirm={`Delete the ${r.quantity} ${r.medicineDef.unit} restock of ${r.medicineDef.name} on ${d}?`}
+                          deleteConfirm={deleteConfirm(live?.role !== "ADMIN", `the ${r.quantity} ${r.medicineDef.unit} restock of ${r.medicineDef.name} on ${d}`)}
                           fields={[
                             { name: "date", label: "Date", type: "date", value: d, required: true },
                             { name: "quantity", label: `Quantity (${r.medicineDef.unit})`, type: "number", step: "0.1", value: String(r.quantity), required: true },

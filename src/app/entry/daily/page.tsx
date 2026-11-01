@@ -115,7 +115,7 @@ export default async function DailySheetPage({ searchParams }: { searchParams: P
       </div>
       <p className="text-sm text-neutral-600">
         One sheet for the whole day, like the paper milk record: milk by cow, milk sold, milk used, feed and a note. Saved figures are locked: you can
-        fill in empty boxes, and only an Admin can change what is already saved. Showing <b>{date}</b>.
+        fill in empty boxes, and to change what is already saved use its Edit button in the Milking, Milk Sale or Feed register. Showing <b>{date}</b>.
       </p>
       <ShareDay date={date} cows={cowRows} customers={customerRows} usage={usageRows} feed={feedRows} note={note?.text ?? ""} groupTotal={groupTotal} />
       <DailySheetForm

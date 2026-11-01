@@ -21,7 +21,7 @@ const ID = /^[A-Za-z0-9_-]{1,64}$/;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 const lockedError = (what: string[]) =>
-  new ValidationError(`Already saved for this day: ${what.join(", ")}. Only an Admin can change a saved figure. Nothing was saved. Refresh the page to see what is already there.`);
+  new ValidationError(`Already saved for this day: ${what.join(", ")}. This sheet only fills empty boxes. To correct a saved figure use its Edit button in the Milking, Milk Sale or Feed register. Nothing was saved. Refresh the page to see what is already there.`);
 
 function group<T>(rows: T[], keyOf: (r: T) => string): Map<string, T[]> {
   const m = new Map<string, T[]>();

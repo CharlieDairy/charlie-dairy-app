@@ -4,7 +4,7 @@ import { getMilkingWorklist, getMilkingLog } from "@/lib/reports/milkingWorklist
 import { periodRange } from "@/lib/reports/herd";
 import { resolvePeriod } from "@/lib/period";
 import PeriodBar from "@/components/PeriodBar";
-import { getLiveUser } from "@/lib/access";
+import { getLiveUser, canWrite } from "@/lib/access";
 import MilkEntryPanel, { type DisplayRow } from "./MilkEntryPanel";
 
 function todayIso() {
@@ -18,9 +18,10 @@ export default async function MilkingEntryPage({
 }) {
   const params = await searchParams;
   const user = await getLiveUser();
-  // Saved milk records are locked: only an Admin can edit or delete them.
-  const canEdit = user?.role === "ADMIN";
-  const canDelete = user?.role === "ADMIN";
+  // The Admin and the farm manager (Editor) can edit a saved milk record. The farm manager's delete is a request the Admin approves.
+  const canEdit = canWrite(user);
+  const canDelete = canWrite(user);
+  const deleteNeedsApproval = user?.role !== "ADMIN";
   const today = todayIso();
   const { period, from, to } = await resolvePeriod(params, "day");
   const date = params.date ?? today;
@@ -132,7 +133,7 @@ export default async function MilkingEntryPage({
       )}
       {logTruncated && <p className="text-xs text-text-muted">Showing the most recent 300 records for this period.</p>}
 
-      <MilkEntryPanel cows={cows} rows={displayRows} mode={period === "day" ? "day" : "log"} defaultDate={date} canEdit={canEdit} canDelete={canDelete} />
+      <MilkEntryPanel cows={cows} rows={displayRows} mode={period === "day" ? "day" : "log"} defaultDate={date} canEdit={canEdit} canDelete={canDelete} deleteNeedsApproval={deleteNeedsApproval} />
     </div>
   );
 }

@@ -869,6 +869,26 @@ model AuditLog {
   @@index([createdAt])
 }
 
+// A delete the farm manager asked for. Nothing is removed until the Admin approves it on the Delete approvals page
+// (the Admin's own deletes happen straight away). entity is the kind of record: CASH, MILKING, MILK_SALE, MILK_USAGE,
+// CUSTOMER_PAYMENT, FEED, SALARY_PAYMENT or RESTOCK. status is PENDING, APPROVED or REJECTED.
+model DeletionRequest {
+  id            String    @id @default(cuid())
+  entity        String
+  recordId      String // the record's id; for milking "<cowId or blank>|<yyyy-mm-dd>" (all of one cow's sessions for a day)
+  summary       String // what the record is, in words, as it was when the request was made
+  requestedById String?
+  requestedBy   String
+  requestedAt   DateTime  @default(now())
+  status        String    @default("PENDING")
+  decidedBy     String?
+  decidedAt     DateTime?
+  decisionNote  String?
+
+  @@index([status])
+  @@index([entity, recordId])
+}
+
 
 // ---------------------------------------------------------------------------
 // Farm Watch: the virtual farm manager / accountant. Rules (plain code) scan the

@@ -7,6 +7,7 @@ import { reqDate, reqEnum, reqId, reqNum, reqText, optNum, optText, DIRECTIONS }
 import { revalidatePath } from "next/cache";
 import { repostFeedCosts } from "@/lib/feedCosting";
 import { assertStockHolds } from "@/lib/feedStockGuard";
+import { deleteOrRequest } from "@/lib/deletionApproval";
 
 export type FormState = { success: boolean; message: string } | undefined;
 
@@ -85,9 +86,9 @@ async function submitFeedImpl(formData: FormData): Promise<FormState> {
 }
 
 // ---------------------------------------------------------------------------
-// Admin-only corrections to feed history: edit one entry, delete one, delete a
-// ticked selection, or delete everything for one feed in a date range. Every
-// change is written to the Audit Log automatically.
+// Corrections to feed history. The Admin and the farm manager can edit one entry; deleting one needs the Admin's approval
+// when the farm manager asks. Deleting a ticked selection, or everything for one feed in a date range, is Admin-only.
+// Every change is written to the Audit Log automatically.
 // ---------------------------------------------------------------------------
 
 function refreshFeed() {
@@ -101,7 +102,7 @@ export async function updateFeedTransaction(_prev: FormState, formData: FormData
 }
 
 async function updateFeedTransactionImpl(formData: FormData): Promise<FormState> {
-  const admin = await requireAccess({ admin: true });
+  const admin = await requirePermission("feed", "EDIT"); // the Admin and the farm manager (Editor)
   const id = reqId(formData, "id", "Feed entry");
   const date = reqDate(formData, "date", "Date");
   const requested = reqText(formData, "feedType", "Feed", { max: 100 });
@@ -145,15 +146,11 @@ export async function deleteFeedTransaction(_prev: FormState, formData: FormData
 }
 
 async function deleteFeedTransactionImpl(formData: FormData): Promise<FormState> {
-  const admin = await requireAccess({ admin: true });
+  const user = await requirePermission("feed", "DELETE");
   const id = reqId(formData, "id", "Feed entry");
-  const row = await prisma.feedTransaction.findUnique({ where: { id }, select: { id: true, feedType: true } });
-  if (!row) return { success: false, message: "That entry no longer exists. Refresh the page." };
-  await assertStockHolds(row.feedType, (before) => before.filter((t) => t.id !== id), "removal");
-  await prisma.feedTransaction.delete({ where: { id } });
-  await repostFeedCosts([row.feedType], admin.name);
-  refreshFeed();
-  return { success: true, message: "Entry deleted and feed costs recalculated." };
+  // The Admin deletes now; the farm manager sends a request the Admin must approve (lib/deletionApproval.ts). The stock rule
+  // (a purchase that was already used cannot be removed) is checked there, before a request is made and again on approval.
+  return deleteOrRequest(user, "FEED", id);
 }
 
 export async function deleteFeedTransactions(_prev: FormState, formData: FormData): Promise<FormState> {

@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAccess, requirePermission, assertNotBackdated, runAction } from "@/lib/access";
+import { requirePermission, assertNotBackdated, runAction } from "@/lib/access";
+import { deleteOrRequest, milkingKey } from "@/lib/deletionApproval";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, optNum } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -100,8 +101,8 @@ function optCowId(formData: FormData): string | null {
 }
 
 async function updateMilkingImpl(formData: FormData): Promise<FormState> {
-  // A saved milk record can only be changed by an Admin; everyone else adds new entries only.
-  const user = await requireAccess({ admin: true });
+  // The Admin and the farm manager (Editor) can both correct a saved milk record. (Deleting one needs the Admin's approval.)
+  const user = await requirePermission("milk", "EDIT");
   const cowId = optCowId(formData); // the cow the record belongs to now
   const targetRaw = formData.get("newCowId");
   const targetCowId = typeof targetRaw === "string" && targetRaw.trim() !== "" ? targetRaw : cowId; // the cow it should belong to
@@ -177,11 +178,9 @@ export async function deleteMilking(_prev: FormState, formData: FormData): Promi
 }
 
 async function deleteMilkingImpl(formData: FormData): Promise<FormState> {
-  await requireAccess({ admin: true });
+  const user = await requirePermission("milk", "DELETE");
   const cowId = optCowId(formData);
   const date = reqDate(formData, "date", "Date");
-  const { count } = await prisma.milkingRecord.deleteMany({ where: { cowId, date } });
-  if (count === 0) return { success: false, message: "That record no longer exists. Refresh the page." };
-  refresh();
-  return { success: true, message: `Deleted ${count} session${count === 1 ? "" : "s"}.` };
+  // The Admin deletes now; the farm manager sends a request the Admin must approve (lib/deletionApproval.ts).
+  return deleteOrRequest(user, "MILKING", milkingKey(cowId, date.toISOString().slice(0, 10)));
 }

@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { assertDateChangeNotBackdated, requireAccess, requirePermission, assertNotBackdated, runAction } from "@/lib/access";
+import { assertDateChangeNotBackdated, requirePermission, assertNotBackdated, runAction } from "@/lib/access";
+import { deleteOrRequest } from "@/lib/deletionApproval";
 import { ValidationError } from "@/lib/errors";
 import { reqDate, reqId, reqNum, reqText, optEnum, SHIFTS } from "@/lib/validate";
 import { revalidatePath } from "next/cache";
@@ -137,15 +138,14 @@ async function submitMilkSaleImpl(formData: FormData): Promise<FormState> {
   return { success: true, message: "Milk sale entry saved." };
 }
 
-// Editing a sale changes the farm's books after the fact -- only an Admin
-// can override information already recorded (see access.ts assertNotBackdated
-// for the matching rule on new entries).
+// Editing a sale changes the farm's books after the fact. The Admin and the farm manager (Editor) can both do it; deleting
+// one needs the Admin's approval (see lib/deletionApproval.ts).
 export async function updateMilkSale(_prev: FormState, formData: FormData): Promise<FormState> {
   return runAction(() => updateMilkSaleImpl(formData));
 }
 
 async function updateMilkSaleImpl(formData: FormData): Promise<FormState> {
-  const user = await requireAccess({ admin: true });
+  const user = await requirePermission("milk", "EDIT");
   const id = reqId(formData, "id", "Sale");
   const sale = await readSale(formData);
 
@@ -169,10 +169,11 @@ async function updateMilkSaleImpl(formData: FormData): Promise<FormState> {
   return { success: true, message: "Sale updated." };
 }
 
-export async function deleteMilkSale(formData: FormData): Promise<void> {
-  await requireAccess({ admin: true });
-  const id = reqId(formData, "id", "Sale");
-  // deleteMany: deleting a sale someone else already removed is a no-op, not a crash.
-  await prisma.milkSale.deleteMany({ where: { id } });
-  refresh();
+export async function deleteMilkSale(_prev: FormState, formData: FormData): Promise<FormState> {
+  return runAction(async () => {
+    const user = await requirePermission("milk", "DELETE");
+    const id = reqId(formData, "id", "Sale");
+    // The Admin deletes now; the farm manager sends a request the Admin must approve (lib/deletionApproval.ts).
+    return deleteOrRequest(user, "MILK_SALE", id);
+  });
 }

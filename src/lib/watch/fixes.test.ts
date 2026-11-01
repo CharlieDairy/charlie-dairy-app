@@ -38,6 +38,14 @@ test("a purchase-without-a-rate finding links to each feed's ledger for the last
   assert.match(links[1].href, /feed=Wheat%20Straw/);
 });
 
+test("a waiting delete request links to Delete Approvals, which only the Admin can open", () => {
+  const f = { ruleId: "approvals.pending", key: "approvals.pending", metric: { pending: 2 } };
+  assert.deepEqual(fixLinks(f).map((l) => l.href), ["/admin/approvals"]);
+  assert.equal(fixesForRole(f, "ADMIN").open.length, 1);
+  assert.equal(fixesForRole(f, "EDITOR").open.length, 0);
+  assert.equal(fixesForRole(f, "EDITOR").adminOnly, 1);
+});
+
 test("the Admin can open every fix", () => {
   const books = fixesForRole({ ruleId: "acct.balance-sheet", key: "k", metric: null }, "ADMIN");
   assert.equal(books.open.length, 2);

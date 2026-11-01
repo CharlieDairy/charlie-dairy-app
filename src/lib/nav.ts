@@ -121,6 +121,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/admin/users", label: "Users & Access" },
       { href: "/admin/master-data", label: "Master Data" },
       { href: "/admin/bulk", label: "Bulk Data" },
+      { href: "/admin/approvals", label: "Delete Approvals" },
       { href: "/admin/audit-log", label: "Audit Log" },
       { href: "/admin/backups", label: "Cloud Backups" },
     ],

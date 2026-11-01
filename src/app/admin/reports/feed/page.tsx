@@ -33,7 +33,7 @@ export default async function FeedOverviewPage({
   const range = periodRange(period, new Date(), from, to);
   const user = await getLiveUser();
   const canEdit = canWrite(user);
-  const isAdmin = user?.role === "ADMIN"; // edit / delete / delete-all are Admin-only
+  const isAdmin = user?.role === "ADMIN"; // tick-boxes, Delete selected and Delete all are Admin-only; per-row edit/delete is for the farm manager too
 
   const report = await getFeedPeriodReport(range, params.feed);
   const rows = report.rows;
@@ -122,7 +122,7 @@ export default async function FeedOverviewPage({
               {selectedRow.unratedPurchaseQty > 0 && <>{qty(selectedRow.unratedPurchaseQty)} {unitLabel} received in this period has no purchase rate. </>}
               {selectedRow.estimatedUseQty > 0 && <>{qty(selectedRow.estimatedUseQty)} {unitLabel} used in this period was costed at an estimated rate (no purchase rate on record, or more used than was ever received). </>}
               {selectedRow.unpricedUseQty > 0 && <>{qty(selectedRow.unpricedUseQty)} {unitLabel} used has no cost at all. </>}
-              {isAdmin ? "Edit the purchase below and enter the rate paid, and every cost after it is recalculated." : "Ask the Admin to enter the missing purchase rates."}
+              {canEdit ? "Edit the purchase below and enter the rate paid, and every cost after it is recalculated." : "Ask the Admin to enter the missing purchase rates."}
             </p>
           )}
 
@@ -138,6 +138,8 @@ export default async function FeedOverviewPage({
             from={range.start.toISOString().slice(0, 10)}
             to={new Date(range.end.getTime() - 86_400_000).toISOString().slice(0, 10)}
             isAdmin={isAdmin}
+            canEdit={canEdit}
+            deleteNeedsApproval={!isAdmin}
           />
           <section className="flex flex-col gap-2">
             <h2 className="text-lg font-semibold text-neutral-900">Stock on hand at the end of the period, oldest first</h2>

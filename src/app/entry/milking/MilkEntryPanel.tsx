@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DeleteRowButton from "@/components/DeleteRowButton";
+import { deleteConfirm } from "@/lib/deleteConfirm";
 import { submitMilking, updateMilking, deleteMilking, type FormState } from "./actions";
 
 export type DisplayRow = {
@@ -44,6 +45,7 @@ export default function MilkEntryPanel({
   defaultDate,
   canEdit,
   canDelete,
+  deleteNeedsApproval = false,
 }: {
   cows: Cow[];
   rows: DisplayRow[];
@@ -51,6 +53,8 @@ export default function MilkEntryPanel({
   defaultDate: string;
   canEdit: boolean;
   canDelete: boolean;
+  /** the farm manager's delete is a request the Admin has to approve */
+  deleteNeedsApproval?: boolean;
 }) {
   const [adding, setAdding] = useState<{ cowId: string; date: string } | null>(null);
   const [editing, setEditing] = useState<DisplayRow | null>(null);
@@ -116,7 +120,7 @@ export default function MilkEntryPanel({
                       <DeleteRowButton
                         action={deleteMilking}
                         hiddenFields={{ cowId: r.cowId ?? "", date: r.date }}
-                        confirmMessage={`Delete all milk sessions for ${r.tag} on ${r.date}? This can't be undone.`}
+                        confirmMessage={deleteConfirm(deleteNeedsApproval, `all milk sessions for ${r.tag} on ${r.date}`)}
                         icon={IconTrash}
                       />
                     )}

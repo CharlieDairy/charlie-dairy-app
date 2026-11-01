@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState, type ReactNode } from "react";
 import DeleteRowButton from "@/components/DeleteRowButton";
+import { deleteConfirm } from "@/lib/deleteConfirm";
 import { formatRs } from "@/lib/format";
 import {
   updateFeedTransaction,
@@ -101,6 +102,8 @@ export default function FeedLedgerTable({
   from,
   to,
   isAdmin,
+  canEdit = isAdmin,
+  deleteNeedsApproval = false,
 }: {
   lines: FeedLedgerLine[];
   feedType: string;
@@ -112,7 +115,12 @@ export default function FeedLedgerTable({
   closing: number;
   from: string; // period start, YYYY-MM-DD
   to: string; // period end (inclusive), YYYY-MM-DD
+  /** Admin: the tick-boxes, Delete selected and Delete all */
   isAdmin: boolean;
+  /** the per-row Edit and Delete buttons (the Admin and the farm manager) */
+  canEdit?: boolean;
+  /** the farm manager's delete is a request the Admin has to approve */
+  deleteNeedsApproval?: boolean;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -130,8 +138,8 @@ export default function FeedLedgerTable({
       return next;
     });
   const allSelected = lines.length > 0 && lines.every((l) => selected.has(l.id));
-  const colSpan = isAdmin ? 10 : 8;
   const lead = isAdmin ? 1 : 0;
+  const colSpan = 8 + lead + (canEdit ? 1 : 0);
 
   return (
     <div className="flex flex-col gap-3">
@@ -205,7 +213,7 @@ export default function FeedLedgerTable({
               <th className="text-center px-4 py-2 whitespace-nowrap" title="Purchases: value bought. Issues: first-in, first-out cost.">Amount</th>
               <th className="text-center px-4 py-2 whitespace-nowrap">Notes</th>
               <th className="text-center px-4 py-2 whitespace-nowrap">By</th>
-              {isAdmin && <th className="text-center px-4 py-2 whitespace-nowrap">Actions</th>}
+              {canEdit && <th className="text-center px-4 py-2 whitespace-nowrap">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -240,7 +248,7 @@ export default function FeedLedgerTable({
                   </td>
                   <td className="px-4 py-2 text-center text-neutral-600">{l.notes ?? ""}</td>
                   <td className="px-4 py-2 text-center whitespace-nowrap text-neutral-500">{l.enteredBy ?? ""}</td>
-                  {isAdmin && (
+                  {canEdit && (
                     <td className="px-4 py-2 text-center whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <button
@@ -254,7 +262,7 @@ export default function FeedLedgerTable({
                         <DeleteRowButton
                           action={deleteFeedTransaction}
                           hiddenFields={{ id: l.id }}
-                          confirmMessage={`Delete this ${l.direction === "IN" ? "inward" : "outward"} entry of ${qty(l.quantity)} ${unit} on ${l.date}? This can't be undone.`}
+                          confirmMessage={deleteConfirm(deleteNeedsApproval, `this ${l.direction === "IN" ? "inward" : "outward"} entry of ${qty(l.quantity)} ${unit} on ${l.date}`)}
                           icon={IconTrash}
                         />
                       </div>
