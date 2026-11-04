@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { CASH_CLASSES, INCOME_CLASSES, classifyCash, netOf, type CashClassKey } from "@/lib/accounting/cashClass";
+import { APP_FEED_CATEGORY, APP_MILK_CATEGORY, NO_APP_BOOKS, coveredByApp, loadAppBooks } from "./appBooks";
 
 // The farm's accounts are kept on a CASH basis: income is counted when the money
 // is received and cost when it is paid. Every Cash Register entry carries an
@@ -8,10 +9,11 @@ import { CASH_CLASSES, INCOME_CLASSES, classifyCash, netOf, type CashClassKey } 
 //   revenue  = milk sales + animal & calf sales + other income
 //   expense  = operating costs
 //   NOT profit or loss: capital spending, money from / to partners, opening balance
-// Milk sales entered in the app (MilkSale) are billing records for customer
-// balances and reconciliation; they are never added to revenue here, because the
-// money is counted when it arrives in the Cash Register (that is what prevented
-// the old double counting).
+// Exception, from the day the app began itemising milk sales (appBooks.ts): milk
+// is counted when BILLED and feed when USED from stock, straight from the app's
+// own records, so they flow the day they are entered. The Cash Register copies of
+// those two (customer payments, feed purchases) are then left out, which is what
+// keeps every rupee counted once. Before that day the cash book is unchanged.
 
 export type MonthlyPnl = {
   month: string; // "YYYY-MM"
@@ -45,10 +47,14 @@ export async function getMilkSalesCutover(): Promise<Date | null> {
   return first?.date ?? null;
 }
 
-export async function getMonthlyPnl(): Promise<MonthlyPnl[]> {
-  const cash = await prisma.cashTransaction.findMany({
-    select: { date: true, category: true, amountIn: true, amountOut: true, remark: true, accountClass: true },
-  });
+/** `cashOnly` keeps the pure cash-book basis (the balance sheet needs it); otherwise milk billed and feed used come from the app. */
+export async function getMonthlyPnl(opts: { cashOnly?: boolean } = {}): Promise<MonthlyPnl[]> {
+  const [cash, app] = await Promise.all([
+    prisma.cashTransaction.findMany({
+      select: { id: true, date: true, category: true, amountIn: true, amountOut: true, remark: true, accountClass: true },
+    }),
+    opts.cashOnly ? Promise.resolve(NO_APP_BOOKS) : loadAppBooks(),
+  ]);
 
   const months = new Map<string, MonthlyPnl>();
   const bucket = (date: Date) => {
@@ -63,6 +69,7 @@ export async function getMonthlyPnl(): Promise<MonthlyPnl[]> {
 
   for (const c of cash) {
     const cls = classifyCash(c);
+    if (coveredByApp(app, c, cls)) continue; // the app's own records count this one (see appBooks.ts)
     const m = bucket(c.date);
     const amt = netOf(cls, c.amountIn, c.amountOut);
     m.byClass[cls] += amt;
@@ -71,6 +78,17 @@ export async function getMonthlyPnl(): Promise<MonthlyPnl[]> {
     } else if (cls === "OPEX") {
       m.expenseByCategory[c.category] = (m.expenseByCategory[c.category] ?? 0) + amt;
     }
+  }
+  // Milk billed and feed used, straight from the app, from the day it began itemising sales.
+  for (const s of app.milk) {
+    const m = bucket(s.date);
+    m.byClass.MILK_SALES += s.amount;
+    m.revenueByCategory[APP_MILK_CATEGORY] = (m.revenueByCategory[APP_MILK_CATEGORY] ?? 0) + s.amount;
+  }
+  for (const f of app.feedUsed) {
+    const m = bucket(f.date);
+    m.byClass.OPEX += f.cost;
+    m.expenseByCategory[APP_FEED_CATEGORY] = (m.expenseByCategory[APP_FEED_CATEGORY] ?? 0) + f.cost;
   }
 
   for (const m of months.values()) {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { CLASS_LABEL, INCOME_CLASSES, classifyCash, netOf } from "@/lib/accounting/cashClass";
+import { APP_FEED_CATEGORY, coveredByApp, loadAppBooks } from "./appBooks";
 import { cashTotals, dateBounds, farmDateKey, milkSession, periodBounds } from "./dashboardMetrics";
 
 export async function getFarmDashboard(params: { period?: string; from?: string; to?: string }) {
@@ -18,12 +19,13 @@ export async function getFarmDashboard(params: { period?: string; from?: string;
   // period's "to" date is in the future.
   const seriesStart = range.start < start ? range.start : start;
   const seriesEnd = range.end > end ? range.end : end;
-  const [cows, milk, sales, payments, cash, feed, vaccinations, treatments, lastMilk] = await Promise.all([
+  const [app, cows, milk, sales, payments, cash, feed, vaccinations, treatments, lastMilk] = await Promise.all([
+    loadAppBooks(),
     prisma.cow.findMany({ select: { id: true, tag: true, gender: true, status: true, breed: true, dateOfBirth: true, expectedCalving: true, nextAiDate: true } }),
     prisma.milkingRecord.findMany({ where: { date: { gte: seriesStart, lt: seriesEnd } }, select: { cowId: true, date: true, shift: true, litres: true } }),
     prisma.milkSale.findMany({ where: { date: { lt: dateBounds(today).end } }, select: { date: true, buyer: true, litres: true, amount: true, enteredBy: true } }),
     prisma.customerPayment.findMany({ where: { date: { lt: dateBounds(today).end } }, select: { buyer: true, amount: true } }),
-    prisma.cashTransaction.findMany({ select: { date: true, category: true, mode: true, amountIn: true, amountOut: true, remark: true, accountClass: true } }),
+    prisma.cashTransaction.findMany({ select: { id: true, date: true, category: true, mode: true, amountIn: true, amountOut: true, remark: true, accountClass: true } }),
     prisma.feedTransaction.findMany({ select: { date: true, feedType: true, direction: true, quantity: true, cost: true } }),
     prisma.vaccinationRecord.findMany({ select: { cowId: true, vaccineName: true, date: true, nextDueDate: true } }),
     prisma.treatmentRecord.findMany({ where: { date: { gte: new Date(dateBounds(today).start.getTime() - 29 * 86400000), lt: dateBounds(today).end } }, select: { cowId: true } }),
@@ -57,9 +59,12 @@ export async function getFarmDashboard(params: { period?: string; from?: string;
   // Capital spending, money from / to the partners and the opening balance are not income or cost.
   for (const c of cash.filter(c => inPeriod(c.date))) {
     const cls = classifyCash(c);
+    if (coveredByApp(app, c, cls)) continue; // milk billed and feed used come from the app's own records (see appBooks.ts)
     if (INCOME_CLASSES.includes(cls)) income[CLASS_LABEL[cls]] = (income[CLASS_LABEL[cls]] ?? 0) + netOf(cls, c.amountIn, c.amountOut);
     else if (cls === "OPEX") expenses[c.category] = (expenses[c.category] ?? 0) + netOf(cls, c.amountIn, c.amountOut);
   }
+  for (const s of app.milk.filter(s => inPeriod(s.date))) income[CLASS_LABEL.MILK_SALES] = (income[CLASS_LABEL.MILK_SALES] ?? 0) + s.amount;
+  for (const f of app.feedUsed.filter(f => inPeriod(f.date))) expenses[APP_FEED_CATEGORY] = (expenses[APP_FEED_CATEGORY] ?? 0) + f.cost;
   // Historical cash-ledger sales have already been received; never turn them
   // into invented receivables merely because no CustomerPayment exists.
   const billed = new Map<string, number>(), received = new Map<string, number>();

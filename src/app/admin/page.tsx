@@ -222,15 +222,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </div>
         {finance && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Metric icon={IconDollar} label="Sale revenue" value={formatRs(income)} detail={`Money received ${periodRangeLabel} (milk, animals, other)`} tone="green" />
-            <Metric icon={IconLayers} label="Expenses" value={formatRs(expense)} detail="Feed, salaries and other running costs paid" tone="rose" />
+            <Metric icon={IconDollar} label="Sale revenue" value={formatRs(income)} detail="Milk billed, plus animal and other income received" tone="green" />
+            <Metric icon={IconLayers} label="Expenses" value={formatRs(expense)} detail="Feed used, plus salaries and other running costs paid" tone="rose" />
             <Metric icon={IconTrend} label={net >= 0 ? "Profit" : "Loss"} value={formatRs(Math.abs(net))} detail={income > 0 ? `${(net / income * 100).toFixed(1)}% of revenue` : "No income recorded"} tone={net >= 0 ? "green" : "rose"} />
           </div>
         )}
         {finance && d.cashLastDate && d.cashLastDate < periodRangeLabel.slice(-10) && (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            The cash book was last updated on <strong>{d.cashLastDate}</strong>, so money received and paid after that date is not in Sale revenue, Expenses or Profit yet.
-            Milk billed in this period: <strong>{formatRs(d.periodSales.reduce((n, s) => n + s.amount, 0))}</strong> (counted as income only when the money reaches the cash book, so it is never counted twice). Enter the missing Cash Register entries to complete them.
+            Milk sales and feed cost are taken from the app as they are entered. The other expenses (salaries, fuel, medicine, A.I. and so on) come from the Cash Register, which was last updated on <strong>{d.cashLastDate}</strong>, so Expenses and Profit are not complete until the later entries are made.
           </p>
         )}
         <p className="text-xs text-slate-500">Morning: {d.morning.records ? `${d.morning.litres.toFixed(1)} L` : "pending"} · Afternoon: {d.afternoon.records ? `${d.afternoon.litres.toFixed(1)} L` : "pending"} · Evening: {d.evening.records ? `${d.evening.litres.toFixed(1)} L` : "pending"} · for the selected period. Missing-entry checks use the current milking herd; historical herd membership may differ. Explicit zero entries remain zero.</p>
@@ -310,7 +309,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
               <Breakdown title="Income by category" values={d.income} />
               <Breakdown title="Outgoings by category" values={d.expenses} />
             </div>
-            <p className="text-xs text-slate-500 mt-4">Cash basis: income is money received (milk, animals, other) and outgoings are the cost of running the farm. Capital spending and money from or to the partners are not included. See the P&amp;L Statement for the full split.</p>
+            <p className="text-xs text-slate-500 mt-4">Milk is counted when billed and feed when used, straight from the app; animal sales, other income and every other cost are counted when the money moves in the Cash Register. Capital spending and money from or to the partners are not included. See the P&amp;L Statement for the full split.</p>
             <div className="border-t mt-4 pt-3">
               <Row label="Cash net recorded · all dates to today" value={formatRs(d.cash.cash)} />
               <Row label="Bank net recorded · all dates to today" value={formatRs(d.cash.bank)} />

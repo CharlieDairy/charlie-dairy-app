@@ -106,7 +106,7 @@ export default async function PnlPage({ searchParams }: { searchParams: Promise<
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold text-neutral-900">P&L Statement</h1>
-        <p className="text-sm text-neutral-500">Cash basis: money counts when it is received or paid.</p>
+        <p className="text-sm text-neutral-500">Milk counts when billed and feed when used (from the app); everything else counts when it is received or paid.</p>
       </div>
 
       <p className="rounded-lg border border-border bg-white px-4 py-3 text-sm text-neutral-600">

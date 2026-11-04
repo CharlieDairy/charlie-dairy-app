@@ -54,7 +54,7 @@ export async function getBalanceSheet(): Promise<BalanceSheet> {
     // shared ledger -- scoped to venture "Dairy", matching the Capital Ledger page's own filter.
     prisma.capitalEntry.findMany({ where: { venture: "Dairy" }, select: { date: true, credit: true, debit: true } }),
     getCustomerSalesSummary("month"),
-    getMonthlyPnl(),
+    getMonthlyPnl({ cashOnly: true }), // the balance sheet is built from the cash book, so its profit line must be too
   ]);
 
   let cashAndBank = 0;
