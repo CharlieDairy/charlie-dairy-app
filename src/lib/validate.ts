@@ -57,10 +57,16 @@ type NumOpts = {
   positive?: boolean;
   /** round to this many decimals (default 2) */
   decimals?: number;
+  /** read a single comma followed by 1-2 digits as a decimal point ("5,25" is 5.25); used for litres, never for money */
+  decimalComma?: boolean;
 };
 
 export function parseNumber(value: string, label: string, opts: NumOpts = {}): number {
-  const s = value.trim().replace(/,/g, "");
+  let s = value.trim();
+  // A comma is a thousands separator ("1,000") unless this field reads it as a decimal point ("5,25").
+  s = opts.decimalComma && /^-?\d+,\d{1,2}$/.test(s) ? s.replace(",", ".") : s.replace(/,/g, "");
+  // ".75" and "5." are what people type on a phone for three-quarters of a litre and a whole number.
+  s = s.replace(/^(-?)\.(?=\d)/, "$10.").replace(/^(-?\d+)\.$/, "$1");
   if (!/^-?\d+(\.\d+)?$/.test(s)) throw new ValidationError(`${label} must be a number.`);
   const n = Number(s);
   if (!Number.isFinite(n)) throw new ValidationError(`${label} must be a number.`);

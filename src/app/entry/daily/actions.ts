@@ -55,7 +55,7 @@ async function saveImpl(fd: FormData): Promise<FormState> {
   for (const k of names) {
     const m = /^m_(.+)_([MAE])$/.exec(k);
     if (!m || !ID.test(m[1])) continue;
-    const litres = optNum(fd, k, "Milk litres", { min: 0, max: 200 });
+    const litres = optNum(fd, k, "Milk litres", { min: 0, max: 200, decimalComma: true });
     if (litres === null) continue;
     milkWanted.set(`${m[1]}|${SHIFT_BY_CODE[m[2] as "M" | "A" | "E"]}`, litres);
     cowIds.add(m[1]);
@@ -99,7 +99,7 @@ async function saveImpl(fd: FormData): Promise<FormState> {
   for (const k of names) {
     const m = /^sale_(.+)$/.exec(k);
     if (!m || !ID.test(m[1])) continue;
-    const litres = optNum(fd, k, "Milk sold", { min: 0, max: 100_000 });
+    const litres = optNum(fd, k, "Milk sold", { min: 0, max: 100_000, decimalComma: true });
     if (litres !== null && litres > 0) saleWanted.set(m[1], litres);
   }
   if (saleWanted.size > 0) {
@@ -135,7 +135,7 @@ async function saveImpl(fd: FormData): Promise<FormState> {
   // ---- milk used on the farm ---------------------------------------------------------------------------------
   const useWanted = new Map<string, number>();
   for (const t of USE_TYPES) {
-    const litres = optNum(fd, `use_${t}`, "Milk used", { min: 0, max: 100_000 });
+    const litres = optNum(fd, `use_${t}`, "Milk used", { min: 0, max: 100_000, decimalComma: true });
     if (litres !== null && litres > 0) useWanted.set(t, litres);
   }
   if (useWanted.size > 0) {

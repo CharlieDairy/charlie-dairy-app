@@ -51,7 +51,7 @@ async function readSale(formData: FormData): Promise<SaleFields> {
   const date = reqDate(formData, "date", "Date");
   const typedBuyer = reqText(formData, "buyer", "Customer", { max: 100 });
   const shift = optEnum(formData, "shift", "Shift", SHIFTS);
-  const litres = reqNum(formData, "litres", "Litres", { positive: true, max: 100_000 });
+  const litres = reqNum(formData, "litres", "Litres", { positive: true, max: 100_000, decimalComma: true });
 
   const customer = await resolveCustomer(typedBuyer);
   const rate = customer.agreedRate;
@@ -66,7 +66,7 @@ export async function submitMilkSale(_prev: FormState, formData: FormData): Prom
 
 async function submitInternalUse(formData: FormData, user: { name: string; role: string }, option: (typeof INTERNAL_USE_OPTIONS)[number]) {
   const date = reqDate(formData, "date", "Date");
-  const litres = reqNum(formData, "litres", "Litres", { positive: true, max: 100_000 });
+  const litres = reqNum(formData, "litres", "Litres", { positive: true, max: 100_000, decimalComma: true });
 
   // One figure per use type per day: a second one would silently add to the first. Only an Admin can add another.
   const sameDay = await prisma.milkUsageRecord.findFirst({ where: { date, type: option.type }, select: { litres: true } });

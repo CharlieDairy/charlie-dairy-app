@@ -39,7 +39,7 @@ async function submitMilkingImpl(formData: FormData): Promise<FormState> {
   assertNotBackdated(date, user, "Date");
 
   // Zero is a valid recorded milking (a cow that gave nothing); 200 L is well past any real single milking.
-  const entries = SHIFT_FIELDS.map((s) => ({ ...s, litres: optNum(formData, s.field, s.label, { min: 0, max: 200 }) })).filter(
+  const entries = SHIFT_FIELDS.map((s) => ({ ...s, litres: optNum(formData, s.field, s.label, { min: 0, max: 200, decimalComma: true }) })).filter(
     (s): s is (typeof SHIFT_FIELDS)[number] & { litres: number } => s.litres !== null
   );
   if (entries.length === 0) {
@@ -108,7 +108,7 @@ async function updateMilkingImpl(formData: FormData): Promise<FormState> {
   const targetCowId = typeof targetRaw === "string" && targetRaw.trim() !== "" ? targetRaw : cowId; // the cow it should belong to
   const date = reqDate(formData, "date", "Date");
 
-  const values = SHIFT_FIELDS.map((s) => ({ ...s, litres: optNum(formData, s.field, s.label, { min: 0, max: 200 }) }));
+  const values = SHIFT_FIELDS.map((s) => ({ ...s, litres: optNum(formData, s.field, s.label, { min: 0, max: 200, decimalComma: true }) }));
   if (values.every((v) => v.litres === null)) {
     throw new ValidationError("Enter litres for at least one session, or use Delete to remove the whole record.");
   }

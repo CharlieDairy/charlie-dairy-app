@@ -82,7 +82,7 @@ function EditRow({
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-neutral-500">Litres</label>
-            <input name="litres" type="number" step="0.1" min="0" defaultValue={sale.litres} required className="border border-neutral-300 rounded px-2 py-1 text-sm w-24" />
+            <input name="litres" type="number" step="0.01" min="0" defaultValue={sale.litres} required className="border border-neutral-300 rounded px-2 py-1 text-sm w-24" />
           </div>
           <span className="text-xs text-neutral-400 pb-1.5">Rate and amount are recomputed from the customer&apos;s current agreed rate on save.</span>
           <button type="submit" disabled={isPending} className="bg-green-700 text-white rounded px-3 py-1.5 text-xs font-medium disabled:opacity-60">

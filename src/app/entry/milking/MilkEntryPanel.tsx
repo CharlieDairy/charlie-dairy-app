@@ -192,9 +192,9 @@ function LitresFields({ initial }: { initial?: { morning: number | null; afterno
             name={f.name}
             type="number"
             inputMode="decimal"
-            step="0.1"
+            step="0.01"
             min="0"
-            placeholder="0.0"
+            placeholder="0.00"
             defaultValue={f.v ?? undefined}
             autoFocus={i === 0}
             className={FIELD}

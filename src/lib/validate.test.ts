@@ -19,6 +19,24 @@ test("numbers: strict parsing rejects junk that parseFloat would accept", () => 
   rejects(() => parseNumber("", "Litres"));
 });
 
+test("numbers: up to 2 decimal places for litres, however they are typed on a phone", () => {
+  assert.equal(parseNumber("5.25", "Litres"), 5.25);
+  assert.equal(parseNumber(".75", "Litres"), 0.75); // no leading zero
+  assert.equal(parseNumber("5.", "Litres"), 5); // trailing dot
+  assert.equal(parseNumber("5.256", "Litres"), 5.26); // more than 2 decimals are rounded
+  assert.equal(parseNumber("-.5", "Litres", { min: -10 }), -0.5);
+  rejects(() => parseNumber(".", "Litres"), /must be a number/);
+  rejects(() => parseNumber("5..2", "Litres"), /must be a number/);
+});
+
+test("numbers: a decimal comma is only read as a decimal point when the field opts in", () => {
+  assert.equal(parseNumber("5,25", "Litres", { decimalComma: true }), 5.25);
+  assert.equal(parseNumber("5,5", "Litres", { decimalComma: true }), 5.5);
+  assert.equal(parseNumber("1,000", "Litres", { decimalComma: true, max: 5000 }), 1000); // three digits after the comma: thousands
+  assert.equal(parseNumber("1,250.5", "Amount"), 1250.5); // money still treats a comma as thousands
+  assert.equal(parseNumber("5,25", "Amount"), 525); // unchanged for fields that do not opt in
+});
+
 test("numbers: range rules", () => {
   rejects(() => parseNumber("-1", "Litres"), /less than/);
   assert.equal(parseNumber("0", "Litres"), 0);

@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState } from "react";
 import { saveDailySheet, type FormState } from "./actions";
 import { rowTotal } from "@/lib/dailySheet";
+import PhotoFill from "./PhotoFill";
 
 export type CowRow = { id: string; tag: string; m: string; a: string; e: string };
 export type CustomerRow = { id: string; name: string; rate: number; litres: string };
@@ -28,11 +29,13 @@ const num = (v: string | null | undefined) => {
   const n = v === null || v === undefined || v.trim() === "" ? 0 : Number(v);
   return Number.isFinite(n) ? n : 0;
 };
-const fmt = (n: number) => (Math.round(n * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 });
+const fmt = (n: number) => (Math.round(n * 100) / 100).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 const boxBase = "min-w-0 rounded-md border px-1 py-2 text-center text-base tabular-nums";
 const boxOpen = "border-neutral-300 bg-white";
 const boxLocked = "border-neutral-200 bg-neutral-100 text-neutral-500 cursor-not-allowed";
+// A total or stock figure the sheet works out itself: a box like the others, but never typed into.
+const totalBox = "block min-w-0 w-full rounded-md border border-neutral-300 bg-neutral-50 px-1 py-2 text-center text-base font-semibold tabular-nums text-neutral-800 min-h-[42px]";
 const th = "py-2 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500";
 
 export default function DailySheetForm({ date, cows, customers, usage, feed, note, version, groupTotal, canFeed, isAdmin }: Props) {
@@ -71,6 +74,33 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
     setTotals(calc((name) => (fd.get(name) as string | null) ?? null));
   };
 
+  // Puts figures read from a photo into the EMPTY, unlocked boxes as a draft (yellow). Saved boxes and anything already typed are
+  // left alone, and nothing is saved until the person presses Save.
+  const applyFills = (fills: Record<string, string>) => {
+    const result = { applied: 0, locked: 0, typed: 0 };
+    const form = formRef.current;
+    if (!form) return result;
+    for (const [name, value] of Object.entries(fills)) {
+      const el = form.elements.namedItem(name);
+      if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) continue;
+      if (el.readOnly) {
+        result.locked++;
+        continue;
+      }
+      if (el.value.trim() !== "") {
+        result.typed++;
+        continue;
+      }
+      // a React-controlled box ignores a plain .value assignment, so go through the browser's own setter and tell the form
+      const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(el, value);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.classList.add("ring-2", "ring-amber-400", "!bg-amber-50");
+      result.applied++;
+    }
+    return result;
+  };
+
   const gap = totals.production - totals.sold - totals.used;
   const lockedCount =
     cows.reduce((n, c) => n + [c.m, c.a, c.e].filter(locked).length, 0) +
@@ -92,6 +122,8 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
         </p>
       )}
 
+      <PhotoFill date={date} onApply={applyFills} />
+
       <div key={version} className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
         <section className="bg-white border border-neutral-200 rounded-lg p-4 xl:row-span-4">
           <h2 className="font-semibold text-neutral-900 mb-3">1. Milk by cow (litres)</h2>
@@ -101,7 +133,7 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
               <col />
               <col />
               <col />
-              <col className="w-16" />
+              <col className="w-24" />
             </colgroup>
             <thead>
               <tr>
@@ -123,7 +155,7 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                         <input
                           name={`m_${c.id}_${s}`}
                           type="number"
-                          step="0.1"
+                          step="0.01"
                           min="0"
                           max="200"
                           inputMode="decimal"
@@ -137,7 +169,9 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                       </td>
                     );
                   })}
-                  <td className="py-1.5 pl-1 text-center font-semibold tabular-nums text-neutral-800">{totals.rows[c.id] ? fmt(totals.rows[c.id]) : ""}</td>
+                  <td className="px-1 py-1.5">
+                    <output className={totalBox} aria-label={`Tag ${c.tag} total litres`}>{totals.rows[c.id] ? fmt(totals.rows[c.id]) : ""}</output>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -146,7 +180,9 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                 <td colSpan={4} className="py-2.5 text-left font-semibold">
                   Production
                 </td>
-                <td className="py-2.5 pl-1 text-center font-semibold tabular-nums">{fmt(totals.production)}</td>
+                <td className="px-1 py-2.5">
+                  <output className={totalBox} aria-label="Production total litres">{fmt(totals.production)}</output>
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -164,7 +200,7 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                 <input
                   name={`sale_${c.id}`}
                   type="number"
-                  step="0.1"
+                  step="0.01"
                   min="0"
                   inputMode="decimal"
                   autoComplete="off"
@@ -187,7 +223,7 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                 <input
                   name={`use_${u.type}`}
                   type="number"
-                  step="0.1"
+                  step="0.01"
                   min="0"
                   inputMode="decimal"
                   autoComplete="off"
@@ -210,7 +246,7 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                 <col />
                 <col />
                 <col />
-                <col className="w-14" />
+                <col className="w-24" />
               </colgroup>
               <thead>
                 <tr>
@@ -273,7 +309,9 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
                         className={boxCls(f.in, "w-full")}
                       />
                     </td>
-                    <td className={`py-1.5 pl-1 text-center tabular-nums ${f.stock < 0 ? "text-red-600" : "text-neutral-600"}`}>{fmt(f.stock)}</td>
+                    <td className="px-1 py-1.5">
+                      <output className={`${totalBox} ${f.stock < 0 ? "!text-red-600" : ""}`} aria-label={`${f.name} stock`}>{fmt(f.stock)}</output>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -77,7 +77,7 @@ export default function MilkSaleForm({ customers }: { customers: CustomerOption[
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="litres" className="text-sm font-medium text-neutral-700">Litres</label>
-        <input id="litres" name="litres" type="number" step="0.1" min="0" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
+        <input id="litres" name="litres" type="number" step="0.01" min="0" required className="border border-neutral-300 rounded-md px-3 py-2 text-base" />
       </div>
 
       <div className="rounded-md bg-neutral-50 border border-neutral-200 px-3 py-2 text-sm">
