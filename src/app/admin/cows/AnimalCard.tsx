@@ -3,6 +3,7 @@
 import Link from "next/link";
 import StatusSelect from "./StatusSelect";
 import DeleteCowButton from "./DeleteCowButton";
+import StatusWatermark from "@/components/StatusWatermark";
 
 export type AnimalRow = {
   id: string;
@@ -53,17 +54,20 @@ export default function AnimalCard({
         <Link
           href={`/admin/cows/${animal.id}?edit=1`}
           title="Edit"
-          className="w-16 h-16 rounded-md border border-neutral-200 bg-neutral-50 shrink-0 overflow-hidden flex items-center justify-center"
+          className="relative w-16 h-16 rounded-md border border-neutral-200 bg-neutral-50 shrink-0 overflow-hidden flex items-center justify-center"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={animal.photoUrl} alt={`Cow ${animal.tag}`} className="w-full h-full object-contain" />
+          <StatusWatermark status={animal.status} />
         </Link>
       ) : (
         <Link
           href={`/admin/cows/${animal.id}?edit=1`}
           title="Edit"
-          className="w-16 h-16 rounded-md bg-neutral-100 border border-neutral-200 shrink-0"
-        />
+          className="relative w-16 h-16 rounded-md bg-neutral-100 border border-neutral-200 shrink-0 overflow-hidden"
+        >
+          <StatusWatermark status={animal.status} />
+        </Link>
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">

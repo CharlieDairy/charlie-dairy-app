@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useEffect, useState } from "react";
 import { updateCowDetails, type FormState } from "./actions";
+import StatusWatermark from "@/components/StatusWatermark";
 
 export default function CowEditForm({
   cowId,
@@ -12,6 +13,7 @@ export default function CowEditForm({
   source,
   notes,
   photoUrl,
+  status,
   autoOpen = false,
 }: {
   cowId: string;
@@ -22,6 +24,8 @@ export default function CowEditForm({
   source: string | null;
   notes: string | null;
   photoUrl: string | null;
+  /** the animal's status: a SOLD or DEAD animal's photo is stamped */
+  status?: string;
   autoOpen?: boolean;
 }) {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(updateCowDetails, undefined);
@@ -62,7 +66,7 @@ export default function CowEditForm({
         <div className="flex flex-col gap-2">
           <div
             onClick={() => hasPhoto && setLightboxOpen(true)}
-            className={`w-full aspect-square rounded-md border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden ${hasPhoto ? "cursor-zoom-in" : ""}`}
+            className={`relative w-full aspect-square rounded-md border border-dashed border-neutral-300 bg-neutral-50 flex items-center justify-center overflow-hidden ${hasPhoto ? "cursor-zoom-in" : ""}`}
           >
             {hasPhoto ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -70,6 +74,7 @@ export default function CowEditForm({
             ) : (
               <span className="text-neutral-300 text-sm">No photo</span>
             )}
+            <StatusWatermark status={status} size="sm" />
           </div>
           <label className="bg-green-700 text-white rounded-md px-3 py-2 text-sm font-medium text-center cursor-pointer hover:bg-green-800">
             {photoUrl ? "Change photo" : "Upload photo"}
@@ -139,8 +144,11 @@ export default function CowEditForm({
         onClick={() => setLightboxOpen(false)}
         className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6 cursor-zoom-out"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photoPreview ?? photoUrl ?? undefined} alt="Cow (enlarged)" className="max-w-full max-h-full object-contain rounded-md" />
+        <div className="relative inline-block max-w-full max-h-full overflow-hidden rounded-md">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photoPreview ?? photoUrl ?? undefined} alt="Cow (enlarged)" className="block max-w-[90vw] max-h-[85vh] object-contain" />
+          <StatusWatermark status={status} size="lg" />
+        </div>
       </div>
     )}
     </>

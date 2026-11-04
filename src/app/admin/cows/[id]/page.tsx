@@ -13,6 +13,7 @@ import WeightChart from "../WeightChart";
 import CowCustomFieldsForm from "../CowCustomFieldsForm";
 import PeriodBar from "@/components/PeriodBar";
 import RecordActions from "@/components/RecordActions";
+import StatusWatermark from "@/components/StatusWatermark";
 import { getLiveUser, hasPermission } from "@/lib/access";
 import {
   updateWeightRecord, deleteWeightRecord, updateVaccination, deleteVaccination, updateTreatment, deleteTreatment,
@@ -98,9 +99,10 @@ export default async function CowProfilePage({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {cow.photoUrl && (
-            <div className="w-16 h-16 rounded-md border border-neutral-200 bg-neutral-50 overflow-hidden flex items-center justify-center shrink-0">
+            <div className="relative w-16 h-16 rounded-md border border-neutral-200 bg-neutral-50 overflow-hidden flex items-center justify-center shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={cow.photoUrl} alt={`Cow ${cow.tag}`} className="w-full h-full object-contain" />
+              <StatusWatermark status={cow.status} />
             </div>
           )}
           <div>
@@ -162,6 +164,7 @@ export default async function CowProfilePage({
             source={cow.source}
             notes={cow.notes}
             photoUrl={cow.photoUrl}
+            status={cow.status}
             autoOpen={edit === "1"}
           />
         </div>
