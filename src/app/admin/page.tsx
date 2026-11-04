@@ -220,6 +220,13 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           <Metric icon={IconArchive} label="Unsold balance" value={d.periodMilk.records && salesComplete ? `${(d.periodMilk.litres - sold).toFixed(1)} L` : "Unreconciled"} detail="Not confirmed unsold stock: use, waste and opening stock need reconciliation" />
           <Metric icon={IconUsers} label="Avg per milking cow" value={d.periodMilk.average === null ? "Pending" : `${d.periodMilk.average.toFixed(1)} L`} detail={`${d.periodMilk.recorded} of ${d.expected.length} logged in this period`} />
         </div>
+        {finance && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Metric icon={IconDollar} label="Sale revenue" value={formatRs(income)} detail={`Money received ${periodRangeLabel} (milk, animals, other)`} tone="green" />
+            <Metric icon={IconLayers} label="Expenses" value={formatRs(expense)} detail="Feed, salaries and other running costs paid" tone="rose" />
+            <Metric icon={IconTrend} label={net >= 0 ? "Profit" : "Loss"} value={formatRs(Math.abs(net))} detail={income > 0 ? `${(net / income * 100).toFixed(1)}% of revenue` : "No income recorded"} tone={net >= 0 ? "green" : "rose"} />
+          </div>
+        )}
         <p className="text-xs text-slate-500">AM: {d.morning.records ? `${d.morning.litres.toFixed(1)} L` : "pending"} · PM: {d.evening.records ? `${d.evening.litres.toFixed(1)} L` : "pending"} · for the selected period. Missing-entry checks use the current milking herd; historical herd membership may differ. Explicit zero entries remain zero.</p>
 
         <Panel title="Needs attention">
