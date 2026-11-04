@@ -218,7 +218,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           <Metric icon={IconDroplet} label="Milk produced" value={d.periodMilk.records ? `${d.periodMilk.litres.toFixed(1)} L` : "Pending"} detail={periodRangeLabel} />
           <Metric icon={IconTrend} label="Sold" value={salesComplete ? `${sold.toFixed(1)} L` : d.periodSales.length ? "Incomplete" : "Not recorded"} detail={`${formatRs(d.periodSales.reduce((n, s) => n + s.amount, 0))} recorded · ${new Set(d.periodSales.map(s => s.buyer).filter(Boolean)).size} named buyers`} />
           <Metric icon={IconArchive} label="Unsold balance" value={d.periodMilk.records && salesComplete ? `${(d.periodMilk.litres - sold).toFixed(1)} L` : "Unreconciled"} detail="Not confirmed unsold stock: use, waste and opening stock need reconciliation" />
-          <Metric icon={IconUsers} label="Avg per milking cow" value={d.periodMilk.average === null ? "Pending" : `${d.periodMilk.average.toFixed(1)} L`} detail={`${d.periodMilk.recorded} of ${d.expected.length} logged in this period`} />
+          <Metric icon={IconUsers} label="Avg per milking cow · per day" value={d.periodMilk.average === null || !d.recordDays ? "Pending" : `${(d.periodMilk.average / d.recordDays).toFixed(1)} L`} detail={`${d.periodMilk.recorded} of ${d.expected.length} logged · over ${d.recordDays} recorded day${d.recordDays === 1 ? "" : "s"}`} />
         </div>
         {finance && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -227,7 +227,13 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
             <Metric icon={IconTrend} label={net >= 0 ? "Profit" : "Loss"} value={formatRs(Math.abs(net))} detail={income > 0 ? `${(net / income * 100).toFixed(1)}% of revenue` : "No income recorded"} tone={net >= 0 ? "green" : "rose"} />
           </div>
         )}
-        <p className="text-xs text-slate-500">AM: {d.morning.records ? `${d.morning.litres.toFixed(1)} L` : "pending"} · PM: {d.evening.records ? `${d.evening.litres.toFixed(1)} L` : "pending"} · for the selected period. Missing-entry checks use the current milking herd; historical herd membership may differ. Explicit zero entries remain zero.</p>
+        {finance && d.cashLastDate && d.cashLastDate < periodRangeLabel.slice(-10) && (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            The cash book was last updated on <strong>{d.cashLastDate}</strong>, so money received and paid after that date is not in Sale revenue, Expenses or Profit yet.
+            Milk billed in this period: <strong>{formatRs(d.periodSales.reduce((n, s) => n + s.amount, 0))}</strong> (counted as income only when the money reaches the cash book, so it is never counted twice). Enter the missing Cash Register entries to complete them.
+          </p>
+        )}
+        <p className="text-xs text-slate-500">Morning: {d.morning.records ? `${d.morning.litres.toFixed(1)} L` : "pending"} · Afternoon: {d.afternoon.records ? `${d.afternoon.litres.toFixed(1)} L` : "pending"} · Evening: {d.evening.records ? `${d.evening.litres.toFixed(1)} L` : "pending"} · for the selected period. Missing-entry checks use the current milking herd; historical herd membership may differ. Explicit zero entries remain zero.</p>
 
         <Panel title="Needs attention">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
