@@ -59,3 +59,6 @@ scripts/deploy/dump/
 .vercel
 .env*
 scripts/history-load/history.json
+
+# in-browser OCR engine, copied from node_modules by scripts/copy-ocr-assets.js
+/public/ocr/

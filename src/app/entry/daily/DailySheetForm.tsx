@@ -122,7 +122,11 @@ export default function DailySheetForm({ date, cows, customers, usage, feed, not
         </p>
       )}
 
-      <PhotoFill date={date} onApply={applyFills} />
+      <PhotoFill
+        date={date}
+        ctx={{ cows: cows.map((c) => ({ id: c.id, tag: c.tag })), customers: customers.map((c) => ({ id: c.id, name: c.name })), feeds: feed.map((f) => ({ id: f.id, name: f.name })), canFeed }}
+        onApply={applyFills}
+      />
 
       <div key={version} className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
         <section className="bg-white border border-neutral-200 rounded-lg p-4 xl:row-span-4">

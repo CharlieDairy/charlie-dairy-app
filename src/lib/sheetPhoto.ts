@@ -1,21 +1,18 @@
-import { z } from "zod";
+// Fill the Daily Record Sheet from a photo of a similar paper sheet. The photo is read on the person's own device (lib/sheetOcr.ts)
+// into the structure below; this module turns that into the sheet's own input names, matching tags, buyers and feeds to the ones
+// on the sheet. Nothing here talks to the database or any outside service, so it is tested on its own. The result is only ever a
+// draft that a person checks before saving.
 
-// Fill the Daily Record Sheet from a photo of a similar paper sheet. The AI reads the photo into the structure below; this module
-// turns that into the sheet's own input names, matching tags, buyers and feeds to the ones on the sheet. Nothing here talks to the
-// database or the AI, so it is tested on its own. The result is only ever a draft that a person checks before saving.
-
-const num = z.number().nullable();
-
-export const SheetReadSchema = z.object({
-  date: z.string(), // YYYY-MM-DD, or "" when no date can be read
-  milk: z.array(z.object({ tag: z.string(), morning: num, noon: num, evening: num })),
-  sold: z.array(z.object({ buyer: z.string(), litres: num })),
-  used: z.array(z.object({ kind: z.string(), litres: num })),
-  feed: z.array(z.object({ name: z.string(), used: num, received: num })),
-  note: z.string(),
-  unclear: z.array(z.string()),
-});
-export type SheetRead = z.infer<typeof SheetReadSchema>;
+/** What was read from the photo. A figure that could not be read is null. */
+export type SheetRead = {
+  date: string; // YYYY-MM-DD, or "" when no date can be read
+  milk: { tag: string; morning: number | null; noon: number | null; evening: number | null }[];
+  sold: { buyer: string; litres: number | null }[];
+  used: { kind: string; litres: number | null }[];
+  feed: { name: string; used: number | null; received: number | null }[];
+  note: string;
+  unclear: string[];
+};
 
 export type SheetContext = {
   cows: { id: string; tag: string }[];

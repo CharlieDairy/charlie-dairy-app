@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSheetFill, litresText, SheetReadSchema, type SheetContext, type SheetRead } from "./sheetPhoto";
+import { buildSheetFill, litresText, type SheetContext, type SheetRead } from "./sheetPhoto";
 
 const ctx: SheetContext = {
   cows: [{ id: "c55", tag: "55" }, { id: "c7", tag: "7" }, { id: "cA", tag: "A12" }],
@@ -69,10 +69,4 @@ test("the note is kept, and anything the AI could not read is passed on", () => 
   const r = buildSheetFill(read({ note: "  AI of Tag 55  ", unclear: ["Tag 7 evening", ""] }), ctx);
   assert.equal(r.fills.note, "AI of Tag 55");
   assert.deepEqual(r.unmatched, ["Hard to read: Tag 7 evening"]);
-});
-
-test("the AI's answer is checked against the expected shape", () => {
-  assert.equal(SheetReadSchema.safeParse(empty).success, true);
-  assert.equal(SheetReadSchema.safeParse({ ...empty, milk: [{ tag: "5", morning: "five" }] }).success, false);
-  assert.equal(SheetReadSchema.safeParse({ date: "2026-10-25" }).success, false);
 });
