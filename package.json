@@ -27,7 +27,7 @@
     "@vercel/blob": "^2.8.0",
     "@vercel/speed-insights": "^2.0.0",
     "bcryptjs": "^3.0.3",
-    "next": "^16.4.3",
+    "next": "^16.4.6",
     "next-auth": "^5.0.0-beta.32",
     "prisma": "6.19.3",
     "react": "19.2.8",
