@@ -17,3 +17,11 @@ Undo the receipt links by deleting CustomerPayment rows whose `enteredBy` is "Re
   marker `account = "CashBook Meezan 09-10-2026"`, mode BANK) and marked the 15 petty-cash "Cash from Company" receipts that are the other side of a bank transfer as class TRANSFER.
   Source export: `Meezan Bank Account 09-10-2026@CashBook.csv` (CashBook > Reports > Excel Report).
 - Backups: `full-backup-2026-10-09T12-28-58-980Z.json` (before 2024), `full-backup-2026-10-09T12-39-24-935Z.json` (before the bank book).
+
+## Third step (20 Nov 2026): petty cash 13 Oct - 19 Nov 2026
+- `cashbook_sync_2026_11.js "<CashBook csv>"` - compares the CashBook petty-cash export with the app (date + amounts) and lists what is missing; `--apply` writes it.
+  Marker: cash entries with `account = "CashBook sync 20-11-2026"`. Re-runnable for a newer export: it only adds rows the app does not already have.
+- 63 entries added (3 zero-amount rows skipped). The 10 milk receipts were attached to their customer's payment (milk is counted when billed, so a receipt
+  without a payment would be counted twice). "Transfer to Agri Expense Book" (Rs 80,000) is class TRANSFER. The 31 Oct silage purchase (64,440 kg, Rs 931,400) was added to feed stock.
+  Tags 133 and 140 were set to SOLD (the cash book records their sale). App cash now equals the CashBook closing balance (-65,374).
+- Backup before: `backups/full-backup-2026-11-20T15-24-09-010Z.json`.
