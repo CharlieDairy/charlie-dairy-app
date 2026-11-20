@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getLiveUser, hasPermission } from "@/lib/access";
 import { getFarmDashboard } from "@/lib/reports/farmDashboard";
 import { getFeedOverview } from "@/lib/reports/feed";
+import { activityNotice } from "@/lib/dailyActivity";
 import { formatRs } from "@/lib/format";
 import DailyProductionChart from "./DailyProductionChart";
 import type { ReactNode } from "react";
@@ -136,9 +137,10 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   // P&L, capital and the finance summary are for the Admin and the Partners (Editors and View Only users never see them).
   const finance = isAdmin || user?.role === "PARTNER";
   const canWrite = user?.role === "ADMIN" || user?.role === "EDITOR";
-  const [d, feed, watchRows] = await Promise.all([
+  const [d, feed, activity, watchRows] = await Promise.all([
     getFarmDashboard(params),
     getFeedOverview(),
+    isAdmin ? activityNotice() : Promise.resolve(null),
     prisma.watchFinding.groupBy({ by: ["severity"], where: { status: "OPEN", ...(isAdmin ? {} : { financeOnly: false }) }, _count: { _all: true } }).catch(() => []),
   ]);
   const watchCount = (sev: string) => watchRows.find((w) => w.severity === sev)?._count._all ?? 0;
@@ -197,6 +199,19 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </span>
         <span className="text-sm font-medium text-green-800">See what to fix →</span>
       </Link>
+
+      {activity && (activity.pastDays.length > 0 || activity.today > 0) && (
+        <Link href="/admin/activity" className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${activity.pastDays.length > 0 ? "border-amber-200 bg-amber-50" : "border-sky-200 bg-sky-50"}`}>
+          <span className="text-sm font-semibold text-slate-900">
+            Farm manager activity:{" "}
+            {activity.pastDays.length > 0
+              ? `${activity.pastDays.reduce((n, d) => n + d.total, 0)} entr${activity.pastDays.reduce((n, d) => n + d.total, 0) === 1 ? "y" : "ies"} over ${activity.pastDays.length} day${activity.pastDays.length === 1 ? "" : "s"} waiting for your review`
+              : "nothing waiting for review"}
+            {activity.today > 0 ? ` · ${activity.today} entr${activity.today === 1 ? "y" : "ies"} so far today` : ""}
+          </span>
+          <span className="text-sm font-medium text-green-800">Review →</span>
+        </Link>
+      )}
 
       {(finance || operations) && (
         <form className="flex flex-wrap gap-2 items-center rounded-xl border border-slate-200 bg-white p-3">

@@ -17,7 +17,7 @@ const MODELS = [
   'pregnancyCheck', 'calving', 'calf', 'milkingRecord', 'milkUsageRecord', 'milkSale',
   'customerPayment', 'employee', 'salaryPayment', 'attendanceRecord',
   'feedTransaction', 'feedItem', 'customer', 'vendor', 'cashTransaction',
-  'capitalEntry', 'masterDataItem', 'asset', 'auditLog', 'dailyNote', 'deletionRequest',
+  'capitalEntry', 'masterDataItem', 'asset', 'auditLog', 'dailyNote', 'deletionRequest', 'activityReview',
 ];
 
 (async () => {

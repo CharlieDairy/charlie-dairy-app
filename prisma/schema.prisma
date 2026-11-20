@@ -869,6 +869,15 @@ model AuditLog {
   @@index([createdAt])
 }
 
+// The Admin's daily review of what the farm manager entered. One row per farm day (Pakistan time, "yyyy-mm-dd") once the
+// Admin has marked that day reviewed; days without a row that have entries show as a notification on the dashboard.
+model ActivityReview {
+  day          String   @id
+  reviewedById String?
+  reviewedBy   String
+  reviewedAt   DateTime @default(now())
+}
+
 // A delete the farm manager asked for. Nothing is removed until the Admin approves it on the Delete approvals page
 // (the Admin's own deletes happen straight away). entity is the kind of record: CASH, MILKING, MILK_SALE, MILK_USAGE,
 // CUSTOMER_PAYMENT, FEED, SALARY_PAYMENT or RESTOCK. status is PENDING, APPROVED or REJECTED.
