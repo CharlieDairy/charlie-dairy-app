@@ -9,6 +9,7 @@ import { controlRules } from "./rules/control";
 import { integrityRules } from "./rules/integrity";
 import { accountingRules } from "./rules/accounting";
 import { gapRules } from "./rules/gaps";
+import { opexRecurringRules } from "./rules/opexRecurring";
 
 export const ALL_RULES: Rule[] = [
   ...dataEntryRules,
@@ -18,6 +19,7 @@ export const ALL_RULES: Rule[] = [
   ...controlRules,
   ...integrityRules,
   ...accountingRules,
+  ...opexRecurringRules,
   ...gapRules,
 ];
 
