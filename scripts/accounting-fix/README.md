@@ -25,3 +25,10 @@ Undo the receipt links by deleting CustomerPayment rows whose `enteredBy` is "Re
   without a payment would be counted twice). "Transfer to Agri Expense Book" (Rs 80,000) is class TRANSFER. The 31 Oct silage purchase (64,440 kg, Rs 931,400) was added to feed stock.
   Tags 133 and 140 were set to SOLD (the cash book records their sale). App cash now equals the CashBook closing balance (-65,374).
 - Backup before: `backups/full-backup-2026-11-20T15-24-09-010Z.json`.
+
+## Fourth step (20 Nov 2026): salary records from the cash book
+- `salary_records_from_cashbook.js` - creates the Team module's SalaryPayment records from the salary entries already in the cash book
+  (183 records: Hakeem 138, Abdul Basit 30, Taha 15). Each is linked to its own cash entry (`cashTransactionId`), so no cash row is added and
+  no P&L, cash flow or balance sheet figure changes. "A.B" is read as Abdul Basit and "Haleem" as Hakeem. Left alone: the 2 Dr. Ammar salaries
+  (not an employee) and the Rs 9,200 temporary wedding labour. Marker: `enteredBy = "Salary backfill (cash book, 20 Nov 2026)"`. Safe to re-run.
+- Backup before: `backups/full-backup-2026-11-20T15-52-42-063Z.json`.
