@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getActiveWithdrawals } from "@/lib/reports/withdrawal";
-import { type Rule, addDays, daysBetween, key, listDates } from "../types";
+import { getBreedingRows } from "@/lib/breeding/herdState";
+import { FOLLOW_UP } from "@/lib/breeding/status";
+import { type FindingDraft, type Rule, addDays, daysBetween, key, listDates } from "../types";
 
 const INACTIVE = ["SOLD", "DEAD"] as const;
 
@@ -37,26 +39,55 @@ export const herdRules: Rule[] = [
   },
   {
     id: "breeding.pd-due",
-    async run({ today }) {
-      const ins = await prisma.insemination.findMany({
-        where: { date: { gte: addDays(today, -120), lte: addDays(today, -45) }, cow: { status: { notIn: [...INACTIVE] } } },
-        select: { cowId: true, date: true, cow: { select: { tag: true } } },
-        orderBy: { date: "desc" },
-      });
-      if (ins.length === 0) return [];
-      const checks = await prisma.pregnancyCheck.findMany({ where: { cowId: { in: ins.map((i) => i.cowId) } }, select: { cowId: true, date: true } });
-      const due = ins.filter((i) => !checks.some((c) => c.cowId === i.cowId && c.date >= i.date));
-      if (due.length === 0) return [];
-      return [
-        {
+    // Pregnancy checks: due from day 40 after the insemination, and the result must be confirmed by day 60 (breeding/status.ts).
+    async run() {
+      const rows = await getBreedingRows();
+      const line = (r: (typeof rows)[number]) => `Cow ${r.tag} (${r.breeding?.days} days since insemination)`;
+      const due = rows.filter((r) => r.breeding?.code === "CHECK_DUE");
+      const overdue = rows.filter((r) => r.breeding?.code === "CHECK_OVERDUE");
+      const out: FindingDraft[] = [];
+      if (due.length) {
+        out.push({
           key: "breeding.pd-due",
           ruleId: "breeding.pd-due",
           category: "HERD",
           severity: "MEDIUM",
-          title: `${due.length} inseminated cow${due.length === 1 ? "" : "s"} need a pregnancy check`,
-          detail: due.slice(0, 8).map((i) => `Cow ${i.cow.tag} - inseminated ${key(i.date)} (${daysBetween(today, i.date)} days ago)`).join("; "),
-          suggestion: "Pregnancy-check around day 45-60 after insemination and record the result; an open cow can be re-served sooner.",
+          title: `${due.length} inseminated cow${due.length === 1 ? " is" : "s are"} due for a pregnancy check (day ${FOLLOW_UP.checkDueDays})`,
+          detail: due.slice(0, 10).map(line).join("; "),
+          suggestion: `Check them and record the result on the Breeding Board (Pregnant or Open). The result has to be confirmed by day ${FOLLOW_UP.confirmByDays}.`,
           metric: { count: due.length },
+        });
+      }
+      if (overdue.length) {
+        out.push({
+          key: "breeding.pd-overdue",
+          ruleId: "breeding.pd-due",
+          category: "HERD",
+          severity: "HIGH",
+          title: `${overdue.length} cow${overdue.length === 1 ? " has" : "s have"} no confirmed pregnancy result after ${FOLLOW_UP.confirmByDays} days`,
+          detail: overdue.slice(0, 10).map(line).join("; "),
+          suggestion: "Record Pregnant or Open on the Breeding Board now. An open cow loses time until she is served again.",
+          metric: { count: overdue.length },
+        });
+      }
+      return out;
+    },
+  },
+  {
+    id: "breeding.waiting-for-heat",
+    async run() {
+      const waiting = (await getBreedingRows()).filter((r) => r.breeding?.code === "WAITING_FOR_HEAT" || r.breeding?.code === "OPEN");
+      if (waiting.length === 0) return [];
+      return [
+        {
+          key: "breeding.waiting-for-heat",
+          ruleId: "breeding.waiting-for-heat",
+          category: "HERD" as const,
+          severity: "LOW" as const,
+          title: `${waiting.length} animal${waiting.length === 1 ? " is" : "s are"} waiting for heat and not yet served`,
+          detail: waiting.slice(0, 10).map((r) => `Cow ${r.tag}: ${r.breeding?.detail}`).join("; "),
+          suggestion: "Watch for heat. When one is seen, record it on the Breeding Board and inseminate.",
+          metric: { count: waiting.length },
         },
       ];
     },

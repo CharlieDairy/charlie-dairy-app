@@ -14,6 +14,8 @@ import CowCustomFieldsForm from "../CowCustomFieldsForm";
 import PeriodBar from "@/components/PeriodBar";
 import RecordActions from "@/components/RecordActions";
 import StatusWatermark from "@/components/StatusWatermark";
+import BreedingBadge from "@/components/BreedingBadge";
+import { getBreedingTagMap } from "@/lib/breeding/herdState";
 import { getLiveUser, hasPermission } from "@/lib/access";
 import {
   updateWeightRecord, deleteWeightRecord, updateVaccination, deleteVaccination, updateTreatment, deleteTreatment,
@@ -72,12 +74,14 @@ export default async function CowProfilePage({
   if (!profile) notFound();
   const { cow, milking, dailyBreakdown, customFields, health } = profile;
 
-  const [statusLabels, genderLabels, locationRows, healthScore] = await Promise.all([
+  const [statusLabels, genderLabels, locationRows, healthScore, breedingTags] = await Promise.all([
     getLabelMap("COW_STATUS"),
     getLabelMap("COW_GENDER"),
     prisma.cowMovement.findMany({ select: { location: true }, distinct: ["location"], orderBy: { location: "asc" } }),
     getCowScore(id),
+    getBreedingTagMap(),
   ]);
+  const breeding = breedingTags.get(cow.id) ?? null;
   const locations = locationRows.map((r) => r.location);
   const currentLocation = cow.movements[0]?.location ?? null;
 
@@ -112,6 +116,7 @@ export default async function CowProfilePage({
               {labelFor(genderLabels, cow.gender)} · {labelFor(statusLabels, cow.status)}
               {currentLocation && <> · {currentLocation}</>}
             </p>
+            {breeding && <div className="mt-1"><BreedingBadge tag={breeding} withDetail /></div>}
           </div>
         </div>
         <Link href="/admin/cows" className="link-btn">
@@ -174,7 +179,7 @@ export default async function CowProfilePage({
           <div><span className="text-neutral-500">Last Calving:</span> {fmtDate(cow.lastCalvingDate)}</div>
           <div><span className="text-neutral-500">Expected Calving:</span> {fmtDate(cow.expectedCalving)}</div>
           <div><span className="text-neutral-500">Dry-Off Due:</span> {fmtDate(cow.dryDate)}</div>
-          <div><span className="text-neutral-500">Next AI Due:</span> {fmtDate(cow.nextAiDate)}</div>
+          <div><span className="text-neutral-500">Breeding:</span> {breeding ? breeding.label : "—"}</div>
           <div><span className="text-neutral-500">Target Sell Date:</span> {fmtDate(cow.targetSellDate)}</div>
           <div><span className="text-neutral-500">Purchase Price:</span> {cow.purchasePrice ? `Rs ${cow.purchasePrice.toLocaleString()}` : "—"}</div>
           <div><span className="text-neutral-500">Purchase Date:</span> {fmtDate(cow.purchaseDate)}</div>

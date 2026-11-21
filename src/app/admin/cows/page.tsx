@@ -6,6 +6,7 @@ import { getHerdOverview, getAnimalCategories } from "@/lib/reports/herdOverview
 import StatCard from "@/components/StatCard";
 import AnimalListClient from "./AnimalListClient";
 import type { AnimalRow } from "./AnimalCard";
+import { getBreedingTagMap } from "@/lib/breeding/herdState";
 
 function Ic({ children }: { children: ReactNode }) {
   return (
@@ -38,12 +39,13 @@ function simplifyRatio(a: number, b: number): string {
 export default async function CowsAdminPage() {
   const session = await auth();
   const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
-  const [overview, categories, cows, statusItems, latestWeights] = await Promise.all([
+  const [overview, categories, cows, statusItems, latestWeights, breedingTags] = await Promise.all([
     getHerdOverview(),
     getAnimalCategories(),
     prisma.cow.findMany(),
     prisma.masterDataItem.findMany({ where: { category: "COW_STATUS" }, orderBy: { sortOrder: "asc" } }),
     prisma.weightRecord.findMany({ orderBy: { date: "asc" }, select: { cowId: true, weightKg: true } }),
+    getBreedingTagMap(),
   ]);
 
   const latestWeightByCow = new Map<string, number>();
@@ -70,6 +72,7 @@ export default async function CowsAdminPage() {
       latestWeightKg: latestWeightByCow.get(c.id) ?? null,
       pregnant: c.expectedCalving !== null,
       monthsInStatus: c.status === "MILKING" ? monthsSince(c.lastCalvingDate) : null,
+      breeding: breedingTags.get(c.id) ?? null,
     }));
 
   return (

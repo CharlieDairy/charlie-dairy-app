@@ -20,6 +20,7 @@ export default function AnimalListClient({
   const [dueSoon, setDueSoon] = useState(false);
   const [noWeight, setNoWeight] = useState(false);
   const [search, setSearch] = useState("");
+  const [stage, setStage] = useState("ALL"); // breeding stage: ALL, ACTION (needs the farm manager) or a stage code
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [state, formAction, isPending] = useActionState<BulkDeleteState, FormData>(deleteCows, undefined);
   const formRef = useRef<HTMLFormElement>(null);
@@ -40,9 +41,18 @@ export default function AnimalListClient({
     return animals
       .filter((a) => category === "ALL" || a.status === category)
       .filter((a) => !dueSoon || a.pregnant)
+      .filter((a) => stage === "ALL" || (stage === "ACTION" ? a.breeding?.needsAction : a.breeding?.code === stage))
       .filter((a) => !noWeight || a.latestWeightKg === null)
       .filter((a) => !search || a.tag.toLowerCase().includes(search.toLowerCase()));
-  }, [animals, category, dueSoon, noWeight, search]);
+  }, [animals, category, dueSoon, noWeight, search, stage]);
+
+  // Only the breeding stages that at least one animal is in, with how many.
+  const stages = useMemo(() => {
+    const m = new Map<string, { label: string; n: number }>();
+    for (const a of animals) if (a.breeding) m.set(a.breeding.code, { label: a.breeding.label, n: (m.get(a.breeding.code)?.n ?? 0) + 1 });
+    return [...m.entries()].sort((x, y) => y[1].n - x[1].n);
+  }, [animals]);
+  const actionCount = useMemo(() => animals.filter((a) => a.breeding?.needsAction).length, [animals]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -65,6 +75,18 @@ export default function AnimalListClient({
         >
           No Weight Recorded
         </button>
+        <select
+          value={stage}
+          onChange={(e) => setStage(e.target.value)}
+          aria-label="Breeding stage"
+          className={`text-xs rounded-full px-3 py-1.5 border ${stage !== "ALL" ? "bg-primary text-white border-primary" : "border-border text-text-muted"}`}
+        >
+          <option value="ALL">Breeding: all</option>
+          <option value="ACTION">Needs action ({actionCount})</option>
+          {stages.map(([code, s]) => (
+            <option key={code} value={code}>{s.label} ({s.n})</option>
+          ))}
+        </select>
       </div>
 
       <div className="flex gap-1.5 flex-wrap border-b border-neutral-200 pb-2">

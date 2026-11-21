@@ -4,6 +4,7 @@ import { getLiveUser, hasPermission } from "@/lib/access";
 import { getFarmDashboard } from "@/lib/reports/farmDashboard";
 import { getFeedOverview } from "@/lib/reports/feed";
 import { activityNotice } from "@/lib/dailyActivity";
+import { getBreedingSummary } from "@/lib/breeding/herdState";
 import { formatRs } from "@/lib/format";
 import DailyProductionChart from "./DailyProductionChart";
 import type { ReactNode } from "react";
@@ -137,10 +138,11 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   // P&L, capital and the finance summary are for the Admin and the Partners (Editors and View Only users never see them).
   const finance = isAdmin || user?.role === "PARTNER";
   const canWrite = user?.role === "ADMIN" || user?.role === "EDITOR";
-  const [d, feed, activity, watchRows] = await Promise.all([
+  const [d, feed, activity, breeding, watchRows] = await Promise.all([
     getFarmDashboard(params),
     getFeedOverview(),
     isAdmin ? activityNotice() : Promise.resolve(null),
+    operations ? getBreedingSummary().catch(() => null) : Promise.resolve(null),
     prisma.watchFinding.groupBy({ by: ["severity"], where: { status: "OPEN", ...(isAdmin ? {} : { financeOnly: false }) }, _count: { _all: true } }).catch(() => []),
   ]);
   const watchCount = (sev: string) => watchRows.find((w) => w.severity === sev)?._count._all ?? 0;
@@ -151,10 +153,13 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const sold = d.periodSales.reduce((n, s) => n + s.litres, 0);
   const salesComplete = d.periodSales.length > 0 && d.periodSales.every(s => s.litres > 0);
   const coverage = d.active.length ? Math.round(d.vaccinated / d.active.length * 100) : null;
-  const overdueBreeding = d.breeding.filter(c => c.nextAiDate!.toISOString().slice(0, 10) < d.today).length;
-  const breedingToday = d.breeding.filter(c => c.nextAiDate!.toISOString().slice(0, 10) === d.today).length;
+  // Breeding follow-up comes from the animals' breeding stages (see lib/breeding/status.ts), not from a stored "next AI date".
+  const bc = breeding?.counts ?? {};
+  const breedingActions = breeding?.needsAction ?? 0;
+  const waitingForHeat = (bc.WAITING_FOR_HEAT ?? 0) + (bc.OPEN ?? 0);
+  const checksDue = (bc.CHECK_DUE ?? 0) + (bc.CHECK_OVERDUE ?? 0);
   const alerts = [
-    { title: "Breeding follow-up", count: overdueBreeding + breedingToday, detail: `${overdueBreeding} overdue · ${breedingToday} due today`, href: "/admin/reports/breeding", tone: "rose" as const },
+    { title: "Breeding follow-up", count: breedingActions, detail: `${bc.CHECK_OVERDUE ?? 0} confirm overdue · ${bc.CHECK_DUE ?? 0} check due · ${bc.IN_HEAT ?? 0} in heat · ${waitingForHeat} waiting for heat`, href: "/entry/breeding/board", tone: "rose" as const },
     { title: "Milk records pending", count: d.dailyMilk.missing, detail: `${d.dailyMilk.recorded} animals recorded today`, href: "/entry/milking", tone: "amber" as const },
     { title: "No vaccination record", count: d.neverVaccinated, detail: "Recorded coverage, not proof of immunity", href: "/admin/reports/health", tone: "sky" as const },
     { title: "Calving dates to review", count: d.overdueCalvings, detail: "Past expected date; confirm outcome", href: "/admin/reports/breeding", tone: "violet" as const },
@@ -284,10 +289,12 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
 
         <p className="text-xs text-slate-500">Operational summaries below reflect current records as of {d.today}; daily feeding cost reflects today.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          <Panel title="Breeding" href="/admin/reports/breeding" icon={IconHeart} tone="rose">
-            <p className="font-bold text-xl mb-2">{overdueBreeding + breedingToday} follow-ups due</p>
+          <Panel title="Breeding" href="/entry/breeding/board" icon={IconHeart} tone="rose">
+            <p className="font-bold text-xl mb-2">{breedingActions} need action</p>
             <Row label="Pregnant (expected date recorded)" value={d.pregnant} />
-            <Row label="Need breeding / due service" value={overdueBreeding + breedingToday} />
+            <Row label="Inseminated, awaiting result" value={(bc.INSEMINATED ?? 0) + checksDue} />
+            <Row label="Pregnancy checks due (day 40+)" value={checksDue} />
+            <Row label="Waiting for heat" value={waitingForHeat} />
             <Row label="Calvings in next 30 days" value={d.calvings} />
             <p className="text-xs text-slate-500 mt-2">Eligibility targets (herd-on-target %) are not configured — would need a defined voluntary-waiting-period rule.</p>
           </Panel>

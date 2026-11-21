@@ -4,6 +4,7 @@ import Link from "next/link";
 import StatusSelect from "./StatusSelect";
 import DeleteCowButton from "./DeleteCowButton";
 import StatusWatermark from "@/components/StatusWatermark";
+import BreedingBadge from "@/components/BreedingBadge";
 
 export type AnimalRow = {
   id: string;
@@ -16,6 +17,8 @@ export type AnimalRow = {
   latestWeightKg: number | null;
   pregnant: boolean;
   monthsInStatus: number | null;
+  /** the breeding tag worked out from the heat, insemination, pregnancy-check and calving records (females only) */
+  breeding: { code: string; label: string; tone: string; detail: string; needsAction: boolean } | null;
 };
 
 function ageFromDob(dobIso: string | null): string {
@@ -90,8 +93,10 @@ export default function AnimalCard({
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
           <span className="text-xs rounded px-2 py-0.5 border border-neutral-200 text-neutral-600">{animal.gender}</span>
           <StatusSelect cowId={animal.id} status={animal.status} options={statusOptions} />
-          {animal.pregnant && (
-            <span className="text-xs rounded px-2 py-0.5 border border-info-light bg-info-light text-info">Pregnant</span>
+          {animal.breeding ? (
+            <BreedingBadge tag={animal.breeding} />
+          ) : (
+            animal.pregnant && <span className="text-xs rounded px-2 py-0.5 border border-info-light bg-info-light text-info">Pregnant</span>
           )}
           {animal.status === "MILKING" && animal.monthsInStatus !== null && (
             <span className="text-xs text-neutral-400">{animal.monthsInStatus}mo since calving</span>
